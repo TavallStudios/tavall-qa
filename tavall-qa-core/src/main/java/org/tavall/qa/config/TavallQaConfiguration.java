@@ -26,4 +26,25 @@ public class TavallQaConfiguration {
         }
         return new TaskBoardDataHandler(database);
     }
+
+    @Bean
+    public org.tavall.qa.handler.ITaskBoardActionTargetResolver taskBoardActionTargetResolver() {
+        return new org.tavall.qa.handler.TaskBoardActionTargetResolver();
+    }
+
+    @Bean
+    public org.tavall.qa.handler.ITaskBoardQueryHandler taskBoardQueryHandler(
+            ITaskBoardDataHandler dataHandler,
+            org.tavall.qa.handler.ITaskBoardActionTargetResolver resolver
+    ) {
+        return new org.tavall.qa.handler.TaskBoardQueryHandler(dataHandler, resolver);
+    }
+
+    @Bean
+    public org.tavall.qa.handler.ITaskBoardMutationHandler taskBoardMutationHandler(
+            ITaskBoardDataHandler dataHandler,
+            org.tavall.qa.handler.ITaskBoardActionTargetResolver resolver
+    ) {
+        return new org.tavall.qa.handler.TaskBoardMutationHandler(dataHandler, resolver);
+    }
 }
