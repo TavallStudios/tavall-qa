@@ -1,0 +1,117 @@
+{
+  "provider": "antigravity-cli",
+  "scope": {
+    "repository": "TavallStudios/tavall-qa",
+    "path": ".",
+    "type": "REPOSITORY_ROOT"
+  },
+  "sourceHeads": {
+    "currentHead": "initial",
+    "targetBranch": "main"
+  },
+  "entrySequence": [
+    "tavall-agent-memory",
+    "tavall-agent-ledger",
+    "tavall-agent-provenance",
+    "tavall-docs-agent",
+    "tavall-orchestrator"
+  ],
+  "agents": [
+    "tavall-agent-memory",
+    "tavall-agent-ledger",
+    "tavall-agent-provenance",
+    "tavall-docs-agent",
+    "tavall-orchestrator",
+    "tavall-agent-authoring",
+    "tavall-agent-module-boundaries",
+    "tavall-agent-code-architecture",
+    "tavall-agent-data"
+  ],
+  "skillReads": [
+    {
+      "path": "agents/tavall-agent-memory/skills/tavall-agent-memory/SKILL.md",
+      "sha256": "a90e1b13589f1e208995be353598a9fdb88541006fc4f5ac949a65378479b652"
+    },
+    {
+      "path": "agents/tavall-agent-ledger/skills/tavall-agent-ledger/SKILL.md",
+      "sha256": "21d353158bba6e41a1244e23d2f9ffb18ff29d4cd161601d2713091a96fa29e9"
+    },
+    {
+      "path": "agents/tavall-agent-provenance/skills/SKILL.md",
+      "sha256": "b23489e662c25b768b8f8d5b3e5d24b76274c4e60db0258f476256222c1693ce"
+    },
+    {
+      "path": "agents/tavall-agent-provenance/skills/start/SKILL.md",
+      "sha256": "712120aa7a73a1dac065ff5638ddc22ee1f317daf45390245ac5f60f008149e1"
+    },
+    {
+      "path": "agents/tavall-orchestrator/skills/tavall-skill-orchestrator/SKILL.md",
+      "sha256": "35780a3323e05a3f43fe38c0ab59bfcf3f8426f82253eedfa0fb2762fc2513c0"
+    },
+    {
+      "path": "agents/tavall-agent-authoring/skills/chat-skill-candidate-review/SKILL.md",
+      "sha256": "1d1aa54a6866b82efe2dbdbe35c93c0c940dead53b82ab132af087068a2f58f4"
+    },
+    {
+      "path": "agents/tavall-agent-module-boundaries/skills/canonical-module-types/SKILL.md",
+      "sha256": "68d3da93258100462fc38adb63aab4c9484f23ba11875f5ca591fd07f1f5d94b"
+    },
+    {
+      "path": "agents/tavall-agent-code-architecture/skills/dependency-injection/SKILL.md",
+      "sha256": "e8fd08c1496162971fc371376599d2b2d94d7818f9283b27079f28c9860ae7fd"
+    },
+    {
+      "path": "agents/tavall-agent-code-architecture/skills/tavall-database-and-durable-persistence/SKILL.md",
+      "sha256": "b14d531a3cd5c5acbdce7a26d6582eb144689d57fb16b153dfc593647f08490f"
+    },
+    {
+      "path": "agents/tavall-agent-code-architecture/skills/typed-data-requests-results-keys-and-local-types/SKILL.md",
+      "sha256": "29b3ae438fd8a46b80edb294507b263361fc02f4e22f4ee48651ece938fc1225"
+    },
+    {
+      "path": "agents/tavall-agent-data/skills/tavall-postgres/SKILL.md",
+      "sha256": "0668f332b5f44528ebd9086a00d72dd1588a01e1c01134a994f02aa1bdb55ce7"
+    }
+  ],
+  "documentReads": [
+    {
+      "receipt": "/srv/dev-storage/workspaces/tavall-qa/repo_root/.tavallai/evidence/canonical-module-types.json"
+    },
+    {
+      "receipt": "/srv/dev-storage/workspaces/tavall-qa/repo_root/.tavallai/evidence/dependency-injection.json"
+    },
+    {
+      "receipt": "/srv/dev-storage/workspaces/tavall-qa/repo_root/.tavallai/evidence/typed-data.json"
+    }
+  ],
+  "memory": {
+    "status": "USED",
+    "query": "QA Board Task Board issue 263 qa.tavall.org",
+    "receipt": "/srv/dev-storage/workspaces/tavall-qa/repo_root/.tavallai/evidence/memory-retrieval.json",
+    "providers": {
+      "graphify": "AVAILABLE",
+      "graphiti": "AVAILABLE",
+      "semantic": "AVAILABLE"
+    }
+  },
+  "ownership": {
+    "moduleType": "tavall-qa-api (API/LIBRARY), tavall-qa-core (SYSTEM/PROVIDER), tavall-qa-test-suite (TEST_SUITE)",
+    "runtimeOwner": "tavall-qa owns backend task/progress/QA authority; consumed by tavall-web-app",
+    "javaTools": "Java 25, Gradle 9.6.1, Tavall Database (IPostgresDatabase entities API), Tavall DI (IDependencyMap)",
+    "concurrency": "Paper/server and controller thread safety preserved; domain mutations use atomic database transactions",
+    "persistence": "Authoritative mapped JPA entities (TaskBoardProjectEntity, TaskBoardTaskEntity, TaskBoardActionEntity, TaskBoardCommentEntity) and checked-in PostgreSQL migration 027_task_board.sql; no raw JDBC or competing stores",
+    "dependencies": "org.tavall:tavall-database-postgres:1.0.0, org.tavall:tavall-di:1.0.0, jakarta.persistence-api:3.1.0"
+  },
+  "ledgerRef": "/srv/dev-storage/workspaces/tavall-qa/repo_root/.tavallai/work/current.json",
+  "gitWork": false,
+  "skillCandidateReview": {
+    "status": "REVIEWED",
+    "decision": "NONE",
+    "reason": "Existing canonical skills for module-boundaries, tavall-postgres, and code-architecture fully govern this authority port; no reusable procedural gap identified."
+  },
+  "acceptance": {
+    "status": "PASS",
+    "tests": "22 tests passed across QueryHandler, MutationHandler, ActionTargetResolver, SchemaResource, and AuthTest",
+    "build": "Java 25 Gradle build successful with zero warnings/errors"
+  }
+}

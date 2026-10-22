@@ -1,0 +1,12 @@
+{
+  "activeScope": {
+    "repository": "TavallStudios/tavall-qa",
+    "tasks": [
+      "tavall-qa-api domain, requests, views, handler interfaces",
+      "tavall-qa-core mapped JPA entities, PostgreSQL migration, data handler",
+      "tavall-qa-test-suite integration and authorization tests"
+    ]
+  },
+  "lastUpdated": "2026-10-22T03:55:00Z",
+  "workerId": "wt_b09d32d6-9562-4535-be7c-84a4a29616bf"
+}

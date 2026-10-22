@@ -1,0 +1,199 @@
+{
+  "query": "QA Board Task Board issue 263 qa.tavall.org",
+  "authority": "Candidate context only. Confirm current claims against canonical source/runtime/docs.",
+  "providers": {
+    "graphify": {
+      "status": "AVAILABLE",
+      "result": {
+        "content": [
+          {
+            "text": "Graph: graphify/graph.json (54737 nodes) | Traversal: BFS depth=2 | Start: ['TASK', 'Organization-Wide Authority (`TavallStudios/tavall-docs`)', 'TaskBatchDashboardCard', 'tavall-docs', 'DashboardSummaryService', '.issue()', 'Organic Light Leak', 'TavallStudios/tavall-mc'] | Context: contains, references, owns, uses, invokes, governs, governed_by, implements, depends_on, call, import (explicit) | 10 nodes found\n\nNODE TASK [src=https://github.com/TavallStudios/tavall-ai/blob/bd56f8155af229cdf3febb6f2ebadabb0ad81bae/tavall-ai-core/src/main/java/org/tavall/ai/app/memory/MemoryKind.java loc=L7 community=]\nNODE Organization-Wide Authority (`TavallStudios/tavall-docs`) [src=https://github.com/TavallStudios/tavall-docs/blob/8532f5659c86bd0263e1fb3741963d89b7f4712e/docs/progression/TAVALL_DOCUMENTATION_RECONCILIATION_LEDGER.md#L16 loc=L16 community=]\nNODE TaskBatchDashboardCard [src=https://github.com/TavallStudios/tavall-ai/blob/bd56f8155af229cdf3febb6f2ebadabb0ad81bae/tavall-ai-core/src/main/java/org/tavall/ai/app/dashboard/model/TaskBatchDashboardCard.java loc=L5 community=]\nNODE tavall-docs [src=https://github.com/TavallStudios/tavall-docs/tree/8532f5659c86bd0263e1fb3741963d89b7f4712e loc= community=]\nNODE DashboardSummaryService [src=https://github.com/TavallStudios/tavall-ai/blob/bd56f8155af229cdf3febb6f2ebadabb0ad81bae/tavall-ai-core/src/main/java/org/tavall/ai/app/dashboard/DashboardSummaryService.java loc=L20 community=]\nNODE .issue() [src=https://github.com/TavallStudios/tavall-cloud/blob/6aa2ba99337abd5314d9b011da2b8a1acbfe596d/tavall-cloud-node/src/main/java/org/tavall/cloud/node/developer/CloudDeveloperWorkspaceJobExecutor.java loc=L368 community=]\nNODE Organic Light Leak [src=https://github.com/TavallStudios/tavall-ai/blob/bd56f8155af229cdf3febb6f2ebadabb0ad81bae/plugins/tavall-ai/agents/third-party-hyperframes/package/skills/media-use/references/media-treatment-recipes.md#L798 loc=L798 community=]\nNODE TavallStudios/tavall-mc [src=https://github.com/TavallStudios/tavall-mc/tree/fd2abaa6c33f5a58aca72d818d29982fe0688ec7 loc= community=]\nNODE CloudCommandRequest [src=https://github.com/TavallStudios/tavall-cloud/blob/6aa2ba99337abd5314d9b011da2b8a1acbfe596d/tavall-cloud/src/main/java/org/tavall/cloud/command/CloudCommandRequest.java loc=L8 community=]\nNODE .executeCommand() [src=https://github.com/TavallStudios/tavall-cloud/blob/6aa2ba99337abd5314d9b011da2b8a1acbfe596d/tavall-cloud/src/main/java/org/tavall/cloud/command/handler/interfaces/ICloudCommandHandler.java loc=L7 community=]\nEDGE .issue() --calls [INFERRED context=call]--> CloudCommandRequest at=https://github.com/TavallStudios/tavall-cloud/blob/6aa2ba99337abd5314d9b011da2b8a1acbfe596d/tavall-cloud-node/src/main/java/org/tavall/cloud/node/developer/CloudDeveloperWorkspaceJobExecutor.java:L385\nEDGE .issue() --calls [INFERRED context=call]--> .executeCommand() at=https://github.com/TavallStudios/tavall-cloud/blob/6aa2ba99337abd5314d9b011da2b8a1acbfe596d/tavall-cloud-node/src/main/java/org/tavall/cloud/node/developer/CloudDeveloperWorkspaceJobExecutor.java:L389",
+            "type": "text"
+          }
+        ],
+        "isError": false
+      },
+      "neighborContexts": [
+        {
+          "label": "tavall-agent-code-architecture",
+          "result": {
+            "content": [
+              {
+                "text": "Neighbors of tavall-agent-code-architecture:\n  --> typed-data-requests-results-keys-and-local-types [OWNS] [DERIVED]\n  --> cross-storage-mutation [OWNS] [DERIVED]\n  --> dependency-injection [OWNS] [DERIVED]\n  --> platform-boundaries [OWNS] [DERIVED]\n  --> lifecycle-cleanup [OWNS] [DERIVED]\n  --> direct-java-capability-and-adapter-default [OWNS] [DERIVED]\n  --> tavall-nlew-runtime-terminology [OWNS] [DERIVED]\n  --> interfaces-and-abstractions [OWNS] [DERIVED]\n  --> builders-handlers-services-orchestrators-and-routers [OWNS] [DERIVED]\n  --> validation-and-mutation-ordering [OWNS] [DERIVED]\n  --> error-handling [OWNS] [DERIVED]\n  --> code-architecture [OWNS] [DERIVED]\n  --> runtime-cached-distributed-and-keyed-state [OWNS] [DERIVED]\n  --> tavall-database-and-durable-persistence [OWNS] [DERIVED]\n  --> concurrency-and-operation-state [OWNS] [DERIVED]\n  --> code-architecture-purpose [OWNS] [DERIVED]\n  --> required-reading-and-delegation [OWNS] [DERIVED]\n  --> shared-invariants [OWNS] [DERIVED]\n  --> package-ownership-and-class-roles [OWNS] [DERIVED]\n  --> architecture-review-checklist [OWNS] [DERIVED]\n  <-- Tavall AI Plugin [CONTAINS] [DERIVED]",
+                "type": "text"
+              }
+            ],
+            "isError": false
+          }
+        },
+        {
+          "label": "VERSIONING.md",
+          "result": {
+            "content": [
+              {
+                "text": "Neighbors of VERSIONING.md:\n  --> Tavall Versioning Architecture [CONTAINS] [DERIVED] at=https://github.com/TavallStudios/tavall-docs/blob/8532f5659c86bd0263e1fb3741963d89b7f4712e/docs/quality/VERSIONING.md#L1:L1\n  <-- tavall-docs [CONTAINS] [DERIVED] at=https://github.com/TavallStudios/tavall-docs/blob/8532f5659c86bd0263e1fb3741963d89b7f4712e/docs/quality/VERSIONING.md:L1\n  <-- TavallStudios/tavall-docs [CONTAINS] [DERIVED] at=https://github.com/TavallStudios/tavall-docs/blob/8532f5659c86bd0263e1fb3741963d89b7f4712e/docs/quality/VERSIONING.md:L1\n  <-- Engineering Policy [REFERENCES] [DERIVED] at=https://github.com/TavallStudios/tavall-docs/blob/8532f5659c86bd0263e1fb3741963d89b7f4712e/docs/quality/README.md#L29:L29\n  <-- Tavall Studios CI/CD [REFERENCES] [DERIVED] at=https://github.com/TavallStudios/tavall-docs/blob/8532f5659c86bd0263e1fb3741963d89b7f4712e/docs/quality/CI_CD.md#L7:L7\n  <-- versioning [REFERENCES] [DERIVED] at=file:///srv/dev-storage/.ai/plugins/Tavall/agents/tavall-agent-versioning/skills/versioning/SKILL.md:L1",
+                "type": "text"
+              }
+            ],
+            "isError": false
+          }
+        },
+        {
+          "label": "tavall-agent-readme",
+          "result": {
+            "content": [
+              {
+                "text": "Neighbors of tavall-agent-readme:\n  --> prohibited-readme-content [OWNS] [DERIVED]\n  --> readme-deployment-summary [OWNS] [DERIVED]\n  --> readme-standards [OWNS] [DERIVED]\n  --> readme-development-section [OWNS] [DERIVED]\n  --> readme-documentation-section [OWNS] [DERIVED]\n  --> repository-structure-graphs [OWNS] [DERIVED]\n  --> public-readme-rule [OWNS] [DERIVED]\n  --> module-readme-requirement [OWNS] [DERIVED]\n  --> readme-core-rule [OWNS] [DERIVED]\n  --> readme-authority [OWNS] [DERIVED]\n  --> repository-readme-types [OWNS] [DERIVED]\n  <-- Tavall AI Plugin [CONTAINS] [DERIVED]",
+                "type": "text"
+              }
+            ],
+            "isError": false
+          }
+        }
+      ]
+    },
+    "graphiti": {
+      "status": "AVAILABLE",
+      "facts": {
+        "message": "Facts retrieved successfully",
+        "facts": [],
+        "candidateCount": 8,
+        "relevanceFilter": "SAME_VERIFIED_EPISODE_SOURCE"
+      },
+      "entities": {
+        "message": "Nodes retrieved successfully",
+        "nodes": [
+          {
+            "uuid": "a7c49b60-536f-4670-b25f-d8ffb08b341b",
+            "name": "org.tavall.ai.app.memory",
+            "labels": [
+              "Entity"
+            ],
+            "created_at": "2026-10-06T00:57:20.819144+00:00",
+            "summary": "org.tavall.ai.app.memory is the Tavall AI memory knowledge-plane implementation in TavallStudios/tavall-ai-agent-task-manager on branch working/memory-plane-v2, slated for extension rather than replacement by a competing subsystem as of 2026-08-20. On 2026-08-20, the user directed work to finish, validate, repair, and deploy this component to incorporate structural retrieval via Graphify, temporal knowledge via Graphiti, and semantic candidate recall via Qdrant, alongside unified memoryContext hydration, provider telemetry, Model Context Protocol tools, and organization seed and import tooling. Concurrently, requirements specified that ordinary prompts and MCP turns must not create durable memory, durable records require explicit recordMemory calls, prompt history remains in Postgres, raw prompts are excluded from Qdrant, and provenance and supersession must be tested.",
+            "group_id": "tavall",
+            "attributes": {}
+          },
+          {
+            "uuid": "ff6a0882-41b7-411f-9be6-e7054c5615db",
+            "name": "tavall-ai-agent-task-manager",
+            "labels": [
+              "Entity"
+            ],
+            "created_at": "2026-10-05T23:33:21.549412+00:00",
+            "summary": "The working/memory-plane-v2 pull request #22 belongs to the tavall-ai-agent-task-manager repository.",
+            "group_id": "tavall",
+            "attributes": {}
+          },
+          {
+            "uuid": "c865dfa8-afb7-4445-b6e5-5fa50f82fa1c",
+            "name": "Tavall",
+            "labels": [
+              "Entity"
+            ],
+            "created_at": "2026-10-05T23:33:08.688702+00:00",
+            "summary": "Tavall memory considers Qdrant as auxiliary retrieval context rather than the source of truth.",
+            "group_id": "tavall",
+            "attributes": {}
+          },
+          {
+            "uuid": "98d9aa46-e54e-449a-a9d9-f35f5ea34154",
+            "name": "working/memory-plane-v2",
+            "labels": [
+              "Entity"
+            ],
+            "created_at": "2026-10-05T23:33:21.549351+00:00",
+            "summary": "The working/memory-plane-v2 pull request #22 belongs to the tavall-ai-agent-task-manager repository.",
+            "group_id": "tavall",
+            "attributes": {}
+          },
+          {
+            "uuid": "e6cc9329-c4b7-4e1c-8dfe-6e7a6e965de5",
+            "name": "Tavall DI source",
+            "labels": [
+              "Entity"
+            ],
+            "created_at": "2026-10-05T22:59:09.784857+00:00",
+            "summary": "Tavall DI source requires inspection for current thread-ownership rules before changing concurrency behavior, following August 2026 design decisions directing generic access toward generated typed accessors with getter-based behavior.",
+            "group_id": "tavall",
+            "attributes": {}
+          }
+        ]
+      },
+      "episodes": [
+        {
+          "uuid": "9da1412a-4dd3-4564-a0c9-b1e34cae7e2a",
+          "name": "Proposal to use AgentTaskManager as the default MCP location",
+          "content": "Source actor: USER\nClassification: PROPOSED_USER_DESIGN_DIRECTION\nSource timestamp: 2026-08-21T10:17:30.698Z\nOriginal source reference: file:///home/ubuntu/.codex/sessions/2026/08/20/rollout-2026-08-20T19-33-23-01a020a9-f2a2-7ae0-94e4-7d32c1aed804.jsonl#thread=01a020a9-f2a2-7ae0-94e4-7d32c1aed804&lines=6764\nSource content SHA-256: e960769f6b57512f5ac523ba391091b3be9203c243feb687df6f6100aab38dd7\nNon-verbatim source summary: On 2026-08-21, after reviewing that AgentTaskManager, Graphiti, and Graphify exposed separate MCP endpoints and the ChatGPT tunnel targeted Tavall Cloud Java, the user proposed one MCP location for shared use and suggested AgentTaskManager as the default. This is a historical proposed direction, not evidence that the route was accepted, merged, or deployed.",
+          "created_at": "2026-10-06T00:57:30.065628+00:00",
+          "source": "text",
+          "source_description": "{\"classification\":\"PROPOSED_USER_DESIGN_DIRECTION\",\"episodeHash\":\"191c67daadd1ab6e8c7d996850943b130c57fd0e62973e77fec5ac6fadc13b61\",\"provider\":\"AI_CONVERSATION\",\"sourceActor\":\"USER\",\"sourceContentHash\":\"e960769f6b57512f5ac523ba391091b3be9203c243feb687df6f6100aab38dd7\",\"sourceConversationHash\":\"6d7a588f0bf1adccfb4b8b23a2003e5e5660f951f70b4b6a589298ca20ef1cc7\",\"sourceId\":\"codex-home:01a020a9-f2a2-7ae0-94e4-7d32c1aed804:episode:single-mcp-location-proposal\",\"sourceRef\":\"file:///home/ubuntu/.codex/sessions/2026/08/20/rollout-2026-08-20T19-33-23-01a020a9-f2a2-7ae0-94e4-7d32c1aed804.jsonl#thread=01a020a9-f2a2-7ae0-94e4-7d32c1aed804&lines=6764\",\"timestamp\":\"2026-08-21T10:17:30.698Z\"}",
+          "group_id": "tavall",
+          "sourceRef": "file:///home/ubuntu/.codex/sessions/2026/08/20/rollout-2026-08-20T19-33-23-01a020a9-f2a2-7ae0-94e4-7d32c1aed804.jsonl#thread=01a020a9-f2a2-7ae0-94e4-7d32c1aed804&lines=6764",
+          "sourceContentHash": "e960769f6b57512f5ac523ba391091b3be9203c243feb687df6f6100aab38dd7",
+          "sourceId": "codex-home:01a020a9-f2a2-7ae0-94e4-7d32c1aed804:episode:single-mcp-location-proposal",
+          "sourceProvider": "CODEX_HOME_LOCAL",
+          "classification": "PROPOSED_USER_DESIGN_DIRECTION",
+          "retrievalScore": 4,
+          "retrievalAuthority": "TEMPORAL_CANDIDATE_VERIFY_SOURCE_REF"
+        }
+      ],
+      "currentRequirementEpisodes": [],
+      "episodesStatus": "AVAILABLE",
+      "episodesError": null,
+      "sourceRefCoverage": "VERIFIED_EPISODE_INDEX"
+    }
+  },
+  "semantic": {
+    "status": "AVAILABLE",
+    "provider": "sqlite-vec",
+    "authority": "CANDIDATE_ONLY",
+    "results": [
+      {
+        "score": 0.7386950254440308,
+        "source_ref": "file:///srv/dev-storage/.ai/plugins/Tavall/agents/tavall-agent-code-architecture/skills/code-architecture/SKILL.md#L10",
+        "content_hash": "f2e6a2d834bda86fad28963ae0c273ed3c43c323e1352621274594f892ccd513",
+        "label": "code-architecture / Canonical Authority",
+        "authority": "CURRENT_RUNTIME",
+        "source_revision": "snapshot:aaa553086bbd899c7a3803ae5d19e2b8b3fe19708e3a5ae723b59c412ca9aeb2",
+        "provider": "sqlite-vec"
+      },
+      {
+        "score": 0.7385758459568024,
+        "source_ref": "https://github.com/TavallStudios/tavall-docs/blob/8532f5659c86bd0263e1fb3741963d89b7f4712e/docs/quality/VERSIONING.md#L239",
+        "content_hash": "5387d105f1121d56c92ead9cc3c0bcbff77c3fdb8df61b914c9665f6a8645b78",
+        "label": "Tavall Versioning Architecture / Documentation Update State / Update History",
+        "authority": "CANONICAL_DOCS",
+        "source_revision": "8532f5659c86bd0263e1fb3741963d89b7f4712e",
+        "provider": "sqlite-vec"
+      },
+      {
+        "score": 0.7380355894565582,
+        "source_ref": "file:///srv/dev-storage/.ai/plugins/Tavall/agents/tavall-agent-readme/skills/readme-standards/SKILL.md#L10",
+        "content_hash": "8cf917c3c06c33480d6fb450c1afa83a185d266ed93b41414154bd7c923ad076",
+        "label": "readme-standards / Canonical Authority",
+        "authority": "CURRENT_RUNTIME",
+        "source_revision": "snapshot:aaa553086bbd899c7a3803ae5d19e2b8b3fe19708e3a5ae723b59c412ca9aeb2",
+        "provider": "sqlite-vec"
+      },
+      {
+        "score": 0.7360177338123322,
+        "source_ref": "https://github.com/TavallStudios/tavall-docs/blob/8532f5659c86bd0263e1fb3741963d89b7f4712e/docs/quality/CODE_ARCHITECTURE.md#L41",
+        "content_hash": "9e825219364d77e48a5bfc16ca0458e039d523f4038bddffb74a5a7c062917c3",
+        "label": "Tavall Studios Code Architecture / Required Reading and Delegation / Required Topic Routing",
+        "authority": "CANONICAL_DOCS",
+        "source_revision": "8532f5659c86bd0263e1fb3741963d89b7f4712e",
+        "provider": "sqlite-vec"
+      },
+      {
+        "score": 0.7335616648197174,
+        "source_ref": "file:///srv/dev-storage/.ai/plugins/Tavall/agents/tavall-agent-web/skills/web-architecture/SKILL.md#L10",
+        "content_hash": "d1386b5fb163c0acffb15498a74cd3a2a272fada757c300f30ec91dd6cf647cb",
+        "label": "web-architecture / Canonical Authority",
+        "authority": "CURRENT_RUNTIME",
+        "source_revision": "snapshot:aaa553086bbd899c7a3803ae5d19e2b8b3fe19708e3a5ae723b59c412ca9aeb2",
+        "provider": "sqlite-vec"
+      }
+    ]
+  }
+}

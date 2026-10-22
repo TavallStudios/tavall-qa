@@ -1,0 +1,14 @@
+package org.tavall.qa.domain.auth;
+
+public enum QaCapability {
+    SUBMIT_EVIDENCE,
+    ASSIGN_SELF_LOW_RISK,
+    ASSIGN_SELF_GAMEPLAY,
+    ASSIGN_OTHERS,
+    REVIEW_EVIDENCE,
+    ACCEPT_REJECT_TASK,
+    HUMAN_VERIFY,
+    MANAGE_TASKS,
+    MANAGE_PROJECTS,
+    TECHNICAL_DEV_EXECUTION
+}

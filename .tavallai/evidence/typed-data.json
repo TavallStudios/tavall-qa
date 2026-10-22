@@ -1,0 +1,22 @@
+{
+  "content": "## Typed Data, Requests, Results, Keys, and Local Types\n\nPrefer typed immutable values where value semantics fit. `*Request` carries operation input, `*Result` represents expected outcomes, `*Data`/`*State` carries named values, `*MetaData` represents derived/display-ready values, and stable keys use typed identities rather than raw strings.\n\nProduction Java local variables under `src/main/java` use explicit declared types; Java `var` is prohibited there. Tests, fixtures, generated source, and tooling may define narrower rules independently.\n\nDetailed rules and Bad/Good examples: [Namespaces, Variables, OOP, DRY, and Type Safety](code-architecture/NAMESPACES_VARIABLES_AND_OOP.md#local-variables), [Methods](code-architecture/METHODS.md), and [Requests, Results, Resolvers, and Formatters](code-architecture/REQUESTS_RESULTS_RESOLVERS_AND_FORMATTERS.md).\n\n##### Why\n\nTavall uses visible types as architecture documentation. Explicit type boundaries make API and domain changes visible during review and refactoring.\n\n",
+  "docsRoot": "/srv/dev-storage/workspaces/tavall-docs/repo_root",
+  "evidence": {
+    "agent": "tavall-agent-code-architecture",
+    "description": "Apply Typed Data, Requests, Results, Keys, and Local Types from docs/quality/CODE_ARCHITECTURE.md when implementing or reviewing typed data requests results keys and local types. Refresh the exact section projection when canonical authority changes.",
+    "document": "docs/quality/CODE_ARCHITECTURE.md",
+    "documentSha256": "f474aea21479cf4693847b90c1324299e61a01695e19701d7b0a3aafab97d335",
+    "endLine": 269,
+    "section": "Typed Data, Requests, Results, Keys, and Local Types",
+    "sectionPath": [
+      "Tavall Studios Code Architecture",
+      "Typed Data, Requests, Results, Keys, and Local Types"
+    ],
+    "sectionSha256": "42f5fdf5b58b0083b4155e20cdf2e0bf671518aba14e4740234d1e1680888bfc",
+    "skill": "agents/tavall-agent-code-architecture/skills/typed-data-requests-results-keys-and-local-types/SKILL.md",
+    "skillSha256": "29b3ae438fd8a46b80edb294507b263361fc02f4e22f4ee48651ece938fc1225",
+    "sourceRevision": "aea8af518cee8ffc7e0a2f8c98d88ee3825ae97e",
+    "startLine": 258
+  },
+  "status": "READ_VERIFIED"
+}
