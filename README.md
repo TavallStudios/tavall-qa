@@ -7,7 +7,7 @@ The Tavall QA Board / QA Tracker browser product at `qa.tavall.org`. This is a *
 - `tavall-web-qa` — QA Forge browser presentation, stable route constants, and read-only projection-facing page composition (**primary module type: API; secondary role: LIBRARY**; runtime owner: `tavall-web-app`).
 - `tavall-web-qa-test-suite` — separate canonical architecture validation (**primary module type: TEST_SUITE; runtime: None**).
 - `tavall-web-app` — shared Spring host, `qa.tavall.org` virtual host routing, session/authentication, Tavall Account / organization authorization, and trusted task projection adapters.
-- Existing mapped-JPA Tavall Web Task Board — canonical task/evidence/progress mutation authority. No duplicate writable `ProgressTask` or QA task table.
+- Authoritative backend task authority — `TavallStudios/tavall-qa` (`tavall-qa-api`, `tavall-qa-core`), canonical mapped-JPA task/evidence/progress authority. No duplicate writable `ProgressTask` or QA task table.
 
 The public `/ → /projects/{project} → /tasks/{task}` journey and staff Workspace C remain the intended UI direction. `Done` does not imply `Human Verified`; no anonymous user can mutate task or evidence state. The first repository slice is a preview scaffold, **not** a live QA board.
 
