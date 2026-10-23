@@ -31,5 +31,5 @@ Read [module separation](https://github.com/TavallStudios/tavall-docs/blob/main/
 - **Runtime:** `tavall-web-app`; this repository owns no server or database lifecycle.
 - **Composition owner:** The shared Tavall Web application consumes this presentation module and the canonical `tavall-qa-api` projections.
 - **CI Definition:** [`.tavallci/ci.yaml`](.tavallci/ci.yaml).
-- **Current PR Stack:** [WebQA presentation PR #2](https://github.com/TavallStudios/tavall-web-qa/pull/2) at `4a668de0ee59ce792f7117f4c9bd5d7eb4dc803b`, pinned to QA authority PR #1 head `0d7b11172131ba677ce9999a5e392fa111ff265c`; consumed by Tavall Web PR #76.
+- **Current PR Stack:** WebQA presentation PR #2 code `4a668de0ee59ce792f7117f4c9bd5d7eb4dc803b`, current head `c48e6a2528aa5e4d033c1b052b5a1f222b68cb76`, pinned to QA authority PR #1 head `93763c0e3e76a8927a9dba5070ba22741be45147`; consumed by Tavall Web PR #76.
 - **Progression:** [`docs/progression/modules/TAVALL_WEB_QA_PROGRESSION.md`](docs/progression/modules/TAVALL_WEB_QA_PROGRESSION.md).

@@ -9,7 +9,7 @@
 
 The presentation preserves the accepted Direction C/A/C design source and uses the existing Forge primitives. It now renders request-bound public summaries, assigned work, evidence, authorized staff forms, task acceptance, Human Verify, task editing, and threaded discussion. Form submissions include CSRF and explicit organization context; the controller and QA API recheck all authority.
 
-WebQA PR #2 code is at `4a668de0ee59ce792f7117f4c9bd5d7eb4dc803b`, with QA API pinned to PR #1 head `0d7b11172131ba677ce9999a5e392fa111ff265c`.
+WebQA PR #2 code is `4a668de0ee59ce792f7117f4c9bd5d7eb4dc803b`, with current head `c48e6a2528aa5e4d033c1b052b5a1f222b68cb76` and QA API pinned to PR #1 head `93763c0e3e76a8927a9dba5070ba22741be45147`.
 
 ## Local validation
 
