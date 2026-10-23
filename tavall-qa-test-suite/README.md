@@ -51,5 +51,5 @@ Runtime owner: `None`; the suite executes validation tasks only.
 - **Composition owner:** Gradle test execution against `tavall-qa-api` and `tavall-qa-system`.
 - **CI Definition:** [`.tavallci/ci.yaml`](.tavallci/ci.yaml)
 - **PostgreSQL integration:** Set `TAVALL_QA_TEST_POSTGRES_URL`, `TAVALL_QA_TEST_POSTGRES_USER`, and optionally `TAVALL_QA_TEST_POSTGRES_PASSWORD` to a disposable database before running `test`. When no URL is configured the isolated-database test is reported skipped; never point it at the shared Tavall Cloud database.
-- **Current PR Stack:** QA authority hardening branch; consumer validation is carried by Tavall Web PR #76.
+- **Current PR Stack:** [QA authority PR #1](https://github.com/TavallStudios/tavall-qa/pull/1); consumer validation is carried by WebQA PR #2 and Tavall Web PR #76.
 - **Progression:** [`../docs/progression/modules/TAVALL_QA_TEST_SUITE_PROGRESSION.md`](../docs/progression/modules/TAVALL_QA_TEST_SUITE_PROGRESSION.md)

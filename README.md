@@ -29,7 +29,7 @@ Authoritative backend task, progress, and QA verification plane for Tavall.
 
 ## Development
 
-- **Current PR stack**: QA authority hardening, followed by the Tavall Web consumer PR #76.
+- **Current PR stack**: [QA authority PR #1](https://github.com/TavallStudios/tavall-qa/pull/1), then WebQA presentation PR #2 and Tavall Web consumer PR #76.
 - **Runtime PR**: Tavall Web PR #76 composes this API/SYSTEM into the existing Web application runtime.
 - **CI**: Root and module `.tavallci/ci.yaml` files identify the exact Gradle tasks owned by each source/build module.
 

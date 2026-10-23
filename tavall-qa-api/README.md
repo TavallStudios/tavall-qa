@@ -53,5 +53,5 @@ Runtime owner: `tavall-web-app`. Current runtime integration: Tavall Web PR #76.
 - **Composition owner:** `tavall-qa-system`
 - **Contract owner and import direction:** `tavall-qa-system`, `tavall-web-app`, and `tavall-web-qa` depend on these caller-facing contracts.
 - **CI Definition:** [`.tavallci/ci.yaml`](.tavallci/ci.yaml)
-- **Current PR Stack:** QA authority hardening branch; Web consumer PR #76.
+- **Current PR Stack:** [QA authority PR #1](https://github.com/TavallStudios/tavall-qa/pull/1); WebQA presentation PR #2 and Web consumer PR #76.
 - **Progression:** [`../docs/progression/modules/TAVALL_QA_API_PROGRESSION.md`](../docs/progression/modules/TAVALL_QA_API_PROGRESSION.md)

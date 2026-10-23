@@ -58,7 +58,7 @@ Runtime owner: `tavall-web-app`. Current runtime integration: Tavall Web PR #76.
 - **Composition owner:** `tavall-web-app` through Tavall QA configuration
 - **Contract owner and import direction:** `tavall-qa-system` implements `tavall-qa-api`; Web and Forge consumers depend on the API.
 - **CI Definition:** [`.tavallci/ci.yaml`](.tavallci/ci.yaml)
-- **Current PR Stack:** `working/qa-board-authority-hardening-20261023`; consumer integration in Tavall Web PR #76.
+- **Current PR Stack:** [QA authority PR #1](https://github.com/TavallStudios/tavall-qa/pull/1), source `641e00cb6ec26fd53362bc88077381ad1c7dbe69`; consumer integration in WebQA PR #2 and Tavall Web PR #76.
 - **Runtime PR:** Tavall Web PR #76.
 - **Progression:** [`../docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md`](../docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md)
 - **Schema ownership:** `schema/postgres/027_task_board.sql` and `028_task_board_qa_workflows.sql`.

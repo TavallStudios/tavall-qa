@@ -11,6 +11,8 @@ The SYSTEM owns mapped-JPA Task Board persistence through Tavall Database's `IPo
 
 Evidence review, task acceptance, and Human Verify are independent operations. Acceptance requires accepted evidence for the current task fingerprint and environment; it marks the task `DONE` while preserving `NHV`. VQC is awarded once per accepted eligible task to the evidence submitter. Rejection changes the task revision so previous evidence is stale. Human Verify requires the separate authorization, valid evidence, active service context, and linked Minecraft identity.
 
+QA PR #1 is at `641e00cb6ec26fd53362bc88077381ad1c7dbe69`.
+
 ## Validation
 
 - `./gradlew --no-daemon test` with `TAVALL_QA_TEST_POSTGRES_URL` set to a temporary PostgreSQL 17 container: 27 tests passed, 0 failures, 0 errors, 0 skips. The PostgreSQL test ran migrations 027/028 and exercised mapped persistence, concurrent acceptance retry/idempotency, rollback, stale-write rejection, Human Verify, and restart recovery.
