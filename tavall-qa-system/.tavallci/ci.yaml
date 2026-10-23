@@ -1,0 +1,43 @@
+version: 2
+
+source:
+  repository: TavallStudios/tavall-qa
+  provider: github
+
+build:
+  type: gradle
+  java: 25
+  gradle: 9.6.1
+
+resources:
+  mode: SYSTEM
+
+dependencies:
+  - kind: source
+    identity: TavallStudios/tavall-database
+    role: SHARED_DEP
+    selector: required-source
+    digest: 32aa272861726f6fefec116bd459e5075d336004
+    substitutions: "org.tavall:tavall-database-postgres=:tavall-database-postgres"
+  - kind: source
+    identity: TavallStudios/tavall-di
+    role: SHARED_DEP
+    selector: required-source
+    digest: d16c1de2c205f3c72fe63cd5a2765c3b1bf55368
+    sourceVersion: "1.0.0"
+    versionProperty: tavallDiVersion
+    substitutions: "org.tavall:tavall-di=:"
+
+requiredChecks:
+  - compilation
+  - quality
+
+checks:
+  compilation:
+    executor: gradle
+    tasks:
+      - :tavall-qa-system:classes
+  quality:
+    executor: gradle
+    tasks:
+      - :tavall-qa-system:check

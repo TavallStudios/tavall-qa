@@ -8,6 +8,7 @@ public record TaskBoardComment(
         UUID commentId,
         UUID taskId,
         UUID parentCommentId,
+        UUID authorAccountId,
         UUID authorMinecraftUUID,
         TaskBoardCommentType type,
         String body,

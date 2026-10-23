@@ -18,11 +18,11 @@ public record TaskBoardTaskUpdateRequest(
         TaskBoardTaskPriority priority,
         TaskBoardQaStatus qaStatus,
         TaskBoardAudience audience,
-        int weight,
-        boolean hostValidationRequired,
+        Integer weight,
+        Boolean hostValidationRequired,
+        Boolean qaQcEligible,
         String sourceType,
         String sourceReference,
-        UUID actorMinecraftUUID,
-        int sortOrder
+        Integer sortOrder
 ) {
 }

@@ -16,9 +16,9 @@ public record TaskBoardTaskCreateRequest(
         TaskBoardAudience audience,
         int weight,
         boolean hostValidationRequired,
+        boolean qaQcEligible,
         String sourceType,
         String sourceReference,
-        UUID actorMinecraftUUID,
         int sortOrder
 ) {
 }

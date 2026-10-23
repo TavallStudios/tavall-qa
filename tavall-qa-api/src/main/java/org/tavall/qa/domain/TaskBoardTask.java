@@ -20,13 +20,75 @@ public record TaskBoardTask(
         boolean hostValidationRequired,
         String sourceType,
         String sourceReference,
+        boolean qaQcEligible,
+        int qaRevision,
+        UUID createdByAccountId,
         UUID createdByMinecraftUUID,
+        UUID verifiedByAccountId,
         UUID verifiedByMinecraftUUID,
+        UUID verifiedEvidenceId,
         Instant humanVerifiedAt,
         int sortOrder,
         Instant createdAt,
         Instant updatedAt
 ) {
+    public TaskBoardTask(
+            UUID taskId,
+            String projectKey,
+            String sectionKey,
+            String title,
+            String publicTitle,
+            String description,
+            String publicSummary,
+            TaskBoardTaskStatus status,
+            TaskBoardTaskPriority priority,
+            TaskBoardQaStatus qaStatus,
+            TaskBoardAudience audience,
+            int weight,
+            boolean hostValidationRequired,
+            String sourceType,
+            String sourceReference,
+            boolean qaQcEligible,
+            UUID createdByAccountId,
+            UUID createdByMinecraftUUID,
+            UUID verifiedByAccountId,
+            UUID verifiedByMinecraftUUID,
+            UUID verifiedEvidenceId,
+            Instant humanVerifiedAt,
+            int sortOrder,
+            Instant createdAt,
+            Instant updatedAt
+    ) {
+        this(
+                taskId,
+                projectKey,
+                sectionKey,
+                title,
+                publicTitle,
+                description,
+                publicSummary,
+                status,
+                priority,
+                qaStatus,
+                audience,
+                weight,
+                hostValidationRequired,
+                sourceType,
+                sourceReference,
+                qaQcEligible,
+                0,
+                createdByAccountId,
+                createdByMinecraftUUID,
+                verifiedByAccountId,
+                verifiedByMinecraftUUID,
+                verifiedEvidenceId,
+                humanVerifiedAt,
+                sortOrder,
+                createdAt,
+                updatedAt
+        );
+    }
+
     public TaskBoardTask {
         Objects.requireNonNull(taskId, "taskId");
         projectKey = requireText(projectKey, "projectKey");
@@ -40,18 +102,27 @@ public record TaskBoardTask(
         Objects.requireNonNull(qaStatus, "qaStatus");
         Objects.requireNonNull(audience, "audience");
         weight = Math.max(1, weight);
+        if (qaRevision < 0) {
+            throw new IllegalArgumentException("qaRevision must not be negative");
+        }
         sourceType = normalize(sourceType);
         sourceReference = normalize(sourceReference);
         Objects.requireNonNull(createdAt, "createdAt");
         Objects.requireNonNull(updatedAt, "updatedAt");
         if (qaStatus == TaskBoardQaStatus.HUMAN_VERIFIED
-                && (verifiedByMinecraftUUID == null || humanVerifiedAt == null)) {
+                && (verifiedByAccountId == null
+                || verifiedByMinecraftUUID == null
+                || verifiedEvidenceId == null
+                || humanVerifiedAt == null)) {
             throw new IllegalArgumentException(
-                    "HUMAN_VERIFIED tasks require a verifier and verification timestamp"
+                    "HUMAN_VERIFIED tasks require an Account, linked Minecraft identity, accepted evidence, and timestamp"
             );
         }
         if (qaStatus != TaskBoardQaStatus.HUMAN_VERIFIED
-                && (verifiedByMinecraftUUID != null || humanVerifiedAt != null)) {
+                && (verifiedByAccountId != null
+                || verifiedByMinecraftUUID != null
+                || verifiedEvidenceId != null
+                || humanVerifiedAt != null)) {
             throw new IllegalArgumentException(
                     "Only HUMAN_VERIFIED tasks may retain verification evidence"
             );
