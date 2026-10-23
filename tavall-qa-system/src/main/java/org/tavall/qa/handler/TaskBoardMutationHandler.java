@@ -323,6 +323,9 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
         requireAvailable();
         TaskBoardTask current = requireTask(taskId);
         require(subject.canAcceptReject(taskId, environment), "Evidence review capability and task assignment required");
+        if (current.status() != TaskBoardTaskStatus.REVIEW && current.status() != TaskBoardTaskStatus.DONE) {
+            throw new IllegalArgumentException("Only REVIEW or DONE tasks can be rejected");
+        }
         String safeReason = requireText(reason, "reason");
         Instant now = Instant.now();
         TaskBoardTask rejected = copyWithQaState(

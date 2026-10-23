@@ -12,6 +12,6 @@ The module tests authorization intersections, public/private query filtering, mu
 ## Latest local result
 
 - Command: `TAVALL_QA_TEST_POSTGRES_URL=jdbc:postgresql://127.0.0.1:<isolated-port>/<disposable-db> ./gradlew --no-daemon test` from `tavall-qa`.
-- 27 tests passed; 0 failures, 0 errors, 0 skips.
+- 28 tests passed; 0 failures, 0 errors, 0 skips.
 - The temporary PostgreSQL 17 database exercised real checked-in migrations, Tavall Database JPA mappings, transactional rollback, concurrent acceptance retry/idempotency, stale-write rejection, Human Verify, and restart recovery.
 - The temporary database container was stopped after acceptance; the shared `tavall-cloud-postgres` service was not modified.

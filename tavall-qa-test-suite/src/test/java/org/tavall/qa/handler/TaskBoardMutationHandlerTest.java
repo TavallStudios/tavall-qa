@@ -235,6 +235,15 @@ final class TaskBoardMutationHandlerTest {
     }
 
     @Test
+    void taskCannotBeRejectedBeforeItReachesReview() {
+        TaskBoardTask task = createTask(manager, false);
+
+        assertThrows(IllegalArgumentException.class, () -> mutationHandler.rejectTask(
+                manager, task.taskId(), QaEnvironmentGrant.DEV, "No review result exists yet"
+        ));
+    }
+
+    @Test
     void parentCommentMustBelongToSameTaskAndActorIsRecorded() {
         TaskBoardTask first = createTask(manager, false);
         TaskBoardTask second = createTask(manager, false);
