@@ -77,6 +77,8 @@ class QaPagesTest {
                 new QaMainBoardPageContext("LINKED", java.util.Optional.empty(), "_csrf", "token", true,
                         java.util.Optional.empty(), List.of()));
         assertNotNull(page);
+        assertTrue(page.animations().animations().stream()
+                .anyMatch(animation -> animation.invocation().function().value().equals("initializeQaBoard")));
 
         String html = renderer.render(page).body();
         assertTrue(html.contains("Follow what changed."));
@@ -221,6 +223,8 @@ class QaPagesTest {
                 Set.of(QaEnvironmentGrant.DEV), Set.of(), true, true, true);
 
         QaStaffWorkspacePage page = QaStaffWorkspacePage.build(workspaceView, workspaceContext);
+        assertTrue(page.animations().animations().stream()
+                .anyMatch(animation -> animation.invocation().function().value().equals("initializeQaBoard")));
         String html = renderer.render(page).body();
 
         assertTrue(html.contains("Direction C · Focus Workspace"));

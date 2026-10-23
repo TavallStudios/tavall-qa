@@ -21,6 +21,8 @@ The Web controller builds typed page contexts from the current resolved `QaSubje
 
 The staff workspace offers Overview, QA, Edit, and Thread focus modes while retaining URL-hash restoration. QA forms support evidence submission, review, task acceptance, rejection, separate Human Verify, scoped assignment, and revocation. The task detail page exposes only the assigned/public-safe fields appropriate to the resolved subject. Public visitors never receive private Account identities, internal QA notes, or privileged action destinations.
 
+Page behavior stays with this presentation module: `src/main/ts/qa-board.ts` owns the existing progressive task expansion, staff select enhancement, and Focus Workspace interactions. `QaPageAnimations` composes that typed initializer with the shared Forge reveal animation through the frontend `PageAnimationPlan`; it adds no script contract to the Web API and does not alter the approved markup or styling.
+
 ## Build and module boundary
 
 The repository remains one API/LIBRARY presentation module because it provides reusable pages to the existing Tavall Web runtime and has no runtime lifecycle. Tests remain with this module; a second test module is not justified. The module consumes exact-source Tavall Web frontend/API contracts and the `tavall-qa-api` request/projection contracts.

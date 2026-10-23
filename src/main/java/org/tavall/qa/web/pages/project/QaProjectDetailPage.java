@@ -2,7 +2,7 @@ package org.tavall.qa.web.pages.project;
 
 import org.tavall.qa.view.TaskBoardPublicProjectView;
 import org.tavall.web.frontend.abstracts.page.AbstractPage;
-import org.tavall.web.frontend.design.ForgeAnimations;
+import org.tavall.qa.web.pages.shared.QaPageAnimations;
 
 /**
  * Direction A Project Detail page at {@code qa.tavall.org/projects/{projectKey}}.
@@ -37,6 +37,6 @@ public final class QaProjectDetailPage extends AbstractPage<QaProjectDetailPage>
         return new QaProjectDetailPage()
                 .title(title)
                 .html(QaProjectDetailPageHTML.build(projectView, canManage, canHumanVerify, nhvDebtCount, blockedCount, context))
-                .animations(ForgeAnimations.reveal());
+                .animations(QaPageAnimations.build());
     }
 }

@@ -2,7 +2,7 @@ package org.tavall.qa.web.pages.workspace;
 
 import org.tavall.qa.view.TaskBoardTaskView;
 import org.tavall.web.frontend.abstracts.page.AbstractPage;
-import org.tavall.web.frontend.design.ForgeAnimations;
+import org.tavall.qa.web.pages.shared.QaPageAnimations;
 
 /** Direction C Focus Workspace at {@code qa.tavall.org/workspace/{projectKey}/tasks/{taskId}}. */
 public final class QaStaffWorkspacePage extends AbstractPage<QaStaffWorkspacePage> {
@@ -15,6 +15,6 @@ public final class QaStaffWorkspacePage extends AbstractPage<QaStaffWorkspacePag
         return new QaStaffWorkspacePage()
                 .title(title)
                 .html(QaStaffWorkspacePageHTML.build(taskView, context))
-                .animations(ForgeAnimations.reveal());
+                .animations(QaPageAnimations.build());
     }
 }

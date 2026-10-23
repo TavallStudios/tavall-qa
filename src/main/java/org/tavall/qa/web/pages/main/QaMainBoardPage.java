@@ -2,7 +2,7 @@ package org.tavall.qa.web.pages.main;
 
 import org.tavall.qa.view.TaskBoardPublicDashboardView;
 import org.tavall.web.frontend.abstracts.page.AbstractPage;
-import org.tavall.web.frontend.design.ForgeAnimations;
+import org.tavall.qa.web.pages.shared.QaPageAnimations;
 
 /**
  * Public QA & Task Board main landing page at {@code qa.tavall.org/}.
@@ -20,6 +20,6 @@ public final class QaMainBoardPage extends AbstractPage<QaMainBoardPage> {
         return new QaMainBoardPage()
                 .title("Tavall QA — Follow what changed")
                 .html(QaMainBoardPageHTML.build(dashboard, canManage, context))
-                .animations(ForgeAnimations.reveal());
+                .animations(QaPageAnimations.build());
     }
 }

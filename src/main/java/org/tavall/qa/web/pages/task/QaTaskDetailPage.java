@@ -3,7 +3,7 @@ package org.tavall.qa.web.pages.task;
 import org.tavall.qa.view.TaskBoardTaskPageView;
 import org.tavall.qa.view.TaskBoardTaskView;
 import org.tavall.web.frontend.abstracts.page.AbstractPage;
-import org.tavall.web.frontend.design.ForgeAnimations;
+import org.tavall.qa.web.pages.shared.QaPageAnimations;
 
 /**
  * Direction A Task Detail page at {@code qa.tavall.org/projects/{projectKey}/tasks/{taskId}}.
@@ -30,7 +30,7 @@ public final class QaTaskDetailPage extends AbstractPage<QaTaskDetailPage> {
         return new QaTaskDetailPage()
                 .title(title)
                 .html(QaTaskDetailPageHTML.build(taskView, canManage, canHumanVerify, context))
-                .animations(ForgeAnimations.reveal());
+                .animations(QaPageAnimations.build());
     }
 
     public static QaTaskDetailPage build(TaskBoardTaskPageView taskPage, boolean canManage, boolean canHumanVerify) {
@@ -41,7 +41,7 @@ public final class QaTaskDetailPage extends AbstractPage<QaTaskDetailPage> {
         return new QaTaskDetailPage()
                 .title(title)
                 .html(QaTaskDetailPageHTML.build(taskPage, canManage, canHumanVerify))
-                .animations(ForgeAnimations.reveal());
+                .animations(QaPageAnimations.build());
     }
 
     public static QaTaskDetailPage build(TaskBoardTaskPageView taskPage, QaTaskPageContext context) {
@@ -52,6 +52,6 @@ public final class QaTaskDetailPage extends AbstractPage<QaTaskDetailPage> {
         return new QaTaskDetailPage()
                 .title(title)
                 .html(QaTaskDetailPageHTML.build(taskPage, false, false, context))
-                .animations(ForgeAnimations.reveal());
+                .animations(QaPageAnimations.build());
     }
 }
