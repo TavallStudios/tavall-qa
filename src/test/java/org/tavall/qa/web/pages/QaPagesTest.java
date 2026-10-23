@@ -112,8 +112,13 @@ class QaPagesTest {
         QaProjectDetailPage page = QaProjectDetailPage.build(projectView, true, true, 3, 0);
         String html = renderer.render(page).body();
 
+        assertTrue(page.animations().animations().stream()
+                .anyMatch(animation -> animation.invocation().function().value().equals("initializeQaBoard")));
         assertTrue(html.contains("Tavall PvP"));
         assertTrue(html.contains("Show more tasks"));
+        assertTrue(html.contains("data-tavall-qa-task-group=\"ffa\""));
+        assertTrue(html.contains("data-tavall-qa-task-item=\"" + taskId1 + "\""));
+        assertTrue(html.contains("data-tavall-qa-task-expander=\"ffa\""));
         assertTrue(html.contains("Visible tasks"));
         assertTrue(html.contains("Task 1"));
         assertTrue(html.contains("Task 4"));

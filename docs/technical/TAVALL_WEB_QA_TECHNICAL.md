@@ -21,7 +21,7 @@ The Web controller builds typed page contexts from the current resolved `QaSubje
 
 The staff workspace offers Overview, QA, Edit, and Thread focus modes while retaining URL-hash restoration. QA forms support evidence submission, review, task acceptance, rejection, separate Human Verify, scoped assignment, and revocation. The task detail page exposes only the assigned/public-safe fields appropriate to the resolved subject. Public visitors never receive private Account identities, internal QA notes, or privileged action destinations.
 
-Page behavior stays with this presentation module: `src/main/ts/qa-board.ts` owns the existing progressive task expansion, staff select enhancement, and Focus Workspace interactions. `QaPageAnimations` composes that typed initializer with the shared Forge reveal animation through the frontend `PageAnimationPlan`; it adds no script contract to the Web API and does not alter the approved markup or styling.
+Page behavior stays with this presentation module: `src/main/ts/qa-board.ts` owns the existing progressive task expansion, staff select enhancement, and Focus Workspace interactions. `QaBoardDomDataRef` supplies the namespaced project task-group/item/expander hooks, and `QaPageAnimations` composes the typed initializer with the shared Forge reveal animation through the frontend `PageAnimationPlan`; it adds no script contract to the Web API and does not alter the approved layout or styling.
 
 ## Build and module boundary
 

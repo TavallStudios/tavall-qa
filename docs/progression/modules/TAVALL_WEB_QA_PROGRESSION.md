@@ -7,7 +7,7 @@
 
 ## Current implementation
 
-The presentation preserves the accepted Direction C/A/C design source and uses the existing Forge primitives. It now renders request-bound public summaries, assigned work, evidence, authorized staff forms, task acceptance, Human Verify, task editing, and threaded discussion. Form submissions include CSRF and explicit organization context; the controller and QA API recheck all authority. The existing progressive task expansion, staff soft-select, and Focus Workspace modes now compile from `src/main/ts/qa-board.ts` and run through the typed Forge page-load plan on each QA page. URL-hash restoration remains part of the same Direction C workspace.
+The presentation preserves the accepted Direction C/A/C design source and uses the existing Forge primitives. It now renders request-bound public summaries, assigned work, evidence, authorized staff forms, task acceptance, Human Verify, task editing, and threaded discussion. Form submissions include CSRF and explicit organization context; the controller and QA API recheck all authority. Project task groups emit typed `data-tavall-qa-*` hooks for the existing three-visible/four-per-click disclosure. Task expansion, staff soft-select, Focus Workspace modes, and URL-hash restoration compile from `src/main/ts/qa-board.ts` and run through the typed Forge page-load plan on each QA page.
 
 WebQA PR #2 consumes QA API PR #1 at exact source head `516a77c21d06c6ac9c98511edcadd5a9fa1c213d`; Tavall Web PR #76 composes the presentation into the shared runtime.
 

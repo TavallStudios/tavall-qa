@@ -4,8 +4,8 @@ const EXPAND_BATCH_SIZE = 4;
 type WorkspaceFocus = 'OVERVIEW' | 'QA' | 'EDIT' | 'THREAD';
 
 function updateExpander(group: Element): void {
-    const items = Array.from(group.querySelectorAll<HTMLElement>('[data-task-item]'));
-    const button = group.querySelector<HTMLButtonElement>('[data-task-expander]');
+    const items = Array.from(group.querySelectorAll<HTMLElement>('[data-tavall-qa-task-item]'));
+    const button = group.querySelector<HTMLButtonElement>('[data-tavall-qa-task-expander]');
     if (!button) {
         return;
     }
@@ -26,12 +26,12 @@ function updateExpander(group: Element): void {
 }
 
 function initializeTaskGroup(group: Element): void {
-    const items = Array.from(group.querySelectorAll<HTMLElement>('[data-task-item]'));
+    const items = Array.from(group.querySelectorAll<HTMLElement>('[data-tavall-qa-task-item]'));
     items.forEach((item, index) => {
         item.hidden = index >= INITIAL_VISIBLE_TASKS;
     });
 
-    const button = group.querySelector<HTMLButtonElement>('[data-task-expander]');
+    const button = group.querySelector<HTMLButtonElement>('[data-tavall-qa-task-expander]');
     if (button) {
         button.addEventListener('click', () => {
             const hiddenItems = items.filter(item => item.hidden);
@@ -325,7 +325,7 @@ function initializeStaffWorkspace(): void {
 
 /** Initializes the existing QA Board progressive enhancement on a Forge page load. */
 export function initializeQaBoard(): void {
-    document.querySelectorAll('[data-task-group]').forEach(initializeTaskGroup);
+    document.querySelectorAll('[data-tavall-qa-task-group]').forEach(initializeTaskGroup);
     initializeStaffControls();
     initializeStaffWorkspace();
 }

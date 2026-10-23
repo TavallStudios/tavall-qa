@@ -7,6 +7,7 @@ import org.tavall.qa.view.TaskBoardPublicSectionView;
 import org.tavall.qa.view.TaskBoardPublicTaskView;
 import org.tavall.qa.web.generated.QaCSS;
 import org.tavall.qa.web.pages.shared.QaProduct;
+import org.tavall.qa.web.pages.shared.QaBoardDomDataRef;
 import org.tavall.qa.web.routes.QaRoutes;
 import org.tavall.web.api.html.HTMLAttribute;
 import org.tavall.web.api.html.HTMLDocument;
@@ -142,7 +143,8 @@ public final class QaProjectDetailPageHTML {
         } else {
             HTMLElement systemList = HTML.div().classes(QaCSS.PUBLIC_SYSTEM_TASK_LIST);
             for (TaskBoardPublicSectionView section : sections) {
-                HTMLElement group = HTML.section().classes(QaCSS.PUBLIC_SYSTEM_TASK_GROUP);
+                HTMLElement group = HTML.section().classes(QaCSS.PUBLIC_SYSTEM_TASK_GROUP)
+                        .data(QaBoardDomDataRef.TASK_GROUP, section.sectionKey());
                 group.attribute(HTMLAttribute.ARIA_LABEL, section.sectionKey());
 
                 // Header
@@ -168,7 +170,8 @@ public final class QaProjectDetailPageHTML {
                 // Task rows (Direction A: 3 initial visible, 4 per expand)
                 HTMLElement taskList = HTML.div().classes(QaCSS.PUBLIC_TASK_LIST);
                 for (TaskBoardPublicTaskView task : section.tasks()) {
-                    HTMLElement row = HTML.article().classes(QaCSS.PUBLIC_TASK_ROW);
+                    HTMLElement row = HTML.article().classes(QaCSS.PUBLIC_TASK_ROW)
+                            .data(QaBoardDomDataRef.TASK_ITEM, task.taskId().toString());
                     if (task.status() == TaskBoardTaskStatus.DONE) {
                         row.classes(QaCSS.IS_DONE);
                     }
@@ -212,6 +215,7 @@ public final class QaProjectDetailPageHTML {
                 // Expander button (Direction A expand behavior: 3 initial -> 4 more per click)
                 HTMLElement expander = HTML.button().classes(QaCSS.PUBLIC_TASK_EXPANDER)
                         .attribute(HTMLAttribute.TYPE, "button")
+                        .data(QaBoardDomDataRef.TASK_EXPANDER, section.sectionKey())
                         .text("Show more tasks");
                 group.child(expander);
 
