@@ -17,7 +17,7 @@ This implementation retains the accepted design already present in the product s
 
 ## Existing Message Editor owner
 
-The message editor is owned by the shared Tavall Web application through its existing `MessageAdminController` and `IMessageAdminService`. The QA `/messages/{key}` route is only a capability-gated handoff; it does not render or persist a parallel editor. The existing Web route rechecks its Account module permission, and message reads/saves continue through the canonical Message Admin service.
+The message editor is owned by the shared Tavall Web application through its existing `MessageAdminController` and `IMessageAdminService`. The QA `/messages/{key}` route is only a capability-gated handoff; it does not render or persist a parallel editor. The shared Web route rechecks either the current Account `mc.messages.edit` module permission or the explicit QA `MANAGE_QA_MESSAGES` capability under the active Tavall Web service binding. The QA capability is resolved again on the editor GET and save POST; message reads/saves continue through the canonical Message Admin service.
 
 ## Request-specific form data
 
