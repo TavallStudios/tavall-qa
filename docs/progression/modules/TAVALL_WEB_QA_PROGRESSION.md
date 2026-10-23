@@ -9,6 +9,8 @@
 
 The presentation preserves the accepted Direction C/A/C design source and uses the existing Forge primitives. It now renders request-bound public summaries, assigned work, evidence, authorized staff forms, task acceptance, Human Verify, task editing, and threaded discussion. Form submissions include CSRF and explicit organization context; the controller and QA API recheck all authority.
 
+WebQA PR #2 code is at `4a668de0ee59ce792f7117f4c9bd5d7eb4dc803b`, with QA API pinned to PR #1 head `0d7b11172131ba677ce9999a5e392fa111ff265c`.
+
 ## Local validation
 
 - Command: `./gradlew --no-daemon clean test` with local exact-source Web and QA composites.
@@ -19,6 +21,5 @@ The presentation preserves the accepted Direction C/A/C design source and uses t
 ## Remaining gates
 
 - Exact-source Tavall CI and merge review.
-- Real PostgreSQL acceptance through the QA SYSTEM.
 - Browser acceptance at 1440px desktop and 390px mobile against the completed shared-runtime composition.
 - DEVELOPMENT and STAGING deployment, host routing, and public `qa.tavall.org` verification.
