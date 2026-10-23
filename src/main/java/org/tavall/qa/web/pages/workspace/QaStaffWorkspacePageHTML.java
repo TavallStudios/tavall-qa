@@ -180,8 +180,8 @@ public final class QaStaffWorkspacePageHTML {
             if (task.status() == TaskBoardTaskStatus.REVIEW || task.status() == TaskBoardTaskStatus.DONE) {
                 panel.child(taskAcceptanceForms(task, taskView.evidence().stream()
                         .map(TaskBoardEvidenceView::evidence).toList(), context, basePath));
+                panel.child(taskRejectionForm(context, basePath));
             }
-            panel.child(taskRejectionForm(context, basePath));
         }
 
         boolean hasVerifiableEvidence = taskView.evidence().stream()

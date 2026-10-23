@@ -230,6 +230,7 @@ class QaPagesTest {
         assertTrue(html.contains("Thread"));
         assertTrue(html.contains("Submit evidence"));
         assertTrue(html.contains("Save task"));
+        assertFalse(html.contains("Reject task acceptance"));
         assertTrue(html.contains("method=\"post\""));
         assertTrue(html.contains("data-tavall-qa-workspace-focus=\"QA\""));
         assertTrue(html.contains("data-tavall-qa-workspace-panel=\"THREAD\""));

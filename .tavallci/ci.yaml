@@ -30,7 +30,7 @@ dependencies:
     identity: TavallStudios/tavall-qa
     role: SHARED_DEP
     selector: required-source
-    digest: 0d7b11172131ba677ce9999a5e392fa111ff265c
+    digest: 93763c0e3e76a8927a9dba5070ba22741be45147
     substitutions: "org.tavall:tavall-qa-api=:tavall-qa-api"
 
 requiredChecks:
