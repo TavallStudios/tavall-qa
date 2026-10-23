@@ -2,30 +2,45 @@ package org.tavall.qa.handler;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.tavall.qa.auth.TaskBoardTestSubjects;
 import org.tavall.qa.domain.TaskBoardAudience;
 import org.tavall.qa.domain.TaskBoardProjectStatus;
-import org.tavall.qa.domain.TaskBoardQaStatus;
 import org.tavall.qa.domain.TaskBoardTask;
 import org.tavall.qa.domain.TaskBoardTaskPriority;
 import org.tavall.qa.domain.TaskBoardTaskStatus;
+import org.tavall.qa.domain.auth.QaCapability;
+import org.tavall.qa.domain.auth.QaClass;
+import org.tavall.qa.domain.auth.QaEnvironmentGrant;
+import org.tavall.qa.domain.auth.QaSubjectContext;
+import org.tavall.qa.domain.auth.QaSubjectStatus;
+import org.tavall.qa.domain.auth.QaTier;
 import org.tavall.qa.request.TaskBoardProjectCreateRequest;
 import org.tavall.qa.request.TaskBoardTaskCreateRequest;
 import org.tavall.qa.request.TaskBoardTaskUpdateRequest;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class TaskBoardQueryHandlerTest {
+    private TaskBoardTestDataHandler dataHandler;
     private TaskBoardMutationHandler mutationHandler;
     private TaskBoardQueryHandler queryHandler;
+    private QaSubjectContext manager;
 
     @BeforeEach
     void setUp() {
-        TaskBoardTestDataHandler dataHandler = new TaskBoardTestDataHandler();
+        dataHandler = new TaskBoardTestDataHandler();
         TaskBoardActionTargetResolver resolver = new TaskBoardActionTargetResolver();
         mutationHandler = new TaskBoardMutationHandler(dataHandler, resolver);
         queryHandler = new TaskBoardQueryHandler(dataHandler, resolver);
-        mutationHandler.createProject(new TaskBoardProjectCreateRequest(
+        manager = TaskBoardTestSubjects.manager(UUID.randomUUID(), UUID.randomUUID());
+        mutationHandler.createProject(manager, new TaskBoardProjectCreateRequest(
                 "project-novus",
                 "Project Novus",
                 "Public development board",
@@ -62,11 +77,7 @@ final class TaskBoardQueryHandlerTest {
     @Test
     void publicDashboardHighlightsActiveAndRecentlyCompletedTasks() {
         TaskBoardTask active = createTask("pvp-engine", TaskBoardAudience.PUBLIC, 2);
-        mutationHandler.updateTask(updateRequest(
-                active,
-                TaskBoardTaskStatus.ACTIVE,
-                TaskBoardQaStatus.NHV
-        ));
+        mutationHandler.updateTask(manager, updateStatus(active, TaskBoardTaskStatus.ACTIVE));
         TaskBoardTask done = createTask("pvp-engine", TaskBoardAudience.PUBLIC, 1);
         complete(done);
 
@@ -78,22 +89,67 @@ final class TaskBoardQueryHandlerTest {
     }
 
     @Test
-    void nhvTasksReportedSeparatelyFromCompletedTasks() {
-        TaskBoardTask doneNhv = createTask("build-pipeline", TaskBoardAudience.PUBLIC, 1);
-        complete(doneNhv);
+    void ordinaryAccountCanReadPublicProjectionButNeverStaffProjection() {
+        TaskBoardTask task = createTask("private-qa", TaskBoardAudience.PUBLIC, 1);
+        QaSubjectContext ordinary = new QaSubjectContext(
+                Optional.of(UUID.randomUUID()),
+                QaSubjectStatus.ACTIVE,
+                Optional.empty(),
+                Optional.empty(),
+                false,
+                false,
+                Set.of(),
+                Optional.empty(),
+                Set.of(),
+                Set.of(),
+                List.of(),
+                false
+        );
 
-        var project = queryHandler.findPublicProjectView("project-novus").orElseThrow();
-        assertEquals(1, project.summary().completedCount());
-        assertEquals(1, project.summary().nhvCount());
-        assertTrue(project.sections().getFirst().nhvCount() > 0);
+        assertTrue(queryHandler.findPublicTaskView(task.taskId()).isPresent());
+        assertTrue(queryHandler.findTaskView(task.taskId(), ordinary).isEmpty());
+        var publicTask = queryHandler.findPublicTaskView(task.taskId()).orElseThrow();
+        assertEquals("Public title", publicTask.title());
+        assertEquals("Public summary", publicTask.summary());
     }
 
-    private TaskBoardTask createTask(
-            String sectionKey,
-            TaskBoardAudience audience,
-            int weight
-    ) {
-        return mutationHandler.createTask(new TaskBoardTaskCreateRequest(
+    @Test
+    void audienceIsFilteredBeforeAuthorizedDashboardCounts() {
+        createTask("website-foundation", TaskBoardAudience.PUBLIC, 2);
+        createTask("website-foundation", TaskBoardAudience.STAFF, 20);
+        QaSubjectContext ordinary = new QaSubjectContext(
+                Optional.of(UUID.randomUUID()),
+                QaSubjectStatus.ACTIVE,
+                Optional.empty(),
+                Optional.empty(),
+                false,
+                false,
+                Set.of(),
+                Optional.empty(),
+                Set.of(),
+                Set.of(),
+                List.of(),
+                false
+        );
+
+        var dashboard = queryHandler.dashboard(ordinary);
+        assertEquals(1, dashboard.projects().size());
+        assertEquals(1, dashboard.projects().getFirst().taskCount());
+    }
+
+    @Test
+    void ownVqcProjectionShowsContributionWithoutGrantingPromotion() {
+        UUID accountId = manager.accountId().orElseThrow();
+        var progression = queryHandler.findQaProgression(accountId, manager).orElseThrow();
+
+        assertEquals(0, progression.acceptedQaQcTaskCount());
+        assertEquals(0, progression.vqcEarned());
+        assertEquals(Optional.of(org.tavall.qa.domain.auth.QaTier.TIER_V), progression.currentTier());
+        assertTrue(progression.nextTierVqcGuideline().isEmpty());
+    }
+
+    private TaskBoardTask createTask(String sectionKey, TaskBoardAudience audience, int weight) {
+        return mutationHandler.createTask(manager, new TaskBoardTaskCreateRequest(
                 "project-novus",
                 sectionKey,
                 "Internal title",
@@ -104,43 +160,21 @@ final class TaskBoardQueryHandlerTest {
                 audience,
                 weight,
                 false,
+                false,
                 "github-pr",
                 "TavallStudios/tavall-project-novus#263",
-                null,
                 0
         ));
     }
 
     private void complete(TaskBoardTask task) {
-        mutationHandler.updateTask(updateRequest(
-                task,
-                TaskBoardTaskStatus.DONE,
-                TaskBoardQaStatus.NHV
-        ));
+        mutationHandler.updateTask(manager, updateStatus(task, TaskBoardTaskStatus.DONE));
     }
 
-    private TaskBoardTaskUpdateRequest updateRequest(
-            TaskBoardTask task,
-            TaskBoardTaskStatus status,
-            TaskBoardQaStatus qaStatus
-    ) {
+    private TaskBoardTaskUpdateRequest updateStatus(TaskBoardTask task, TaskBoardTaskStatus status) {
         return new TaskBoardTaskUpdateRequest(
-                task.taskId(),
-                task.sectionKey(),
-                task.title(),
-                task.publicTitle(),
-                task.description(),
-                task.publicSummary(),
-                status,
-                task.priority(),
-                qaStatus,
-                task.audience(),
-                task.weight(),
-                task.hostValidationRequired(),
-                task.sourceType(),
-                task.sourceReference(),
-                null,
-                task.sortOrder()
+                task.taskId(), null, null, null, null, null,
+                status, null, null, null, null, null, null, null, null, null
         );
     }
 }

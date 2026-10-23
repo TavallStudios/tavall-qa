@@ -7,6 +7,7 @@ import org.tavall.qa.domain.TaskBoardTaskPriority;
 import org.tavall.qa.domain.TaskBoardTaskStatus;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -24,7 +25,9 @@ public record TaskBoardTaskPageView(
         int weight,
         String sourceType,
         Instant updatedAt,
-        boolean publicVisible
+        boolean publicVisible,
+        List<TaskBoardAssignedEvidenceView> assignedEvidence,
+        List<TaskBoardPublicEvidenceView> publicEvidence
 ) {
     public TaskBoardTaskPageView {
         Objects.requireNonNull(taskId, "taskId");
@@ -39,6 +42,8 @@ public record TaskBoardTaskPageView(
         Objects.requireNonNull(audience, "audience");
         sourceType = sourceType == null ? "" : sourceType;
         Objects.requireNonNull(updatedAt, "updatedAt");
+        assignedEvidence = List.copyOf(Objects.requireNonNull(assignedEvidence, "assignedEvidence"));
+        publicEvidence = List.copyOf(Objects.requireNonNull(publicEvidence, "publicEvidence"));
     }
 
     public static TaskBoardTaskPageView publicTask(
@@ -59,7 +64,9 @@ public record TaskBoardTaskPageView(
                 task.weight(),
                 task.sourceType(),
                 task.updatedAt(),
-                true
+                true,
+                List.of(),
+                task.evidence()
         );
     }
 
@@ -79,7 +86,63 @@ public record TaskBoardTaskPageView(
                 task.weight(),
                 task.sourceType(),
                 task.updatedAt(),
-                task.publicVisible()
+                taskView.project().publicVisible() && task.publicVisible(),
+                taskView.evidence().stream()
+                        .map(TaskBoardEvidenceView::evidence)
+                        .map(evidence -> new TaskBoardAssignedEvidenceView(
+                                evidence.evidenceId(),
+                                evidence.environment(),
+                                evidence.buildReference(),
+                                evidence.testCase(),
+                                evidence.expectedResult(),
+                                evidence.actualResult(),
+                                evidence.evidenceReference(),
+                                evidence.publicSummary(),
+                                evidence.status(),
+                        evidence.currentFor(org.tavall.qa.domain.TaskBoardTaskFingerprint.compute(task)),
+                                evidence.submittedAt()
+                        ))
+                        .toList(),
+                taskView.evidence().stream()
+                        .map(TaskBoardEvidenceView::evidence)
+                        .filter(evidence -> evidence.status() == org.tavall.qa.domain.TaskBoardEvidenceStatus.ACCEPTED)
+                        .filter(org.tavall.qa.domain.TaskBoardEvidence::publicSummaryApproved)
+                        .filter(evidence -> !evidence.publicSummary().isBlank())
+                        .map(evidence -> new TaskBoardPublicEvidenceView(
+                                evidence.publicSummary(),
+                                evidence.environment(),
+                                evidence.submittedAt()
+                        ))
+                        .toList()
+        );
+    }
+
+    /** Scoped assignment projection without staff identities, destinations, comments, or source references. */
+    public static TaskBoardTaskPageView assignedTask(
+            String projectDisplayName,
+            boolean projectPublicVisible,
+            TaskBoardTask task,
+            List<TaskBoardAssignedEvidenceView> assignedEvidence,
+            List<TaskBoardPublicEvidenceView> publicEvidence
+    ) {
+        boolean isPublic = projectPublicVisible && task.publicVisible();
+        return new TaskBoardTaskPageView(
+                task.taskId(),
+                task.projectKey(),
+                projectDisplayName,
+                task.sectionKey(),
+                isPublic ? task.publicDisplayTitle() : task.title(),
+                isPublic ? task.publicDisplaySummary() : task.description(),
+                task.status(),
+                task.priority(),
+                task.qaStatus(),
+                isPublic ? TaskBoardAudience.PUBLIC : task.audience(),
+                task.weight(),
+                task.sourceType(),
+                task.updatedAt(),
+                isPublic,
+                assignedEvidence,
+                publicEvidence
         );
     }
 }

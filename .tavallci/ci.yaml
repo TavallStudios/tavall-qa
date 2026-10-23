@@ -1,0 +1,38 @@
+version: 2
+
+source:
+  repository: TavallStudios/tavall-qa
+  provider: github
+
+build:
+  type: gradle
+  java: 25
+  gradle: 9.6.1
+
+resources:
+  mode: SYSTEM
+
+modules:
+  - tavall-qa-api
+  - tavall-qa-system
+  - tavall-qa-test-suite
+
+requiredChecks:
+  - compilation
+  - unit-tests
+  - quality
+
+checks:
+  compilation:
+    executor: gradle
+    tasks:
+      - :tavall-qa-api:classes
+      - :tavall-qa-system:classes
+  unit-tests:
+    executor: gradle
+    tasks:
+      - :tavall-qa-test-suite:test
+  quality:
+    executor: gradle
+    tasks:
+      - check
