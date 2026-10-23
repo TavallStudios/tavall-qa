@@ -19,8 +19,19 @@ WebQA PR #2 merged at `5943bbd7ba8b576fb50c64de3b1b6537d30f77a` and consumes QA 
 - `git diff --check` passes for the current candidate worktree.
 - The Web application consumer test run passed 411 tests with 9 PostgreSQL-gated skips.
 
+## Shared-runtime browser acceptance — 2026-10-23
+
+The Web consumer candidate `TavallStudios/tavall-web@119562a080ecf8772a726db7d188872a455ee253` uses this presentation source at `241cc4e14b3ad3483bce165013ec79e04d011a99` with QA authority `516a77c21d06c6ac9c98511edcadd5a9fa1c213d` and Dashboard catalog `61246e952c7454b64bdca2bbddb3dc3e3c144f03`. The integrated Web source passed `check`, standalone verification, architecture tests, and the following local Chromium checks against a disposable PostgreSQL 17 fixture:
+
+- Public C project index, A project/task pages, and C Focus Workspace were checked at 1440px and 390px. Workspace URL-hash restoration, keyboard Edit, Thread focus, and 3 → 7 → 8 progressive task expansion passed.
+- Public task HTML retained NHV and did not include the synthetic internal description or synthetic Account/Minecraft identifiers. All checked pages had no horizontal overflow or browser console errors.
+- The existing shared Web Message Editor rendered the desktop A index/form/preview layout and mobile C Preview/Edit/Messages modes. Message filtering, keyboard Edit, and Save & Return to the same task, organization context, and workspace hash passed.
+
+Sanitized public and Message Editor screenshots and the exact result report are committed in the Web App [QA Board evidence](https://github.com/TavallStudios/tavall-web/tree/working/qa-message-editor-completion-20261023/docs/progression/evidence/2026-10-23-qa-board-completion). The Workspace screenshot was not published because the local fixture showed a synthetic Account identifier. These are local artifact/browser checks, not hosted TCI, remote Account SSO, or runtime acceptance.
+
 ## Remaining gates
 
-- Exact-source Tavall CI and merge review.
-- Browser acceptance at 1440px desktop and 390px mobile against the completed shared-runtime composition.
-- DEVELOPMENT and STAGING deployment, host routing, and public `qa.tavall.org` verification.
+- Merge WebQA PR #3 with its exact-source Web consumer follow-up; the accepted layouts and source ownership do not require another design round.
+- Run current exact-head Tavall CI, deliver an immutable candidate through the managed deployment path, and verify the QA host on STAGING. The current live DEVELOPMENT baseline serves the host, but the new editor follow-up is not deployed.
+- An authenticated QA Account with the explicit task capabilities must verify revocation and submit real public work through the QA API. The live public index currently has no publicly visible tasks; the private task count was not queried.
+- Connect Cache/Event, CMS, roadmap, Discord, and public-proof subscribers only after their current owners expose typed contracts and the privacy/idempotency checks pass.
