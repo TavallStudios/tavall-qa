@@ -24,7 +24,6 @@ import org.tavall.qa.web.pages.workspace.QaWorkspacePageContext;
 import org.tavall.qa.view.TaskBoardTaskView;
 import org.tavall.qa.view.TaskBoardEvidenceView;
 import org.tavall.qa.web.pages.task.QaTaskPageContext;
-import org.tavall.qa.web.pages.editor.QaMessageEditorPage;
 import org.tavall.qa.web.pages.main.QaMainBoardPage;
 import org.tavall.qa.web.pages.project.QaProjectDetailPage;
 import org.tavall.qa.web.pages.task.QaTaskDetailPage;
@@ -306,24 +305,4 @@ class QaPagesTest {
         assertFalse(staleWorkspaceHtml.contains("Accept task with this evidence"));
     }
 
-    @Test
-    @DisplayName("Message Editor renders Desktop Direction A and Mobile Direction C")
-    void messageEditorDesktopAMobileC() {
-        QaMessageEditorPage page = QaMessageEditorPage.build(
-                "ffa.match.countdown",
-                "en_us",
-                "UNIVERSAL",
-                "TITLE",
-                "<gold>Match starts in {{countdown.seconds}}</gold>",
-                "/projects/tavall-pvp/tasks/test-task"
-        );
-
-        String html = renderer.render(page).body();
-        assertTrue(html.contains("Minecraft Preview"));
-        assertTrue(html.contains("PREVIEW"));
-        assertTrue(html.contains("EDIT"));
-        assertTrue(html.contains("MESSAGES"));
-        assertTrue(html.contains("Match starts in 5"));
-        assertTrue(html.contains("Save &amp; Return to Task"));
-    }
 }

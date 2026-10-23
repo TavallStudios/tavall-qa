@@ -15,6 +15,10 @@ The owner map, dependency boundaries, migration ownership, and security model ar
 
 This implementation retains the accepted design already present in the product source (`main@b50ab5a`) and the Task Board decisions in [Issue #263](https://github.com/TavallStudios/tavall-mc/issues/263): Direction C public main board, Direction A project/task detail, Direction C staff Focus Workspace, and the existing Message Editor. This record describes implementation ownership and behavior; it does not introduce a replacement visual design.
 
+## Existing Message Editor owner
+
+The message editor is owned by the shared Tavall Web application through its existing `MessageAdminController` and `IMessageAdminService`. The QA `/messages/{key}` route is only a capability-gated handoff; it does not render or persist a parallel editor. The existing Web route rechecks its Account module permission, and message reads/saves continue through the canonical Message Admin service.
+
 ## Request-specific form data
 
 The Web controller builds typed page contexts from the current resolved `QaSubjectContext`, organization, CSRF token, and exact task evidence projection. Pages use those facts to render applicable forms. Every submitted form is still re-authorized by the Web adapter and QA mutation handler. Form visibility is presentation only.
