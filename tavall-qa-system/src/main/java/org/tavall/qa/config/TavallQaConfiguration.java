@@ -2,6 +2,7 @@ package org.tavall.qa.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.tavall.database.postgres.IPostgresDatabase;
 import org.tavall.dependency.maps.interfaces.IDependencyMap;
 import org.tavall.qa.persistence.ITaskBoardDataHandler;
@@ -34,7 +35,7 @@ public class TavallQaConfiguration {
 
     @Bean
     public org.tavall.qa.handler.ITaskBoardQueryHandler taskBoardQueryHandler(
-            ITaskBoardDataHandler dataHandler,
+            @Lazy ITaskBoardDataHandler dataHandler,
             org.tavall.qa.handler.ITaskBoardActionTargetResolver resolver
     ) {
         return new org.tavall.qa.handler.TaskBoardQueryHandler(dataHandler, resolver);
@@ -42,7 +43,7 @@ public class TavallQaConfiguration {
 
     @Bean
     public org.tavall.qa.handler.ITaskBoardMutationHandler taskBoardMutationHandler(
-            ITaskBoardDataHandler dataHandler,
+            @Lazy ITaskBoardDataHandler dataHandler,
             org.tavall.qa.handler.ITaskBoardActionTargetResolver resolver
     ) {
         return new org.tavall.qa.handler.TaskBoardMutationHandler(dataHandler, resolver);
