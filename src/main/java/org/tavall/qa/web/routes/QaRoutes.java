@@ -24,6 +24,13 @@ public final class QaRoutes {
     public static final String TASK_MUTATION = "/projects/{projectKey}/tasks/{taskId}";
     public static final String ACTIONS_MUTATION = "/projects/{projectKey}/tasks/{taskId}/actions";
     public static final String COMMENTS_MUTATION = "/projects/{projectKey}/tasks/{taskId}/comments";
+    public static final String EVIDENCE_SUBMISSIONS_MUTATION = "/projects/{projectKey}/tasks/{taskId}/evidence";
+    public static final String EVIDENCE_REVIEW_MUTATION = "/projects/{projectKey}/tasks/{taskId}/evidence/{evidenceId}/review";
+    public static final String TASK_ACCEPT_MUTATION = "/projects/{projectKey}/tasks/{taskId}/accept";
+    public static final String HUMAN_VERIFY_MUTATION = "/projects/{projectKey}/tasks/{taskId}/verify";
+    public static final String TASK_REJECT_MUTATION = "/projects/{projectKey}/tasks/{taskId}/reject";
+    public static final String ASSIGNMENTS_MUTATION = "/projects/{projectKey}/tasks/{taskId}/assignments";
+    public static final String ASSIGNMENT_REVOKE_MUTATION = "/projects/{projectKey}/tasks/{taskId}/assignments/{assignmentId}/revoke";
 
     // Legacy paths
     public static final String LEGACY_ROOT = "/task-board";

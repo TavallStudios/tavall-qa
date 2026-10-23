@@ -14,13 +14,22 @@ import org.tavall.web.frontend.design.ForgeAnimations;
 public final class QaTaskDetailPage extends AbstractPage<QaTaskDetailPage> {
 
     public static QaTaskDetailPage build(TaskBoardTaskView taskView, boolean canManage, boolean canHumanVerify) {
+        return build(taskView, canManage, canHumanVerify, QaTaskPageContext.readOnly());
+    }
+
+    public static QaTaskDetailPage build(
+            TaskBoardTaskView taskView,
+            boolean canManage,
+            boolean canHumanVerify,
+            QaTaskPageContext context
+    ) {
         String title = taskView != null && taskView.task() != null
                 ? taskView.task().title() + " | " + taskView.project().displayName() + " | Tavall QA"
                 : "Task Detail | Tavall QA";
 
         return new QaTaskDetailPage()
                 .title(title)
-                .html(QaTaskDetailPageHTML.build(taskView, canManage, canHumanVerify))
+                .html(QaTaskDetailPageHTML.build(taskView, canManage, canHumanVerify, context))
                 .animations(ForgeAnimations.reveal());
     }
 
@@ -32,6 +41,17 @@ public final class QaTaskDetailPage extends AbstractPage<QaTaskDetailPage> {
         return new QaTaskDetailPage()
                 .title(title)
                 .html(QaTaskDetailPageHTML.build(taskPage, canManage, canHumanVerify))
+                .animations(ForgeAnimations.reveal());
+    }
+
+    public static QaTaskDetailPage build(TaskBoardTaskPageView taskPage, QaTaskPageContext context) {
+        String title = taskPage != null
+                ? taskPage.title() + " | " + taskPage.projectDisplayName() + " | Tavall QA"
+                : "Task Detail | Tavall QA";
+
+        return new QaTaskDetailPage()
+                .title(title)
+                .html(QaTaskDetailPageHTML.build(taskPage, false, false, context))
                 .animations(ForgeAnimations.reveal());
     }
 }

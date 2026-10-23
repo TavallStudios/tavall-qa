@@ -1,14 +1,15 @@
 pluginManagement {
-    val tavallWebBuild = providers.gradleProperty("tavallWebBuild")
+    val includedByTavallWeb = providers.environmentVariable("TAVALL_WEB_QA_BUILD")
+        .orNull
+        ?.let { file(it).canonicalFile == settingsDir.canonicalFile }
+        ?: false
+    val tavallWebBuild = if (includedByTavallWeb) null else providers.gradleProperty("tavallWebBuild")
         .orElse(providers.environmentVariable("TAVALL_WEB_BUILD"))
         .orElse(providers.provider { file("/srv/dev-storage/workspaces/tavall-web/repo_root").takeIf { it.isDirectory }?.absolutePath ?: "" })
         .orNull
-    if (!tavallWebBuild.isNullOrBlank()) {
-        val buildDirectory = file(tavallWebBuild).canonicalFile
-        includeBuild(buildDirectory.resolve("tavall-web-frontend-gradle")) {
-            name = "tavall-web-frontend-gradle-plugin-provider"
-        }
-    }
+    // The exact Tavall Web source composite below supplies the frontend plugin
+    // project. Including its plugin sub-build separately creates two composite
+    // providers for the same artifact when Web is also materialized as a source.
     repositories {
         maven {
             name = "TavallPrivateSnapshots"
@@ -75,7 +76,11 @@ dependencyResolutionManagement {
 
 rootProject.name = "tavall-web-qa"
 
-val tavallWebBuild = providers.gradleProperty("tavallWebBuild")
+val includedByTavallWeb = providers.environmentVariable("TAVALL_WEB_QA_BUILD")
+    .orNull
+    ?.let { file(it).canonicalFile == settingsDir.canonicalFile }
+    ?: false
+val tavallWebBuild = if (includedByTavallWeb) null else providers.gradleProperty("tavallWebBuild")
     .orElse(providers.environmentVariable("TAVALL_WEB_BUILD"))
     .orElse(providers.provider { file("/srv/dev-storage/workspaces/tavall-web/repo_root").takeIf { it.isDirectory }?.absolutePath ?: "" })
     .orNull
@@ -100,7 +105,7 @@ if (!tavallQaBuild.isNullOrBlank()) {
         name = "tavall-qa-source"
         dependencySubstitution {
             substitute(module("org.tavall:tavall-qa-api")).using(project(":tavall-qa-api"))
-            substitute(module("org.tavall:tavall-qa-core")).using(project(":tavall-qa-core"))
+            substitute(module("org.tavall:tavall-qa-system")).using(project(":tavall-qa-system"))
         }
     }
 }

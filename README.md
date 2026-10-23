@@ -4,19 +4,20 @@ The Tavall QA Board / QA Tracker browser product at `qa.tavall.org`. This is a *
 
 ## Ownership
 
-- `tavall-web-qa` — QA Forge browser presentation, stable route constants, and read-only projection-facing page composition (**primary module type: API; secondary role: LIBRARY**; runtime owner: `tavall-web-app`).
-- `tavall-web-qa-test-suite` — separate canonical architecture validation (**primary module type: TEST_SUITE; runtime: None**).
+- `tavall-web-qa` — QA Forge browser presentation and stable route contracts (**primary module type: API; secondary role: LIBRARY**; runtime owner: `tavall-web-app`). The repository currently has one production module; its tests remain with that module.
 - `tavall-web-app` — shared Spring host, `qa.tavall.org` virtual host routing, session/authentication, Tavall Account / organization authorization, and trusted task projection adapters.
-- Authoritative backend task authority — `TavallStudios/tavall-qa` (`tavall-qa-api`, `tavall-qa-core`), canonical mapped-JPA task/evidence/progress authority. No duplicate writable `ProgressTask` or QA task table.
+- Authoritative backend task authority — `TavallStudios/tavall-qa` (`tavall-qa-api`, `tavall-qa-system`), canonical mapped-JPA task/evidence/progress authority. No duplicate writable `ProgressTask` or QA task table.
 
-The public `/ → /projects/{project} → /tasks/{task}` journey and staff Workspace C remain the intended UI direction. `Done` does not imply `Human Verified`; no anonymous user can mutate task or evidence state. The first repository slice is a preview scaffold, **not** a live QA board.
+The current implementation preserves the recovered public Direction C main board, Direction A project/task pages, and Direction C Focus Workspace. The accepted source is the existing presentation at `main@b50ab5a`; this completion adds request-bound workflows to those pages without replacing their visual direction. `DONE` does not imply `HUMAN_VERIFIED`; acceptance and Human Verify are separate actions. Public pages use sanitized projections, and the Web/QA boundaries check current Account facts and task assignments on each mutation. Runtime deployment and public acceptance remain separate gates.
+
+The route journey is `/` → `/projects/{projectKey}` → `/projects/{projectKey}/tasks/{taskId}`. Staff Focus Workspace opens at `/workspace/{projectKey}/tasks/{taskId}` for a selected authorized task.
 
 ## Build modules
 
-- [QA product module](tavall-web-qa/README.md)
-- [QA test suite](tavall-web-qa-test-suite/README.md)
-- [QA module DESIGN](docs/design/TAVALL_WEB_QA_MODULE_DESIGN.md)
-- [QA system PROGRESSION](docs/progression/TAVALL_WEB_QA_SYSTEM_PROGRESSION.md)
+- [QA product module](README.md)
+- [QA module PROGRESSION](docs/progression/modules/TAVALL_WEB_QA_PROGRESSION.md)
+- [QA surface TECHNICAL](docs/technical/TAVALL_WEB_QA_TECHNICAL.md)
+- [Canonical task authority TECHNICAL](https://github.com/TavallStudios/tavall-qa/blob/main/docs/technical/TAVALL_QA_TASK_BOARD_TECHNICAL_DESIGN.md)
 
 Java 25 / Gradle 9.6.1, exact-source Tavall CI, `org.tavall.web.frontend` and `org.tavall.architecture-tests` supplied by their canonical producers.
 
@@ -24,4 +25,11 @@ Java 25 / Gradle 9.6.1, exact-source Tavall CI, `org.tavall.web.frontend` and `o
 
 Read [module separation](https://github.com/TavallStudios/tavall-docs/blob/main/docs/quality/code-architecture/MODULE_SEPARATION.md), [module types](https://github.com/TavallStudios/tavall-docs/blob/main/docs/quality/MODULE_TYPES.md), and [Tavall Web](https://github.com/TavallStudios/tavall-web). UI state must reflect the verified backend/Tavall Account projection; hiding staff controls is never authorization.
 
-> **Status:** Repository setup in progress. This README initializes a previously empty repository; feature integration, hosted CI, signed-in actions, task persistence, `qa.tavall.org` DNS/ingress, and deployment are not claimed.
+## Development
+
+- **Module Type:** `API` (secondary role: `LIBRARY`).
+- **Runtime:** `tavall-web-app`; this repository owns no server or database lifecycle.
+- **Composition owner:** The shared Tavall Web application consumes this presentation module and the canonical `tavall-qa-api` projections.
+- **CI Definition:** [`.tavallci/ci.yaml`](.tavallci/ci.yaml).
+- **Current PR Stack:** Candidate Workspace evidence/forms PR; composed by Tavall Web PR #76 after the QA authority PR.
+- **Progression:** [`docs/progression/modules/TAVALL_WEB_QA_PROGRESSION.md`](docs/progression/modules/TAVALL_WEB_QA_PROGRESSION.md).

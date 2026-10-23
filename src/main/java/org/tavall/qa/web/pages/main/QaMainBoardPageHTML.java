@@ -2,6 +2,8 @@ package org.tavall.qa.web.pages.main;
 
 import org.tavall.qa.view.TaskBoardPublicDashboardView;
 import org.tavall.qa.view.TaskBoardPublicProjectSummaryView;
+import org.tavall.qa.view.TaskBoardQaProgressionView;
+import org.tavall.qa.view.TaskBoardTaskPageView;
 import org.tavall.qa.web.generated.QaCSS;
 import org.tavall.qa.web.pages.shared.QaProduct;
 import org.tavall.qa.web.routes.QaRoutes;
@@ -26,9 +28,11 @@ public final class QaMainBoardPageHTML {
     public static HTMLDocument build(
             TaskBoardPublicDashboardView dashboard,
             boolean canManage,
-            boolean canHumanVerify,
-            String identityStatus
+            QaMainBoardPageContext context
     ) {
+        if (context == null) {
+            context = QaMainBoardPageContext.anonymous();
+        }
         HTMLElement shell = HTML.div().classes(
                 QaCSS.QA_APP,
                 QaCSS.PUBLIC_TASK_BOARD_PAGE,
@@ -64,7 +68,7 @@ public final class QaMainBoardPageHTML {
         shell.child(hero);
 
         // 2. Staff Strip (Progressive enhancement)
-        if (canManage) {
+        if (canManage || context.canManageProjects()) {
             HTMLElement staffStrip = HTML.section().classes(QaCSS.PUBLIC_BOARD_STAFF_STRIP);
             HTMLElement staffInner = HTML.div().classes(QaCSS.PUBLIC_BOARD_SHELL, QaCSS.PUBLIC_BOARD_STAFF_STRIP_INNER);
             staffInner.child(HTML.div()
@@ -72,16 +76,17 @@ public final class QaMainBoardPageHTML {
                     .child(HTML.strong().text("Same public board, additional controls.")));
             staffInner.child(HTML.div()
                     .child(HTML.span().text("Identity"))
-                    .child(HTML.strong().text(identityStatus != null ? identityStatus : "UNLINKED")));
-            staffInner.child(HTML.div()
-                    .child(HTML.span().text("Human Verify"))
-                    .child(HTML.strong().text(canHumanVerify ? "Available" : "Needs linked Minecraft identity")));
-            staffInner.child(HTML.a()
-                    .attribute(HTMLAttribute.HREF, "#staff-create-project")
-                    .text("Create project ↓"));
+                    .child(HTML.strong().text(context.identityStatus())));
+            if (context.canManageProjects()) {
+                staffInner.child(HTML.a()
+                        .attribute(HTMLAttribute.HREF, "#staff-create-project")
+                        .text("Create project ↓"));
+            }
             staffStrip.child(staffInner);
             shell.child(staffStrip);
         }
+
+        context.qaProgression().ifPresent(progression -> shell.child(qaProgression(progression)));
 
         // Storage notice if unavailable
         if (dashboard == null || !dashboard.storageAvailable()) {
@@ -142,8 +147,38 @@ public final class QaMainBoardPageHTML {
         indexSection.child(indexShell);
         shell.child(indexSection);
 
+        if (!context.assignedTasks().isEmpty()) {
+            HTMLElement assignedSection = HTML.section().classes(QaCSS.PUBLIC_PROJECT_INDEX);
+            HTMLElement assignedShell = HTML.div().classes(QaCSS.PUBLIC_BOARD_SHELL);
+            assignedShell.child(HTML.div().classes(QaCSS.PUBLIC_BOARD_SECTION_HEADING, QaCSS.ROW)
+                    .child(HTML.div()
+                            .child(HTML.p().classes(QaCSS.SECTION_KICKER).text("QA assignments"))
+                            .child(HTML.h2().text("Work assigned to you.")))
+                    .child(HTML.p().text("Open an assigned task to submit evidence or continue its review.")));
+            HTMLElement assignedGrid = HTML.div().classes(QaCSS.PUBLIC_PROJECT_INDEX_GRID);
+            for (TaskBoardTaskPageView task : context.assignedTasks()) {
+                String taskUrl = QaRoutes.task(task.projectKey(), task.taskId());
+                if (context.organizationId().isPresent()) {
+                    taskUrl += "?organizationId=" + context.organizationId().get();
+                }
+                HTMLElement card = HTML.a().classes(QaCSS.PUBLIC_PROJECT_INDEX_CARD)
+                        .attribute(HTMLAttribute.HREF, taskUrl);
+                card.child(HTML.div().classes(QaCSS.PUBLIC_PROJECT_INDEX_COPY)
+                        .child(HTML.span().text(task.status().name() + " · " + task.audience().name()))
+                        .child(HTML.h3().text(task.title()))
+                        .child(HTML.p().text(task.summary())));
+                card.child(HTML.div().classes(QaCSS.PUBLIC_PROJECT_INDEX_META)
+                        .child(HTML.span().text(task.sectionKey().replace('-', ' ')))
+                        .child(HTML.span().text("QA " + task.qaStatus().name())));
+                assignedGrid.child(card);
+            }
+            assignedShell.child(assignedGrid);
+            assignedSection.child(assignedShell);
+            shell.child(assignedSection);
+        }
+
         // 4. Staff Create Project Panel (Direction C Progressive Enhancement)
-        if (canManage) {
+        if (context.canManageProjects()) {
             HTMLElement staffSection = HTML.section().classes(QaCSS.PUBLIC_BOARD_SHELL, QaCSS.PUBLIC_STAFF_EDITOR);
             HTMLElement details = HTML.details();
             details.child(HTML.summary()
@@ -152,23 +187,61 @@ public final class QaMainBoardPageHTML {
                     .child(HTML.span().text("Open editor")));
 
             HTMLElement form = HTML.form().classes(QaCSS.PUBLIC_STAFF_FORM)
+                    .attribute(HTMLAttribute.METHOD, "post")
                     .attribute(HTMLAttribute.ACTION, QaRoutes.PROJECTS_MUTATION);
+            if (!context.csrfToken().isBlank()) {
+                form.child(hidden(context.csrfParameterName(), context.csrfToken()));
+            }
+            context.organizationId().ifPresent(id -> form.child(hidden("organizationId", id.toString())));
             form.child(HTML.label()
                     .child(HTML.span().text("Project key"))
-                    .child(HTML.input()));
+                    .child(HTML.input().attribute(HTMLAttribute.NAME, "projectKey").attribute(HTMLAttribute.REQUIRED, "required")));
             form.child(HTML.label()
                     .child(HTML.span().text("Display name"))
-                    .child(HTML.input()));
+                    .child(HTML.input().attribute(HTMLAttribute.NAME, "displayName").attribute(HTMLAttribute.REQUIRED, "required")));
             form.child(HTML.label().classes(QaCSS.WIDE)
                     .child(HTML.span().text("Description"))
-                    .child(HTML.textarea()));
+                    .child(HTML.textarea().attribute(HTMLAttribute.NAME, "description")));
             form.child(HTML.div().classes(QaCSS.PUBLIC_STAFF_FORM_ACTIONS)
-                    .child(HTML.button().classes(QaCSS.GOLD_BUTTON).text("Create project")));
+                    .child(HTML.button().classes(QaCSS.GOLD_BUTTON)
+                            .attribute(HTMLAttribute.TYPE, "submit")
+                            .text("Create project")));
             details.child(form);
             staffSection.child(details);
             shell.child(staffSection);
         }
 
         return Forge.page(QaProduct.product(QaRoutes.ROOT), shell);
+    }
+
+    private static HTMLElement hidden(String name, String value) {
+        return HTML.input().attribute(HTMLAttribute.TYPE, "hidden")
+                .attribute(HTMLAttribute.NAME, name)
+                .attribute(HTMLAttribute.VALUE, value);
+    }
+
+    private static HTMLElement qaProgression(TaskBoardQaProgressionView progression) {
+        HTMLElement section = HTML.section().classes(QaCSS.PUBLIC_BOARD_SHELL, QaCSS.PUBLIC_SECTION_CARD);
+        section.child(HTML.p().classes(QaCSS.SECTION_KICKER).text("Your QA progression"));
+        HTMLElement stats = HTML.dl().classes(QaCSS.PUBLIC_INDEX_STATS);
+        stats.child(HTML.div()
+                .child(HTML.dt().text("Accepted QA/QC tasks"))
+                .child(HTML.dd().text(Integer.toString(progression.acceptedQaQcTaskCount()))));
+        stats.child(HTML.div()
+                .child(HTML.dt().text("VQC"))
+                .child(HTML.dd().text(Integer.toString(progression.vqcEarned()))));
+        stats.child(HTML.div()
+                .child(HTML.dt().text("QA tier"))
+                .child(HTML.dd().text(progression.currentTier().map(Enum::name)
+                        .orElse(progression.qaClasses().contains(org.tavall.qa.domain.auth.QaClass.FOUNDING_PUBLIC)
+                                ? "Founding Public Tester"
+                                : "Not assigned"))));
+        progression.nextTierVqcGuideline().ifPresent(guideline -> stats.child(HTML.div()
+                .child(HTML.dt().text("Next-tier VQC guideline"))
+                .child(HTML.dd().text(Integer.toString(guideline)))));
+        section.child(stats);
+        section.child(HTML.p().classes(QaCSS.PUBLIC_WEIGHT_NOTE)
+                .text("VQC records accepted contributions. Promotions and capability grants remain separately reviewed."));
+        return section;
     }
 }

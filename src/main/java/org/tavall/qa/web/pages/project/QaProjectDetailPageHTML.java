@@ -34,6 +34,17 @@ public final class QaProjectDetailPageHTML {
             int nhvDebtCount,
             int blockedCount
     ) {
+        return build(projectView, canManage, canHumanVerify, nhvDebtCount, blockedCount, QaProjectPageContext.readOnly());
+    }
+
+    public static HTMLDocument build(
+            TaskBoardPublicProjectView projectView,
+            boolean canManage,
+            boolean canHumanVerify,
+            int nhvDebtCount,
+            int blockedCount,
+            QaProjectPageContext pageContext
+    ) {
         HTMLElement shell = HTML.div().classes(
                 QaCSS.QA_APP,
                 QaCSS.PUBLIC_TASK_BOARD_PAGE,
@@ -217,26 +228,81 @@ public final class QaProjectDetailPageHTML {
             details.child(HTML.summary()
                     .child(HTML.span().text("Staff control"))
                     .child(HTML.strong().text("Add tracked work"))
-                    .child(HTML.span().text("Backlog + NHV + private")));
+                    .child(HTML.span().text("Backlog + NHV with explicit audience")));
 
             HTMLElement form = HTML.form().classes(QaCSS.PUBLIC_STAFF_FORM)
-                    .attribute(HTMLAttribute.ACTION, QaRoutes.TASKS_MUTATION.replace("{projectKey}", summary.projectKey()));
+                    .attribute(HTMLAttribute.METHOD, "post")
+                    .attribute(HTMLAttribute.ACTION, "/projects/" + summary.projectKey() + "/tasks");
+            if (!pageContext.csrfToken().isBlank()) {
+                form.child(hidden(pageContext.csrfParameterName(), pageContext.csrfToken()));
+            }
+            pageContext.organizationId().ifPresent(id -> form.child(hidden("organizationId", id.toString())));
             form.child(HTML.label()
                     .child(HTML.span().text("Section key"))
-                    .child(HTML.input()));
+                    .child(HTML.input().attribute(HTMLAttribute.NAME, "sectionKey").attribute(HTMLAttribute.REQUIRED, "required")));
             form.child(HTML.label()
                     .child(HTML.span().text("Internal title"))
-                    .child(HTML.input()));
+                    .child(HTML.input().attribute(HTMLAttribute.NAME, "title").attribute(HTMLAttribute.REQUIRED, "required")));
+            form.child(HTML.label()
+                    .child(HTML.span().text("Public title (optional)"))
+                    .child(HTML.input().attribute(HTMLAttribute.NAME, "publicTitle")));
             form.child(HTML.label().classes(QaCSS.WIDE)
                     .child(HTML.span().text("Description"))
-                    .child(HTML.textarea()));
+                    .child(HTML.textarea().attribute(HTMLAttribute.NAME, "description")));
+            form.child(HTML.label().classes(QaCSS.WIDE)
+                    .child(HTML.span().text("Public summary (optional)"))
+                    .child(HTML.textarea().attribute(HTMLAttribute.NAME, "publicSummary")));
+            form.child(HTML.label()
+                    .child(HTML.span().text("Priority"))
+                    .child(select("priority", List.of("LOW", "NORMAL", "HIGH", "CRITICAL"), "NORMAL")));
+            form.child(HTML.label()
+                    .child(HTML.span().text("Audience"))
+                    .child(select("audience", List.of("PUBLIC", "QA_TESTER", "STAFF", "ADMIN_ONLY"), "ADMIN_ONLY")));
+            form.child(HTML.label()
+                    .child(HTML.span().text("Weight"))
+                    .child(HTML.input().attribute(HTMLAttribute.TYPE, "number")
+                            .attribute(HTMLAttribute.NAME, "weight")
+                            .attribute(HTMLAttribute.VALUE, "1")
+                            .attribute(HTMLAttribute.MIN, "1")));
+            form.child(HTML.label()
+                    .child(HTML.span().text("Hosted validation required"))
+                    .child(select("hostValidationRequired", List.of("false", "true"), "false")));
+            form.child(HTML.label()
+                    .child(HTML.span().text("Counts for VQC"))
+                    .child(select("qaQcEligible", List.of("false", "true"), "false")));
+            form.child(HTML.label()
+                    .child(HTML.span().text("Source type"))
+                    .child(HTML.input().attribute(HTMLAttribute.NAME, "sourceType")));
+            form.child(HTML.label().classes(QaCSS.WIDE)
+                    .child(HTML.span().text("Source reference"))
+                    .child(HTML.input().attribute(HTMLAttribute.NAME, "sourceReference")));
             form.child(HTML.div().classes(QaCSS.PUBLIC_STAFF_FORM_ACTIONS)
-                    .child(HTML.button().classes(QaCSS.GOLD_BUTTON).text("Create NHV task")));
+                    .child(HTML.button().classes(QaCSS.GOLD_BUTTON)
+                            .attribute(HTMLAttribute.TYPE, "submit")
+                            .text("Create NHV task")));
             details.child(form);
             staffSection.child(details);
             shell.child(staffSection);
         }
 
         return Forge.page(QaProduct.product(QaRoutes.ROOT), shell);
+    }
+
+    private static HTMLElement select(String name, List<String> values, String selectedValue) {
+        HTMLElement select = HTML.select().attribute(HTMLAttribute.NAME, name);
+        for (String value : values) {
+            HTMLElement option = HTML.option().attribute(HTMLAttribute.VALUE, value).text(value);
+            if (value.equals(selectedValue)) {
+                option.attribute(HTMLAttribute.SELECTED, "selected");
+            }
+            select.child(option);
+        }
+        return select;
+    }
+
+    private static HTMLElement hidden(String name, String value) {
+        return HTML.input().attribute(HTMLAttribute.TYPE, "hidden")
+                .attribute(HTMLAttribute.NAME, name)
+                .attribute(HTMLAttribute.VALUE, value);
     }
 }

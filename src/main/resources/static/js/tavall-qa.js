@@ -226,19 +226,19 @@
     }
 
     function initializeStaffControls() {
-        if (!document.body.dataset.staffWorkspaceVariant) return;
+        if (!document.querySelector('.qa-app[data-tavall-qa-workspace-variant]')) return;
         document.querySelectorAll('.public-staff-form select, .public-staff-state-picker select')
                 .forEach((select, index) => initializeSoftSelect(select, index));
     }
 
     function initializeStaffWorkspace() {
-        const body = document.body;
-        if (body.dataset.staffWorkspaceVariant !== 'C') {
+        const workspace = document.querySelector('.qa-app[data-tavall-qa-workspace-variant="C"]');
+        if (!workspace) {
             return;
         }
 
-        const buttons = Array.from(document.querySelectorAll('[data-workspace-focus]'));
-        const panels = Array.from(document.querySelectorAll('[data-workspace-panel]'));
+        const buttons = Array.from(workspace.querySelectorAll('[data-tavall-qa-workspace-focus]'));
+        const panels = Array.from(workspace.querySelectorAll('[data-tavall-qa-workspace-panel]'));
         if (buttons.length === 0 || panels.length === 0) {
             return;
         }
@@ -254,12 +254,12 @@
         const applyFocus = (requestedFocus, updateHash) => {
             const focus = normalizeFocus(requestedFocus);
             buttons.forEach(button => {
-                const active = button.dataset.workspaceFocus === focus;
+                const active = button.dataset.tavallQaWorkspaceFocus === focus;
                 button.classList.toggle('active', active);
                 button.setAttribute('aria-pressed', String(active));
             });
             panels.forEach(panel => {
-                panel.hidden = focus !== 'OVERVIEW' && panel.dataset.workspacePanel !== focus;
+                panel.hidden = focus !== 'OVERVIEW' && panel.dataset.tavallQaWorkspacePanel !== focus;
             });
             if (updateHash) {
                 const hash = focus === 'EDIT' ? '#task-edit' : focus === 'THREAD' ? '#task-thread' : focus === 'QA' ? '#workspace-qa' : '';
@@ -271,7 +271,7 @@
         };
 
         buttons.forEach(button => {
-            button.addEventListener('click', () => applyFocus(button.dataset.workspaceFocus || 'OVERVIEW', true));
+            button.addEventListener('click', () => applyFocus(button.dataset.tavallQaWorkspaceFocus || 'OVERVIEW', true));
         });
         applyFocus(focusFromHash(), false);
     }
