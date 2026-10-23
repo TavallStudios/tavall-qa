@@ -2,7 +2,7 @@ package org.tavall.qa.web.pages.main;
 
 import org.tavall.qa.view.TaskBoardPublicDashboardView;
 import org.tavall.web.frontend.abstracts.page.AbstractPage;
-import org.tavall.web.frontend.design.ForgeAnimations;
+import org.tavall.qa.web.pages.shared.QaPageAnimations;
 
 /**
  * Public QA & Task Board main landing page at {@code qa.tavall.org/}.
@@ -12,10 +12,14 @@ import org.tavall.web.frontend.design.ForgeAnimations;
  */
 public final class QaMainBoardPage extends AbstractPage<QaMainBoardPage> {
 
-    public static QaMainBoardPage build(TaskBoardPublicDashboardView dashboard, boolean canManage, boolean canHumanVerify, String identityStatus) {
+    public static QaMainBoardPage build(
+            TaskBoardPublicDashboardView dashboard,
+            boolean canManage,
+            QaMainBoardPageContext context
+    ) {
         return new QaMainBoardPage()
                 .title("Tavall QA — Follow what changed")
-                .html(QaMainBoardPageHTML.build(dashboard, canManage, canHumanVerify, identityStatus))
-                .animations(ForgeAnimations.reveal());
+                .html(QaMainBoardPageHTML.build(dashboard, canManage, context))
+                .animations(QaPageAnimations.build());
     }
 }

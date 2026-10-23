@@ -1,7 +1,7 @@
 package org.tavall.qa.web.pages.editor;
 
 import org.tavall.web.frontend.abstracts.page.AbstractPage;
-import org.tavall.web.frontend.design.ForgeAnimations;
+import org.tavall.qa.web.pages.shared.QaPageAnimations;
 
 /**
  * Message Editor page implementing Desktop Direction A and Mobile Direction C.
@@ -19,6 +19,6 @@ public final class QaMessageEditorPage extends AbstractPage<QaMessageEditorPage>
         return new QaMessageEditorPage()
                 .title("Message Editor — " + messageKey + " | Tavall QA")
                 .html(QaMessageEditorPageHTML.build(messageKey, locale, platform, delivery, content, returnTaskUrl))
-                .animations(ForgeAnimations.reveal());
+                .animations(QaPageAnimations.build());
     }
 }
