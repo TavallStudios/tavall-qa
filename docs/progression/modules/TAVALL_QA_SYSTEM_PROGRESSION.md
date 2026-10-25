@@ -18,6 +18,12 @@ Evidence review, task acceptance, and Human Verify are independent operations. A
 - Web exact-source local tests: 411 tests passed, 0 failures, 0 errors, 9 unrelated Account PostgreSQL-gated skips.
 - The shared `tavall-cloud-postgres` database was not modified.
 
+## October 25 documentation-only source checkpoint
+
+**Audited main:** `TavallStudios/tavall-qa@85779a99e8ab338c0366e3958d2a58da3023747b`. Source-level examples for the existing [TaskBoardQueryHandler](https://github.com/TavallStudios/tavall-qa/blob/85779a99e8ab338c0366e3958d2a58da3023747b/tavall-qa-system/src/main/java/org/tavall/qa/handler/TaskBoardQueryHandler.java), [TaskBoardTaskEntity](https://github.com/TavallStudios/tavall-qa/blob/85779a99e8ab338c0366e3958d2a58da3023747b/tavall-qa-system/src/main/java/org/tavall/qa/persistence/entity/TaskBoardTaskEntity.java), and [TaskBoardMutationHandler](https://github.com/TavallStudios/tavall-qa/blob/85779a99e8ab338c0366e3958d2a58da3023747b/tavall-qa-system/src/main/java/org/tavall/qa/handler/TaskBoardMutationHandler.java) were inspected for the accompanying Technical update. **No test, migration, live QA Web browser or Notion/GitHub sync run was performed in this documentation-only pass**. Previous test receipts in the Validation section remain historical evidence tied to their original source context, not a fresh current-head acceptance.
+
+The newly approved Notion/GitHub 1:1 task projection, WebMCP task-view migration, and cross-provider checkpoints are `DESIGNED / NOT_VALIDATED` features. Do not mark them complete until their owner APIs, exact build, integration receipts and shared runtime verification exist. Parent aggregate PROGRESSION must link this module record rather than copying each task/revision event.
+
 ## Remaining gates
 
 - Pass exact-source Tavall CI and repository-owned review checks.
