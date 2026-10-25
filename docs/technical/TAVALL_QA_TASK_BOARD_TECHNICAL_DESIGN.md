@@ -88,8 +88,8 @@ Acceptance binds to exact source SHAs for each participating repository and the 
 ### Current Locations
 | Surface | Sync State | Location | Last Updated | Evidence |
 | --- | --- | --- | --- | --- |
-| GitHub | `PR_DRAFT` | `TavallStudios/tavall-qa/docs/technical/TAVALL_QA_TASK_BOARD_TECHNICAL_DESIGN.md` | 2026-10-25 2:17 AM PDT | Docs-only branch `docs/qa-board-examples-20261025`; linked draft PR |
-| Notion | `PENDING_1_TO_1_SYNC` | To be linked under owning GENERAL | 2026-10-25 2:17 AM PDT | Twin to be created in this pass |
+| GitHub | `1:1_DRAFT_PR` | `TavallStudios/tavall-qa/docs/technical/TAVALL_QA_TASK_BOARD_TECHNICAL_DESIGN.md` | 2026-10-25 2:17 AM PDT | [Draft PR](https://github.com/TavallStudios/tavall-qa/pull/2); linked Notion twin |
+| Notion | `1:1_DRAFT_PR` | [Notion twin](https://app.notion.com/p/40438458ddfd8142b3fef192175a7bfa) | 2026-10-25 2:17 AM PDT | Created Notion twin https://app.notion.com/p/40438458ddfd8142b3fef192175a7bfa |
 
 ### Update History
 | Timestamp | Surface | Event | Location | Previous Location | Evidence | Notes |
