@@ -81,3 +81,19 @@ Historical Task Board UI and PR lineage under `tavall-mc` are reference material
 The current progress aggregator computes weighted public progress inside the QA authority. Cache/event publication, CMS widgets, roadmap projections, curated Discord milestones, and public receipts must attach to existing Tavall owners through typed contracts after those owners and consumers are verified. No placeholder subscriber or duplicate progress store is introduced. The PvP QA repository and PRs referenced as #155 and #179–182 must be verified by repository identity before any source or VQC progression is treated as authoritative.
 
 Acceptance binds to exact source SHAs for each participating repository and the actual Tavall Web DEVELOPMENT/STAGING runtime. Required checks include direct HTTP privacy and authorization, mapped-JPA migration/persistence behavior, task assignment/evidence/review/acceptance/Human Verify and invalidation, desktop/mobile browser behavior at the accepted layouts, shared runtime composition, and health/routing. Source, CI, artifact, migration, deployment, DNS, and public browser acceptance are recorded separately; none is inferred from the presence of a host config or a local build. Current local source-test results are recorded in the module progression documents; PostgreSQL, remote CI, browser, and deployment gates are tracked independently.
+
+<details>
+<summary>Documentation Update State</summary>
+
+### Current Locations
+| Surface | Sync State | Location | Last Updated | Evidence |
+| --- | --- | --- | --- | --- |
+| GitHub | `PR_DRAFT` | `TavallStudios/tavall-qa/docs/technical/TAVALL_QA_TASK_BOARD_TECHNICAL_DESIGN.md` | 2026-10-25 2:17 AM PDT | Docs-only branch `docs/qa-board-examples-20261025`; linked draft PR |
+| Notion | `PENDING_1_TO_1_SYNC` | To be linked under owning GENERAL | 2026-10-25 2:17 AM PDT | Twin to be created in this pass |
+
+### Update History
+| Timestamp | Surface | Event | Location | Previous Location | Evidence | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-25 2:17 AM PDT | GitHub | `UPDATED` | `docs/technical/TAVALL_QA_TASK_BOARD_TECHNICAL_DESIGN.md` | Same file | Branch `docs/qa-board-examples-20261025` | Added verified source references, current design scope and footer. |
+
+</details>
