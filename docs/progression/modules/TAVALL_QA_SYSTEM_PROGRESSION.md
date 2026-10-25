@@ -37,7 +37,7 @@ The newly approved Notion/GitHub 1:1 task projection, WebMCP task-view migration
 | Surface | Sync State | Location | Last Updated | Evidence |
 | --- | --- | --- | --- | --- |
 | GitHub | `PR_DRAFT` | `TavallStudios/tavall-qa/docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | 2026-10-25 2:17 AM PDT | Docs-only branch `docs/qa-board-examples-20261025`; linked draft PR |
-| Notion | `PENDING_1_TO_1_SYNC` | To be linked under owning GENERAL | 2026-10-25 2:17 AM PDT | Twin to be created in this pass |
+| Notion | `1:1_DRAFT_PR` | [Notion twin](https://app.notion.com/p/40438458ddfd812fb5f1d73a310307d1) | 2026-10-25 2:17 AM PDT | Twin to be created in this pass |
 
 ### Update History
 | Timestamp | Surface | Event | Location | Previous Location | Evidence | Notes |
