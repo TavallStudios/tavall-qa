@@ -29,3 +29,19 @@ The newly approved Notion/GitHub 1:1 task projection, WebMCP task-view migration
 - Pass exact-source Tavall CI and repository-owned review checks.
 - Verify the migration against the actual shared DEVELOPMENT runtime database before deployment; no schema was applied in this source test.
 - Merge and deploy only after the corresponding source, artifact, migration, and runtime gates pass.
+
+<details>
+<summary>Documentation Update State</summary>
+
+### Current Locations
+| Surface | Sync State | Location | Last Updated | Evidence |
+| --- | --- | --- | --- | --- |
+| GitHub | `PR_DRAFT` | `TavallStudios/tavall-qa/docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | 2026-10-25 2:17 AM PDT | Docs-only branch `docs/qa-board-examples-20261025`; linked draft PR |
+| Notion | `PENDING_1_TO_1_SYNC` | To be linked under owning GENERAL | 2026-10-25 2:17 AM PDT | Twin to be created in this pass |
+
+### Update History
+| Timestamp | Surface | Event | Location | Previous Location | Evidence | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-25 2:17 AM PDT | GitHub | `UPDATED` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same file | Branch `docs/qa-board-examples-20261025` | Added verified source references, current design scope and footer. |
+
+</details>
