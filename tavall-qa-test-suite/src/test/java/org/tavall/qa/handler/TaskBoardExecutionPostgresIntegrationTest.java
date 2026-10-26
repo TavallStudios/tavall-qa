@@ -207,6 +207,22 @@ class TaskBoardExecutionPostgresIntegrationTest {
                 new TaskBoardExecutionResumeRequest(request, latest.checkpointId(), latest.source())));
     }
 
+    @Test
+    void delayedAcquireCannotReviveATokenAfterAnotherLeaseReplacedIt() {
+        Context context = context(null, administrator());
+        TaskBoardExecutionLeaseRequest original = acquire(context);
+        TaskBoardExecutionLeaseData first = context.handler().acquireLease(context.actor(), original);
+        context.handler().releaseLease(context.actor(), first);
+        TaskBoardExecutionLeaseData second = context.handler().acquireLease(context.actor(), acquire(context));
+        TaskBoardExecutionLeaseData released = context.handler().releaseLease(context.actor(), second);
+
+        assertThrows(TaskBoardConcurrentModificationException.class,
+                () -> context.handler().acquireLease(context.actor(), original));
+        assertEquals(released, context.handler().currentLease(context.actor(), original.taskId()).orElseThrow());
+        assertEquals(2, context.tasks().findAuditEntries(original.taskId()).stream()
+                .filter(event -> event.eventType() == TaskBoardAuditEventType.EXECUTION_LEASE_ACQUIRED).count());
+    }
+
     private static boolean claim(Context context, TaskBoardExecutionLeaseRequest request, CountDownLatch start) throws Exception {
         start.await();
         try { context.handler().acquireLease(context.actor(), request); return true; }

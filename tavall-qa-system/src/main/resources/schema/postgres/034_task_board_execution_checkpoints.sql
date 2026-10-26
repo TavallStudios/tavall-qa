@@ -1,7 +1,17 @@
+CREATE TABLE IF NOT EXISTS task_board_execution_lease_token (
+    lease_id VARCHAR(36) PRIMARY KEY,
+    task_id VARCHAR(36) NOT NULL REFERENCES task_board_task(task_id) ON DELETE RESTRICT,
+    run_id VARCHAR(36) NOT NULL,
+    owner_account_id VARCHAR(36) NOT NULL,
+    issued_at TIMESTAMPTZ NOT NULL,
+    initial_expires_at TIMESTAMPTZ NOT NULL CHECK (initial_expires_at > issued_at)
+);
+
 CREATE TABLE IF NOT EXISTS task_board_execution_lease (
     task_id VARCHAR(36) PRIMARY KEY REFERENCES task_board_task(task_id) ON DELETE CASCADE,
     run_id VARCHAR(36) NOT NULL,
-    lease_id VARCHAR(36) NOT NULL UNIQUE,
+    lease_id VARCHAR(36) NOT NULL UNIQUE REFERENCES task_board_execution_lease_token(lease_id)
+        DEFERRABLE INITIALLY DEFERRED,
     owner_account_id VARCHAR(36) NOT NULL,
     revision BIGINT NOT NULL CHECK (revision >= 0),
     checkpoint_sequence BIGINT NOT NULL CHECK (checkpoint_sequence >= 0),
@@ -53,6 +63,16 @@ BEGIN
     RAISE EXCEPTION 'Task execution checkpoint history is append-only';
 END;
 $$;
+
+DROP TRIGGER IF EXISTS task_board_execution_token_no_row_mutation ON task_board_execution_lease_token;
+CREATE TRIGGER task_board_execution_token_no_row_mutation
+BEFORE UPDATE OR DELETE ON task_board_execution_lease_token
+FOR EACH ROW EXECUTE FUNCTION task_board_reject_checkpoint_mutation();
+
+DROP TRIGGER IF EXISTS task_board_execution_token_no_truncate ON task_board_execution_lease_token;
+CREATE TRIGGER task_board_execution_token_no_truncate
+BEFORE TRUNCATE ON task_board_execution_lease_token
+FOR EACH STATEMENT EXECUTE FUNCTION task_board_reject_checkpoint_mutation();
 
 DROP TRIGGER IF EXISTS task_board_checkpoint_no_row_mutation ON task_board_execution_checkpoint;
 CREATE TRIGGER task_board_checkpoint_no_row_mutation

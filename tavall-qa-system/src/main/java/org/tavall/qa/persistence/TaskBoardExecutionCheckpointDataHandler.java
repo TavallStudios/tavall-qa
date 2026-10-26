@@ -21,6 +21,7 @@ import org.tavall.qa.persistence.entity.TaskBoardAuditEntryEntity;
 import org.tavall.qa.persistence.entity.TaskBoardExecutionCheckpointEntity;
 import org.tavall.qa.persistence.entity.TaskBoardExecutionCheckpointPayloadEntity;
 import org.tavall.qa.persistence.entity.TaskBoardExecutionLeaseEntity;
+import org.tavall.qa.persistence.entity.TaskBoardExecutionLeaseTokenEntity;
 import org.tavall.qa.persistence.entity.TaskBoardTaskEntity;
 import org.tavall.qa.request.execution.TaskBoardExecutionCheckpointRequest;
 import org.tavall.qa.request.execution.TaskBoardExecutionLeaseRequest;
@@ -69,6 +70,9 @@ public final class TaskBoardExecutionCheckpointDataHandler extends GenerationOwn
             }
             if (lease.leaseId().equals(request.leaseId())) throw conflict("An expired lease token cannot be replayed");
         }
+        if (entities.find(TaskBoardExecutionLeaseTokenEntity.class, request.leaseId().toString()).isPresent()) {
+            throw conflict("Execution lease token was already issued and cannot be replayed");
+        }
         List<TaskBoardExecutionCheckpointEntity> history = entities.findNamed(TaskBoardExecutionCheckpointEntity.class,
                 TaskBoardExecutionCheckpointEntity.FIND_BY_RUN,
                 Map.of("taskId", request.taskId().toString(), "runId", request.runId().toString()), 1);
@@ -81,6 +85,7 @@ public final class TaskBoardExecutionCheckpointDataHandler extends GenerationOwn
         TaskBoardExecutionLeaseData lease = new TaskBoardExecutionLeaseData(request.taskId(), request.runId(),
                 request.leaseId(), actorAccountId, previous.map(value -> Math.addExact(value.revision(), 1)).orElse(0L),
                 sequence, fingerprint, now.plus(request.duration()));
+        entities.save(TaskBoardExecutionLeaseTokenEntity.fromDomain(lease, now));
         TaskBoardExecutionLeaseData saved = entities.save(TaskBoardExecutionLeaseEntity.fromDomain(lease)).toDomain();
         audit(entities, task, actorAccountId, TaskBoardAuditEventType.EXECUTION_LEASE_ACQUIRED,
                 "Execution lease acquired for run " + lease.runId(), now);
