@@ -1,0 +1,61 @@
+{
+  "status": "PASS_EXACT_SOURCE",
+  "repository": "TavallStudios/tavall-qa",
+  "testedSource": "f39e51666296dd4b5cd235f4624fc9ebf464a5f8",
+  "requestId": "501527ce-a0d2-458d-a00e-c035f09c5c5f",
+  "persistence": {
+    "evidenceRef": "tavall-storage://ci/runs/501527ce-a0d2-458d-a00e-c035f09c5c5f/ci-evidence.json",
+    "evidenceSha256": "b4c49a305f5ecdba9f1ed354dc70a078ffaaf78ee56ab1e943abdecf96f8a45a"
+  },
+  "jdkVersion": "25",
+  "gradleVersion": "9.6.1",
+  "sourceAggregateSha256": "4b8741ae841a4b3b3dcee1873c951d15f919ceb9482664e469a9b56d8334ac3c",
+  "checks": [
+    {
+      "check": "COMPILATION",
+      "successful": true,
+      "exitCode": 0,
+      "failureClass": "NONE",
+      "command": "GRADLE :tavall-qa-api:classes :tavall-qa-system:classes :tavall-qa-test-suite:testClasses"
+    },
+    {
+      "check": "UNIT_TESTS",
+      "successful": true,
+      "exitCode": 0,
+      "failureClass": "NONE",
+      "command": "GRADLE :tavall-qa-test-suite:test"
+    },
+    {
+      "check": "INTEGRATION",
+      "successful": true,
+      "exitCode": 0,
+      "failureClass": "NONE",
+      "command": "GRADLE :tavall-qa-test-suite:executionCheckpointIntegrationTest"
+    },
+    {
+      "check": "QUALITY",
+      "successful": true,
+      "exitCode": 0,
+      "failureClass": "NONE",
+      "command": "GRADLE check :tavall-qa-api:check :tavall-qa-system:check :tavall-qa-test-suite:check"
+    },
+    {
+      "check": "REQUIRED_ALL",
+      "successful": true,
+      "exitCode": 0,
+      "failureClass": "NONE",
+      "command": "Tavall CI required check aggregate"
+    }
+  ],
+  "coverage": [
+    "Actual mapped PostgreSQL checkpoints, immutable payload/envelope linkage, issued-token replay rejection and restart persistence.",
+    "Latest checkpoint, task fingerprint, branch/commit/diff guards before lease acquisition; revoked/current Account DEV authorization.",
+    "Actual Tavall dependency map and root configuration rebinding; previous checkpoint handler generation retires and supplied Clock survives.",
+    "Dedicated executionCheckpointIntegrationTest requires private native PostgreSQL and bypasses cached/up-to-date test output."
+  ],
+  "boundaries": [
+    "No shared database migration or deployed Web/runtime acceptance.",
+    "No real model/provider continuation or task Human Verify acceptance.",
+    "Later documentation/report commits are distinct from the exact tested source."
+  ]
+}
