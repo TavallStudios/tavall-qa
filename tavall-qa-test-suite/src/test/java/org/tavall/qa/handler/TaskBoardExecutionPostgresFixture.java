@@ -33,7 +33,7 @@ final class TaskBoardExecutionPostgresFixture implements AutoCloseable {
             assumeTrue(installed, "Native PostgreSQL fixture unavailable; this does not prove persistence acceptance");
         }
         int port;
-        try (ServerSocket socket = new ServerSocket(0, 0, InetAddress.getLoopbackAddress())) {
+        try (ServerSocket socket = new ServerSocket(0, 0, InetAddress.getByName("127.0.0.1"))) {
             port = socket.getLocalPort();
         }
         url = "jdbc:postgresql://127.0.0.1:" + port + "/postgres";
