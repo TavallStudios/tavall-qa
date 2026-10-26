@@ -30,6 +30,23 @@ CREATE TABLE IF NOT EXISTS task_board_execution_checkpoint (
     CONSTRAINT task_board_execution_checkpoint_sequence UNIQUE (task_id, run_id, checkpoint_sequence)
 );
 
+CREATE OR REPLACE FUNCTION task_board_reject_checkpoint_mutation() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+    RAISE EXCEPTION 'Task execution checkpoint history is append-only';
+END;
+$$;
+
+DROP TRIGGER IF EXISTS task_board_checkpoint_no_row_mutation ON task_board_execution_checkpoint;
+CREATE TRIGGER task_board_checkpoint_no_row_mutation
+BEFORE UPDATE OR DELETE ON task_board_execution_checkpoint
+FOR EACH ROW EXECUTE FUNCTION task_board_reject_checkpoint_mutation();
+
+DROP TRIGGER IF EXISTS task_board_checkpoint_no_truncate ON task_board_execution_checkpoint;
+CREATE TRIGGER task_board_checkpoint_no_truncate
+BEFORE TRUNCATE ON task_board_execution_checkpoint
+FOR EACH STATEMENT EXECUTE FUNCTION task_board_reject_checkpoint_mutation();
+
 ALTER TABLE task_board_audit DROP CONSTRAINT IF EXISTS task_board_audit_event_check;
 ALTER TABLE task_board_audit ADD CONSTRAINT task_board_audit_event_check CHECK (event_type IN (
     'PROJECT_CREATED', 'TASK_CREATED', 'TASK_UPDATED', 'TASK_ASSIGNED', 'TASK_ASSIGNMENT_REVOKED',

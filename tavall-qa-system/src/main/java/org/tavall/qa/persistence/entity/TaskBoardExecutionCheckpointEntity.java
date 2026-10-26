@@ -89,7 +89,7 @@ public class TaskBoardExecutionCheckpointEntity {
         entity.providerId = data.providerId();
         entity.status = data.status();
         entity.recordedByAccountId = data.recordedByAccountId().toString();
-        entity.recordedAt = data.recordedAt();
+        entity.recordedAt = data.recordedAt().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
         return entity;
     }
 

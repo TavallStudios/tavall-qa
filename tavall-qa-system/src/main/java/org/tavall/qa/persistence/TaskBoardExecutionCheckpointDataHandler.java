@@ -73,10 +73,10 @@ public final class TaskBoardExecutionCheckpointDataHandler extends GenerationOwn
             TaskBoardExecutionLeaseData lease = new TaskBoardExecutionLeaseData(request.taskId(), request.runId(),
                     request.leaseId(), actorAccountId, previous.map(value -> Math.addExact(value.revision(), 1)).orElse(0L),
                     sequence, fingerprint, now.plus(request.duration()));
-            entities.save(TaskBoardExecutionLeaseEntity.fromDomain(lease));
+            TaskBoardExecutionLeaseData saved = entities.save(TaskBoardExecutionLeaseEntity.fromDomain(lease)).toDomain();
             audit(entities, task, actorAccountId, TaskBoardAuditEventType.EXECUTION_LEASE_ACQUIRED,
                     "Execution lease acquired for run " + lease.runId(), now);
-            return lease;
+            return saved;
         });
     }
 
@@ -92,10 +92,10 @@ public final class TaskBoardExecutionCheckpointDataHandler extends GenerationOwn
             TaskBoardExecutionLeaseData renewed = new TaskBoardExecutionLeaseData(current.taskId(), current.runId(),
                     current.leaseId(), current.ownerAccountId(), Math.addExact(current.revision(), 1),
                     current.checkpointSequence(), current.taskFingerprint(), now.plus(duration));
-            entities.save(TaskBoardExecutionLeaseEntity.fromDomain(renewed));
+            TaskBoardExecutionLeaseData saved = entities.save(TaskBoardExecutionLeaseEntity.fromDomain(renewed)).toDomain();
             audit(entities, task, actorAccountId, TaskBoardAuditEventType.EXECUTION_LEASE_RENEWED,
                     "Execution lease renewed for run " + current.runId(), now);
-            return renewed;
+            return saved;
         });
     }
 
@@ -108,10 +108,10 @@ public final class TaskBoardExecutionCheckpointDataHandler extends GenerationOwn
             TaskBoardExecutionLeaseData released = new TaskBoardExecutionLeaseData(current.taskId(), current.runId(),
                     current.leaseId(), current.ownerAccountId(), Math.addExact(current.revision(), 1),
                     current.checkpointSequence(), current.taskFingerprint(), now);
-            entities.save(TaskBoardExecutionLeaseEntity.fromDomain(released));
+            TaskBoardExecutionLeaseData saved = entities.save(TaskBoardExecutionLeaseEntity.fromDomain(released)).toDomain();
             audit(entities, task, actorAccountId, TaskBoardAuditEventType.EXECUTION_LEASE_RELEASED,
                     "Execution lease released for run " + current.runId(), now);
-            return released;
+            return saved;
         });
     }
 
@@ -147,13 +147,13 @@ public final class TaskBoardExecutionCheckpointDataHandler extends GenerationOwn
                 return stored;
             }
             if (!current.equals(expected)) throw conflict("Execution lease revision changed; reload before appending");
-            entities.save(TaskBoardExecutionCheckpointEntity.fromDomain(checkpoint));
+            TaskBoardExecutionCheckpointData saved = entities.save(TaskBoardExecutionCheckpointEntity.fromDomain(checkpoint)).toDomain();
             entities.save(TaskBoardExecutionLeaseEntity.fromDomain(new TaskBoardExecutionLeaseData(current.taskId(),
                     current.runId(), current.leaseId(), current.ownerAccountId(), Math.addExact(current.revision(), 1),
                     checkpoint.sequence(), current.taskFingerprint(), current.expiresAt())));
             audit(entities, task, actorAccountId, TaskBoardAuditEventType.EXECUTION_CHECKPOINT_RECORDED,
                     "Execution checkpoint " + checkpoint.sequence() + " recorded for run " + current.runId(), now);
-            return checkpoint;
+            return saved;
         });
     }
 

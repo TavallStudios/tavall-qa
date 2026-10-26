@@ -50,7 +50,7 @@ public class TaskBoardExecutionLeaseEntity {
         entity.revision = data.revision();
         entity.checkpointSequence = data.checkpointSequence();
         entity.taskFingerprint = data.taskFingerprint();
-        entity.expiresAt = data.expiresAt();
+        entity.expiresAt = data.expiresAt().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
         return entity;
     }
 
