@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.tavall.database.postgres.IPostgresDatabase;
 import org.tavall.dependency.maps.interfaces.IDependencyMap;
+import org.tavall.dependency.annotations.CompositionBoundary;
 import org.tavall.qa.persistence.ITaskBoardDataHandler;
 import org.tavall.qa.persistence.TaskBoardDataHandler;
 import org.tavall.qa.persistence.UnavailableTaskBoardDataHandler;
@@ -17,6 +18,7 @@ import java.util.Objects;
 import java.time.Clock;
 
 @Configuration
+@CompositionBoundary("Binds Spring-owned QA capabilities into the existing process dependency map")
 public class TavallQaConfiguration {
     private final IDependencyMap dependencyMap;
 
@@ -64,8 +66,11 @@ public class TavallQaConfiguration {
     public ITaskBoardExecutionCheckpointHandler taskBoardExecutionCheckpointHandler(
             @Lazy ITaskBoardDataHandler tasks, ITaskBoardExecutionCheckpointDataHandler checkpoints) {
         // Spring is the external composition boundary; consumers resolve these through typed Tavall DI.
-        if (dependencyMap.findInstance(ITaskBoardDataHandler.class) == null) {
+        ITaskBoardDataHandler current = dependencyMap.findInstance(ITaskBoardDataHandler.class);
+        if (current == null) {
             dependencyMap.registerInstance(ITaskBoardDataHandler.class, tasks);
+        } else if (current != tasks) {
+            dependencyMap.replaceInstance(ITaskBoardDataHandler.class, () -> tasks);
         }
         if (dependencyMap.findInstance(Clock.class) == null) {
             dependencyMap.registerInstance(Clock.class, Clock.systemUTC());
