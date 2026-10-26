@@ -35,7 +35,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class TaskBoardDataHandler implements ITaskBoardDataHandler {
-    private static final String TASK_LOCK_PREFIX = "tavall-qa:task:";
     private static final String EVIDENCE_LOCK_PREFIX = "tavall-qa:evidence:";
     private static final String ASSIGNMENT_LOCK_PREFIX = "tavall-qa:assignment:";
     private static final String VQC_LOCK_PREFIX = "tavall-qa:vqc:";
@@ -117,7 +116,7 @@ public final class TaskBoardDataHandler implements ITaskBoardDataHandler {
         Objects.requireNonNull(expectedUpdatedAt, "expectedUpdatedAt");
         requireAudit(auditEntry, Optional.of(task.taskId()), task.projectKey());
         return database.entities().executeAtomic(context -> {
-            context.acquireAdvisoryTransactionLock(TASK_LOCK_PREFIX + task.taskId());
+            context.acquireAdvisoryTransactionLock(TaskBoardTaskEntity.lockKey(task.taskId()));
             Optional<TaskBoardTaskEntity> persisted = context.find(
                     TaskBoardTaskEntity.class,
                     task.taskId().toString(),
@@ -311,7 +310,7 @@ public final class TaskBoardDataHandler implements ITaskBoardDataHandler {
             throw new IllegalArgumentException("Evidence review must produce a final state");
         }
         return database.entities().executeAtomic(context -> {
-            context.acquireAdvisoryTransactionLock(TASK_LOCK_PREFIX + evidence.taskId());
+            context.acquireAdvisoryTransactionLock(TaskBoardTaskEntity.lockKey(evidence.taskId()));
             context.acquireAdvisoryTransactionLock(EVIDENCE_LOCK_PREFIX + evidence.evidenceId());
             TaskBoardTaskEntity taskEntity = context.find(
                             TaskBoardTaskEntity.class,
@@ -368,7 +367,7 @@ public final class TaskBoardDataHandler implements ITaskBoardDataHandler {
             throw new IllegalArgumentException("Task acceptance requires accepted evidence for the same task");
         }
         return database.entities().executeAtomic(context -> {
-            context.acquireAdvisoryTransactionLock(TASK_LOCK_PREFIX + task.taskId());
+            context.acquireAdvisoryTransactionLock(TaskBoardTaskEntity.lockKey(task.taskId()));
             TaskBoardTaskEntity persisted = context.find(
                             TaskBoardTaskEntity.class,
                             task.taskId().toString(),

@@ -8,8 +8,13 @@ import org.tavall.dependency.maps.interfaces.IDependencyMap;
 import org.tavall.qa.persistence.ITaskBoardDataHandler;
 import org.tavall.qa.persistence.TaskBoardDataHandler;
 import org.tavall.qa.persistence.UnavailableTaskBoardDataHandler;
+import org.tavall.qa.persistence.ITaskBoardExecutionCheckpointDataHandler;
+import org.tavall.qa.persistence.TaskBoardExecutionCheckpointDataHandler;
+import org.tavall.qa.handler.ITaskBoardExecutionCheckpointHandler;
+import org.tavall.qa.handler.TaskBoardExecutionCheckpointHandler;
 
 import java.util.Objects;
+import java.time.Clock;
 
 @Configuration
 public class TavallQaConfiguration {
@@ -47,5 +52,25 @@ public class TavallQaConfiguration {
             org.tavall.qa.handler.ITaskBoardActionTargetResolver resolver
     ) {
         return new org.tavall.qa.handler.TaskBoardMutationHandler(dataHandler, resolver);
+    }
+
+    @Bean
+    public ITaskBoardExecutionCheckpointDataHandler taskBoardExecutionCheckpointDataHandler() {
+        return dependencyMap.registerInstance(ITaskBoardExecutionCheckpointDataHandler.class,
+                new TaskBoardExecutionCheckpointDataHandler());
+    }
+
+    @Bean
+    public ITaskBoardExecutionCheckpointHandler taskBoardExecutionCheckpointHandler(
+            @Lazy ITaskBoardDataHandler tasks, ITaskBoardExecutionCheckpointDataHandler checkpoints) {
+        // Spring is the external composition boundary; consumers resolve these through typed Tavall DI.
+        if (dependencyMap.findInstance(ITaskBoardDataHandler.class) == null) {
+            dependencyMap.registerInstance(ITaskBoardDataHandler.class, tasks);
+        }
+        if (dependencyMap.findInstance(Clock.class) == null) {
+            dependencyMap.registerInstance(Clock.class, Clock.systemUTC());
+        }
+        return dependencyMap.registerInstance(ITaskBoardExecutionCheckpointHandler.class,
+                new TaskBoardExecutionCheckpointHandler());
     }
 }
