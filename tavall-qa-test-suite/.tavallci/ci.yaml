@@ -43,6 +43,7 @@ requiredChecks:
   - compilation
   - unit-tests
   - quality
+  - integration
 checks:
   compilation:
     executor: gradle
@@ -58,4 +59,9 @@ checks:
     executor: gradle
     tasks:
       - :tavall-qa-test-suite:check
+    networkMode: PUBLIC
+  integration:
+    executor: gradle
+    tasks:
+      - :tavall-qa-test-suite:executionCheckpointIntegrationTest
     networkMode: PUBLIC
