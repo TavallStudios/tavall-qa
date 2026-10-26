@@ -37,6 +37,8 @@ import org.tavall.qa.request.TaskBoardTaskCreateRequest;
 import org.tavall.qa.request.TaskBoardTaskUpdateRequest;
 import org.tavall.qa.request.execution.TaskBoardExecutionCheckpointRequest;
 import org.tavall.qa.request.execution.TaskBoardExecutionLeaseRequest;
+import org.tavall.qa.request.execution.TaskBoardExecutionResumeRequest;
+import org.tavall.qa.domain.execution.TaskBoardExecutionResumeResult;
 
 import java.nio.file.Path;
 import java.sql.DriverManager;
@@ -167,6 +169,42 @@ class TaskBoardExecutionPostgresIntegrationTest {
         assertThrows(SecurityException.class, () -> context.handler().loadPayload(revoked, lease.taskId(), UUID.randomUUID()));
         context.dependencies().removeDependency(ITaskBoardExecutionCheckpointHandler.class);
         assertThrows(IllegalStateException.class, () -> context.handler().currentLease(assigned, lease.taskId()));
+    }
+
+    @Test
+    void resumeChecksLatestCheckpointAndHostSourceBeforeIssuingAnotherLease() {
+        Context context = context(null, administrator());
+        TaskBoardExecutionLeaseData lease = context.handler().acquireLease(context.actor(), acquire(context));
+        TaskBoardExecutionCheckpointData first = context.handler().appendCheckpoint(context.actor(),
+                checkpoint(lease, UUID.randomUUID(), "First next action"));
+        TaskBoardExecutionLeaseData advanced = context.handler().currentLease(context.actor(), lease.taskId()).orElseThrow();
+        TaskBoardExecutionCheckpointData latest = context.handler().appendCheckpoint(context.actor(),
+                checkpoint(advanced, UUID.randomUUID(), "Compile the retained source"));
+        TaskBoardExecutionLeaseData released = context.handler().releaseLease(context.actor(),
+                context.handler().currentLease(context.actor(), lease.taskId()).orElseThrow());
+        TaskBoardExecutionLeaseRequest request = new TaskBoardExecutionLeaseRequest(lease.taskId(), lease.runId(),
+                UUID.randomUUID(), lease.taskFingerprint(), Duration.ofMinutes(1));
+
+        assertThrows(TaskBoardConcurrentModificationException.class, () -> context.handler().resumeCheckpoint(context.actor(),
+                new TaskBoardExecutionResumeRequest(request, first.checkpointId(), first.source())));
+        TaskBoardExecutionSourceData changed = new TaskBoardExecutionSourceData(latest.source().repository(),
+                latest.source().branch(), "e".repeat(40), latest.source().diffSha256());
+        assertThrows(TaskBoardConcurrentModificationException.class, () -> context.handler().resumeCheckpoint(context.actor(),
+                new TaskBoardExecutionResumeRequest(request, latest.checkpointId(), changed)));
+        assertEquals(released, context.handler().currentLease(context.actor(), lease.taskId()).orElseThrow(),
+                "Failed source/context checks must not consume or replace a lease");
+
+        QaSubjectContext nextActor = administrator();
+        TaskBoardExecutionResumeResult resumed = context.handler().resumeCheckpoint(nextActor,
+                new TaskBoardExecutionResumeRequest(request, latest.checkpointId(), latest.source()));
+        assertEquals(nextActor.accountId().orElseThrow(), resumed.lease().ownerAccountId());
+        assertEquals(2, resumed.lease().checkpointSequence());
+        assertEquals(latest, resumed.checkpoint());
+        assertEquals("Compile the retained source", resumed.payload().nextAction());
+        assertThrows(TaskBoardConcurrentModificationException.class, () -> context.handler().appendCheckpoint(context.actor(),
+                checkpoint(advanced, UUID.randomUUID(), "Stale worker")));
+        assertThrows(SecurityException.class, () -> context.handler().resumeCheckpoint(QaSubjectContext.anonymous(),
+                new TaskBoardExecutionResumeRequest(request, latest.checkpointId(), latest.source())));
     }
 
     private static boolean claim(Context context, TaskBoardExecutionLeaseRequest request, CountDownLatch start) throws Exception {
