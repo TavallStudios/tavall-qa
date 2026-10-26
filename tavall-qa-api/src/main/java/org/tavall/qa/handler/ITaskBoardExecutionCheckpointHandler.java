@@ -6,6 +6,8 @@ import org.tavall.qa.domain.execution.TaskBoardExecutionLeaseData;
 import org.tavall.qa.domain.execution.TaskBoardExecutionCheckpointPayloadData;
 import org.tavall.qa.request.execution.TaskBoardExecutionCheckpointRequest;
 import org.tavall.qa.request.execution.TaskBoardExecutionLeaseRequest;
+import org.tavall.qa.request.execution.TaskBoardExecutionResumeRequest;
+import org.tavall.qa.domain.execution.TaskBoardExecutionResumeResult;
 
 import java.time.Duration;
 import java.util.List;
@@ -21,4 +23,5 @@ public interface ITaskBoardExecutionCheckpointHandler {
     Optional<TaskBoardExecutionLeaseData> currentLease(QaSubjectContext subject, UUID taskId);
     List<TaskBoardExecutionCheckpointData> checkpoints(QaSubjectContext subject, UUID taskId, UUID runId, int limit);
     Optional<TaskBoardExecutionCheckpointPayloadData> loadPayload(QaSubjectContext subject, UUID taskId, UUID checkpointId);
+    TaskBoardExecutionResumeResult resumeCheckpoint(QaSubjectContext subject, TaskBoardExecutionResumeRequest request);
 }

@@ -24,6 +24,8 @@ import org.tavall.qa.persistence.entity.TaskBoardExecutionLeaseEntity;
 import org.tavall.qa.persistence.entity.TaskBoardTaskEntity;
 import org.tavall.qa.request.execution.TaskBoardExecutionCheckpointRequest;
 import org.tavall.qa.request.execution.TaskBoardExecutionLeaseRequest;
+import org.tavall.qa.request.execution.TaskBoardExecutionResumeRequest;
+import org.tavall.qa.domain.execution.TaskBoardExecutionResumeResult;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -45,41 +47,45 @@ public final class TaskBoardExecutionCheckpointDataHandler extends GenerationOwn
         Objects.requireNonNull(request, "request");
         Objects.requireNonNull(actorAccountId, "actorAccountId");
         Objects.requireNonNull(now, "now");
-        return requireEntities().executeAtomic(entities -> {
-            TaskBoardTask task = lockedTask(entities, request.taskId());
-            requireExecutable(task);
-            String fingerprint = TaskBoardTaskFingerprint.compute(task);
-            if (!fingerprint.equals(request.expectedTaskFingerprint())) throw conflict("Task changed before lease acquisition");
-            Optional<TaskBoardExecutionLeaseData> previous = entities.find(TaskBoardExecutionLeaseEntity.class,
-                    request.taskId().toString(), LockModeType.PESSIMISTIC_WRITE).map(TaskBoardExecutionLeaseEntity::toDomain);
-            if (previous.isPresent()) {
-                TaskBoardExecutionLeaseData lease = previous.orElseThrow();
-                if (lease.activeAt(now)) {
-                    if (lease.runId().equals(request.runId()) && lease.leaseId().equals(request.leaseId())
-                            && lease.ownerAccountId().equals(actorAccountId) && lease.taskFingerprint().equals(fingerprint)) {
-                        return lease; // Duplicate acquire does not extend an existing lease.
-                    }
-                    throw conflict("Task already has an active execution lease");
+        return requireEntities().executeAtomic(entities -> acquireLease(entities, request, actorAccountId, now));
+    }
+
+    private TaskBoardExecutionLeaseData acquireLease(IPostgresEntityOperationContext entities,
+            TaskBoardExecutionLeaseRequest request, UUID actorAccountId, Instant now) {
+        TaskBoardTask task = lockedTask(entities, request.taskId());
+        requireExecutable(task);
+        String fingerprint = TaskBoardTaskFingerprint.compute(task);
+        if (!fingerprint.equals(request.expectedTaskFingerprint())) throw conflict("Task changed before lease acquisition");
+        Optional<TaskBoardExecutionLeaseData> previous = entities.find(TaskBoardExecutionLeaseEntity.class,
+                request.taskId().toString(), LockModeType.PESSIMISTIC_WRITE).map(TaskBoardExecutionLeaseEntity::toDomain);
+        if (previous.isPresent()) {
+            TaskBoardExecutionLeaseData lease = previous.orElseThrow();
+            if (lease.activeAt(now)) {
+                if (lease.runId().equals(request.runId()) && lease.leaseId().equals(request.leaseId())
+                        && lease.ownerAccountId().equals(actorAccountId) && lease.taskFingerprint().equals(fingerprint)) {
+                    return lease; // Duplicate acquire does not extend an existing lease.
                 }
-                if (lease.leaseId().equals(request.leaseId())) throw conflict("An expired lease token cannot be replayed");
+                throw conflict("Task already has an active execution lease");
             }
-            List<TaskBoardExecutionCheckpointEntity> history = entities.findNamed(TaskBoardExecutionCheckpointEntity.class,
-                    TaskBoardExecutionCheckpointEntity.FIND_BY_RUN,
-                    Map.of("taskId", request.taskId().toString(), "runId", request.runId().toString()), 1);
-            long sequence = 0;
-            if (!history.isEmpty()) {
-                TaskBoardExecutionCheckpointData latest = history.getFirst().toDomain();
-                if (!latest.taskFingerprint().equals(fingerprint)) throw conflict("Run belongs to an older task revision");
-                sequence = latest.sequence();
-            }
-            TaskBoardExecutionLeaseData lease = new TaskBoardExecutionLeaseData(request.taskId(), request.runId(),
-                    request.leaseId(), actorAccountId, previous.map(value -> Math.addExact(value.revision(), 1)).orElse(0L),
-                    sequence, fingerprint, now.plus(request.duration()));
-            TaskBoardExecutionLeaseData saved = entities.save(TaskBoardExecutionLeaseEntity.fromDomain(lease)).toDomain();
-            audit(entities, task, actorAccountId, TaskBoardAuditEventType.EXECUTION_LEASE_ACQUIRED,
-                    "Execution lease acquired for run " + lease.runId(), now);
-            return saved;
-        });
+            if (lease.leaseId().equals(request.leaseId())) throw conflict("An expired lease token cannot be replayed");
+        }
+        List<TaskBoardExecutionCheckpointEntity> history = entities.findNamed(TaskBoardExecutionCheckpointEntity.class,
+                TaskBoardExecutionCheckpointEntity.FIND_BY_RUN,
+                Map.of("taskId", request.taskId().toString(), "runId", request.runId().toString()), 1);
+        long sequence = 0;
+        if (!history.isEmpty()) {
+            TaskBoardExecutionCheckpointData latest = history.getFirst().toDomain();
+            if (!latest.taskFingerprint().equals(fingerprint)) throw conflict("Run belongs to an older task revision");
+            sequence = latest.sequence();
+        }
+        TaskBoardExecutionLeaseData lease = new TaskBoardExecutionLeaseData(request.taskId(), request.runId(),
+                request.leaseId(), actorAccountId, previous.map(value -> Math.addExact(value.revision(), 1)).orElse(0L),
+                sequence, fingerprint, now.plus(request.duration()));
+        TaskBoardExecutionLeaseData saved = entities.save(TaskBoardExecutionLeaseEntity.fromDomain(lease)).toDomain();
+        audit(entities, task, actorAccountId, TaskBoardAuditEventType.EXECUTION_LEASE_ACQUIRED,
+                "Execution lease acquired for run " + lease.runId(), now);
+        return saved;
+
     }
 
     @Override
@@ -192,6 +198,40 @@ public final class TaskBoardExecutionCheckpointDataHandler extends GenerationOwn
         TaskBoardExecutionCheckpointPayloadEntity payload = entities.find(TaskBoardExecutionCheckpointPayloadEntity.class,
                 checkpointId.toString()).orElseThrow(() -> new TaskBoardStorageUnavailableException("Checkpoint payload is missing"));
         return Optional.of(payload.toDomain(checkpoint.orElseThrow().payloadSha256()));
+    }
+
+    @Override
+    public TaskBoardExecutionResumeResult resumeCheckpoint(TaskBoardExecutionResumeRequest request,
+            UUID actorAccountId, Instant now) {
+        Objects.requireNonNull(request, "request");
+        Objects.requireNonNull(actorAccountId, "actorAccountId");
+        Objects.requireNonNull(now, "now");
+        return requireEntities().executeAtomic(entities -> {
+            TaskBoardExecutionLeaseRequest leaseRequest = request.leaseRequest();
+            TaskBoardTask task = lockedTask(entities, leaseRequest.taskId());
+            requireExecutable(task);
+            TaskBoardExecutionCheckpointData checkpoint = entities.find(TaskBoardExecutionCheckpointEntity.class,
+                    request.checkpointId().toString()).map(TaskBoardExecutionCheckpointEntity::toDomain)
+                    .orElseThrow(() -> conflict("Checkpoint is missing"));
+            if (!checkpoint.taskId().equals(leaseRequest.taskId()) || !checkpoint.runId().equals(leaseRequest.runId())
+                    || !checkpoint.taskFingerprint().equals(leaseRequest.expectedTaskFingerprint())
+                    || !checkpoint.taskFingerprint().equals(TaskBoardTaskFingerprint.compute(task))
+                    || !checkpoint.source().equals(request.observedSource())) {
+                throw conflict("Task, source or outstanding diff changed before checkpoint resumption");
+            }
+            List<TaskBoardExecutionCheckpointEntity> latest = entities.findNamed(TaskBoardExecutionCheckpointEntity.class,
+                    TaskBoardExecutionCheckpointEntity.FIND_BY_RUN,
+                    Map.of("taskId", checkpoint.taskId().toString(), "runId", checkpoint.runId().toString()), 1);
+            if (latest.isEmpty() || !latest.getFirst().toDomain().checkpointId().equals(checkpoint.checkpointId())) {
+                throw conflict("Checkpoint was superseded; load the latest run context");
+            }
+            TaskBoardExecutionCheckpointPayloadData payload = entities.find(TaskBoardExecutionCheckpointPayloadEntity.class,
+                    checkpoint.checkpointId().toString()).orElseThrow(() -> conflict("Checkpoint payload is missing"))
+                    .toDomain(checkpoint.payloadSha256());
+            if (!payload.instructions().equals(task.description())) throw conflict("Checkpoint task instructions changed");
+            TaskBoardExecutionLeaseData lease = acquireLease(entities, leaseRequest, actorAccountId, now);
+            return new TaskBoardExecutionResumeResult(lease, checkpoint, payload);
+        });
     }
 
     private IPostgresEntityStore requireEntities() {

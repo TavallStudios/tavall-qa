@@ -14,6 +14,8 @@ import org.tavall.qa.persistence.ITaskBoardDataHandler;
 import org.tavall.qa.persistence.ITaskBoardExecutionCheckpointDataHandler;
 import org.tavall.qa.request.execution.TaskBoardExecutionCheckpointRequest;
 import org.tavall.qa.request.execution.TaskBoardExecutionLeaseRequest;
+import org.tavall.qa.request.execution.TaskBoardExecutionResumeRequest;
+import org.tavall.qa.domain.execution.TaskBoardExecutionResumeResult;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -80,6 +82,15 @@ public final class TaskBoardExecutionCheckpointHandler extends GenerationOwnedDe
     public Optional<TaskBoardExecutionCheckpointPayloadData> loadPayload(QaSubjectContext subject, UUID taskId, UUID checkpointId) {
         authorize(subject, taskId);
         return getInstance().taskBoardExecutionCheckpointDataHandler().loadPayload(taskId, checkpointId);
+    }
+
+    @Override
+    public TaskBoardExecutionResumeResult resumeCheckpoint(QaSubjectContext subject, TaskBoardExecutionResumeRequest request) {
+        Objects.requireNonNull(request, "request");
+        authorize(subject, request.leaseRequest().taskId());
+        TaskBoardExecutionCheckpointHandlerDependencyAccess dependencies = getInstance();
+        return dependencies.taskBoardExecutionCheckpointDataHandler().resumeCheckpoint(request,
+                subject.accountId().orElseThrow(), dependencies.clock().instant());
     }
 
     private void authorize(QaSubjectContext subject, UUID taskId) {
