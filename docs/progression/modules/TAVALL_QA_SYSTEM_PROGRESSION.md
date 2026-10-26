@@ -38,6 +38,12 @@ The newly approved Notion/GitHub 1:1 task projection, WebMCP task-view migration
 | Real payload, source guards and provider resume | No current runtime receipt | Incomplete |
 | Shared Web routes, migration, QA UI and deployment | No current acceptance | Incomplete; existing runtime and product design retained |
 
+## Typed payload and source-guarded resumption
+
+Source `1fe4770fb86439c881c6ec5cae2d2c3bafa4cd3b` adds actual QA-owned typed payload persistence, canonical JSON/digest mapping, bounded patch context, separate authorized body retrieval and immutable envelope/body links. It passed compilation in run `e401039f-7bfa-4683-92ab-0e36e4073434`, required native PostgreSQL integration in `47418912-3e65-4ab7-a8ea-c741895cd6cc`, and unit tests in `240ae975-cad7-4dac-9c39-779f14e54c18`. Evidence SHA-256 values are respectively `900bd3b9208a7888c77c6eda9a3b91b12fdc45057b695cf4aa3e53b601a71818`, `40fa4a7557ccda8941edcf7ff1c314a888f7e4244739006d8c5f5f07fcc6f58f`, and `deea72b286ab65b05110fc2d00fb3435c62c7410eebfdb6b88fdf19edfb4ff61`.
+
+Subsequent source `6bed27ee0cd7369f88c29cc0d2cce518851a6edd` adds atomic latest-checkpoint/source/diff guards before resume lease acquisition and a stable version-one serialization fixture. Compilation request `34cbeab2-5193-4c3f-8073-8f6473cee925` is running. Its new tests are not yet accepted; real AI host workspace verification, current capability equivalence, provider invocation, shared Web endpoints and migration application remain incomplete.
+
 ## Remaining gates
 
 - Pass exact-source Tavall CI and repository-owned review checks.
@@ -58,5 +64,5 @@ The newly approved Notion/GitHub 1:1 task projection, WebMCP task-view migration
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-10-25 2:17 AM PDT | GitHub | `UPDATED` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same file | Branch `docs/qa-board-examples-20261025` | Added verified source references, current design scope and footer. |
 
-| 2026-10-26 11:10 AM PDT | GitHub | `UPDATED` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same logical document from PR #2 | PR #3, source `fd44ada` and exact CI receipts | Documented real DI/Database checkpoint implementation; kept runtime, payload and provider-continuation gates separate. |
+| 2026-10-26 10:59 AM PDT | GitHub | `UPDATED` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same logical document from PR #2 | PR #3, source `fd44ada` and exact CI receipts | Documented real DI/Database checkpoint implementation; kept runtime, payload and provider-continuation gates separate. |
 </details>
