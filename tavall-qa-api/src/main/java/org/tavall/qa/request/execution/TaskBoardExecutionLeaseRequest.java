@@ -8,6 +8,7 @@ import java.util.UUID;
 public record TaskBoardExecutionLeaseRequest(UUID taskId, UUID runId, UUID leaseId,
         String expectedTaskFingerprint, Duration duration) {
     public static final Duration MAX_DURATION = Duration.ofMinutes(15);
+    public static final Duration MIN_DURATION = Duration.ofMillis(1);
 
     public TaskBoardExecutionLeaseRequest {
         Objects.requireNonNull(taskId, "taskId");
@@ -22,8 +23,8 @@ public record TaskBoardExecutionLeaseRequest(UUID taskId, UUID runId, UUID lease
 
     public static void validateDuration(Duration duration) {
         Objects.requireNonNull(duration, "duration");
-        if (duration.isNegative() || duration.isZero() || duration.compareTo(MAX_DURATION) > 0) {
-            throw new IllegalArgumentException("Lease duration must be positive and within fifteen minutes");
+        if (duration.compareTo(MIN_DURATION) < 0 || duration.compareTo(MAX_DURATION) > 0) {
+            throw new IllegalArgumentException("Lease duration must be within one millisecond and fifteen minutes");
         }
     }
 }
