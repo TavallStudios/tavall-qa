@@ -3,6 +3,7 @@ package org.tavall.qa.handler;
 import org.tavall.qa.domain.auth.QaSubjectContext;
 import org.tavall.qa.domain.execution.TaskBoardExecutionCheckpointData;
 import org.tavall.qa.domain.execution.TaskBoardExecutionLeaseData;
+import org.tavall.qa.domain.execution.TaskBoardExecutionCheckpointPayloadData;
 import org.tavall.qa.request.execution.TaskBoardExecutionCheckpointRequest;
 import org.tavall.qa.request.execution.TaskBoardExecutionLeaseRequest;
 
@@ -19,4 +20,5 @@ public interface ITaskBoardExecutionCheckpointHandler {
     TaskBoardExecutionCheckpointData appendCheckpoint(QaSubjectContext subject, TaskBoardExecutionCheckpointRequest request);
     Optional<TaskBoardExecutionLeaseData> currentLease(QaSubjectContext subject, UUID taskId);
     List<TaskBoardExecutionCheckpointData> checkpoints(QaSubjectContext subject, UUID taskId, UUID runId, int limit);
+    Optional<TaskBoardExecutionCheckpointPayloadData> loadPayload(QaSubjectContext subject, UUID taskId, UUID checkpointId);
 }

@@ -16,8 +16,10 @@ import org.tavall.qa.domain.TaskBoardTaskFingerprint;
 import org.tavall.qa.domain.TaskBoardTaskStatus;
 import org.tavall.qa.domain.execution.TaskBoardExecutionCheckpointData;
 import org.tavall.qa.domain.execution.TaskBoardExecutionLeaseData;
+import org.tavall.qa.domain.execution.TaskBoardExecutionCheckpointPayloadData;
 import org.tavall.qa.persistence.entity.TaskBoardAuditEntryEntity;
 import org.tavall.qa.persistence.entity.TaskBoardExecutionCheckpointEntity;
+import org.tavall.qa.persistence.entity.TaskBoardExecutionCheckpointPayloadEntity;
 import org.tavall.qa.persistence.entity.TaskBoardExecutionLeaseEntity;
 import org.tavall.qa.persistence.entity.TaskBoardTaskEntity;
 import org.tavall.qa.request.execution.TaskBoardExecutionCheckpointRequest;
@@ -131,9 +133,14 @@ public final class TaskBoardExecutionCheckpointDataHandler extends GenerationOwn
                 throw conflict("Execution lease expired or changed owner");
             }
             requireCurrentTask(task, current);
+            if (!request.payload().instructions().equals(task.description())) {
+                throw conflict("Checkpoint instructions differ from the canonical task");
+            }
+            TaskBoardExecutionCheckpointPayloadEntity payload = TaskBoardExecutionCheckpointPayloadEntity.fromDomain(
+                    request.checkpointId(), request.payload());
             TaskBoardExecutionCheckpointData checkpoint = new TaskBoardExecutionCheckpointData(request.checkpointId(),
                     expected.taskId(), expected.runId(), expected.leaseId(), Math.addExact(expected.checkpointSequence(), 1),
-                    expected.taskFingerprint(), request.source(), request.payloadSha256(), request.providerId(), request.status(),
+                    expected.taskFingerprint(), request.source(), payload.payloadSha256(), request.providerId(), request.status(),
                     actorAccountId, now);
             Optional<TaskBoardExecutionCheckpointData> duplicate = entities.find(TaskBoardExecutionCheckpointEntity.class,
                     request.checkpointId().toString()).map(TaskBoardExecutionCheckpointEntity::toDomain);
@@ -148,6 +155,7 @@ public final class TaskBoardExecutionCheckpointDataHandler extends GenerationOwn
             }
             if (!current.equals(expected)) throw conflict("Execution lease revision changed; reload before appending");
             TaskBoardExecutionCheckpointData saved = entities.save(TaskBoardExecutionCheckpointEntity.fromDomain(checkpoint)).toDomain();
+            entities.save(payload);
             entities.save(TaskBoardExecutionLeaseEntity.fromDomain(new TaskBoardExecutionLeaseData(current.taskId(),
                     current.runId(), current.leaseId(), current.ownerAccountId(), Math.addExact(current.revision(), 1),
                     checkpoint.sequence(), current.taskFingerprint(), current.expiresAt())));
@@ -170,6 +178,20 @@ public final class TaskBoardExecutionCheckpointDataHandler extends GenerationOwn
                 Map.of("taskId", Objects.requireNonNull(taskId, "taskId").toString(),
                         "runId", Objects.requireNonNull(runId, "runId").toString()), limit)
                 .stream().map(TaskBoardExecutionCheckpointEntity::toDomain).toList();
+    }
+
+    @Override
+    public Optional<TaskBoardExecutionCheckpointPayloadData> loadPayload(UUID taskId, UUID checkpointId) {
+        Objects.requireNonNull(taskId, "taskId");
+        Objects.requireNonNull(checkpointId, "checkpointId");
+        IPostgresEntityStore entities = requireEntities();
+        Optional<TaskBoardExecutionCheckpointData> checkpoint = entities.find(TaskBoardExecutionCheckpointEntity.class,
+                checkpointId.toString()).map(TaskBoardExecutionCheckpointEntity::toDomain);
+        if (checkpoint.isEmpty()) return Optional.empty();
+        if (!checkpoint.orElseThrow().taskId().equals(taskId)) throw new SecurityException("Checkpoint belongs to another task");
+        TaskBoardExecutionCheckpointPayloadEntity payload = entities.find(TaskBoardExecutionCheckpointPayloadEntity.class,
+                checkpointId.toString()).orElseThrow(() -> new TaskBoardStorageUnavailableException("Checkpoint payload is missing"));
+        return Optional.of(payload.toDomain(checkpoint.orElseThrow().payloadSha256()));
     }
 
     private IPostgresEntityStore requireEntities() {

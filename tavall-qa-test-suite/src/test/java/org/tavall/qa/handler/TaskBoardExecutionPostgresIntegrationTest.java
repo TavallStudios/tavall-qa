@@ -26,6 +26,8 @@ import org.tavall.qa.domain.execution.TaskBoardExecutionCheckpointData;
 import org.tavall.qa.domain.execution.TaskBoardExecutionLeaseData;
 import org.tavall.qa.domain.execution.TaskBoardExecutionSourceData;
 import org.tavall.qa.domain.execution.TaskBoardExecutionStatus;
+import org.tavall.qa.domain.execution.TaskBoardExecutionCheckpointPayloadData;
+import org.tavall.qa.domain.execution.TaskBoardExecutionDiffData;
 import org.tavall.qa.persistence.ITaskBoardDataHandler;
 import org.tavall.qa.persistence.ITaskBoardExecutionCheckpointDataHandler;
 import org.tavall.qa.persistence.TaskBoardDataHandler;
@@ -76,6 +78,7 @@ class TaskBoardExecutionPostgresIntegrationTest {
         TaskBoardExecutionCheckpointRequest request = checkpoint(lease, UUID.randomUUID(), "b".repeat(64));
         TaskBoardExecutionCheckpointData recorded = context.handler().appendCheckpoint(context.actor(), request);
         assertEquals(recorded, context.handler().appendCheckpoint(context.actor(), request));
+        assertEquals(request.payload(), context.handler().loadPayload(context.actor(), lease.taskId(), recorded.checkpointId()).orElseThrow());
         assertEquals(1, context.handler().checkpoints(context.actor(), lease.taskId(), lease.runId(), 10).size());
         assertEquals(1, context.tasks().findAuditEntries(lease.taskId()).stream()
                 .filter(event -> event.eventType() == TaskBoardAuditEventType.EXECUTION_CHECKPOINT_RECORDED).count());
@@ -93,7 +96,9 @@ class TaskBoardExecutionPostgresIntegrationTest {
         postgres.restart();
         Context restored = context(context.task(), context.actor());
         assertEquals(recorded, restored.handler().checkpoints(restored.actor(), lease.taskId(), lease.runId(), 10).getFirst());
-        assertEquals("tavall-storage://artifacts/sha256/" + "b".repeat(64), recorded.payloadReference().toString());
+        assertEquals(request.payload(), restored.handler().loadPayload(restored.actor(), lease.taskId(), recorded.checkpointId()).orElseThrow());
+        assertEquals("tavall-qa://tasks/" + lease.taskId() + "/execution-checkpoints/" + recorded.checkpointId() + "/payload",
+                recorded.payloadReference().toString());
     }
 
     @Test
@@ -159,6 +164,7 @@ class TaskBoardExecutionPostgresIntegrationTest {
         assertThrows(SecurityException.class,
                 () -> context.handler().appendCheckpoint(revoked, checkpoint(lease, UUID.randomUUID(), "b".repeat(64))));
         assertThrows(SecurityException.class, () -> context.handler().currentLease(assigned, UUID.randomUUID()));
+        assertThrows(SecurityException.class, () -> context.handler().loadPayload(revoked, lease.taskId(), UUID.randomUUID()));
         context.dependencies().removeDependency(ITaskBoardExecutionCheckpointHandler.class);
         assertThrows(IllegalStateException.class, () -> context.handler().currentLease(assigned, lease.taskId()));
     }
@@ -181,9 +187,16 @@ class TaskBoardExecutionPostgresIntegrationTest {
     }
 
     private static TaskBoardExecutionCheckpointRequest checkpoint(TaskBoardExecutionLeaseData lease, UUID id, String payload) {
+        TaskBoardExecutionCheckpointPayloadData context = payload("Acceptance instructions", payload);
         return new TaskBoardExecutionCheckpointRequest(id, lease,
-                new TaskBoardExecutionSourceData("TavallStudios/tavall-ai", "working/fixture", "a".repeat(40), "d".repeat(64)),
-                payload, "codex", TaskBoardExecutionStatus.COMPLETED);
+                new TaskBoardExecutionSourceData("TavallStudios/tavall-ai", "working/fixture", "a".repeat(40), context.diff().sha256()),
+                context, "codex", TaskBoardExecutionStatus.COMPLETED);
+    }
+
+    private static TaskBoardExecutionCheckpointPayloadData payload(String instructions, String nextAction) {
+        return new TaskBoardExecutionCheckpointPayloadData(1, instructions, List.of("Preserve task identity"),
+                TaskBoardExecutionDiffData.inline(""), List.of(), List.of(), List.of(), List.of(), List.of(),
+                List.of("tavall-agent-builder"), List.of(), List.of(), List.of(), List.of("REPOSITORY_READ"), List.of(), nextAction);
     }
 
     private static QaSubjectContext administrator() {

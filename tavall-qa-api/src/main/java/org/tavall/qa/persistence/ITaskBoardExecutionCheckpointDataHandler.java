@@ -2,6 +2,7 @@ package org.tavall.qa.persistence;
 
 import org.tavall.qa.domain.execution.TaskBoardExecutionCheckpointData;
 import org.tavall.qa.domain.execution.TaskBoardExecutionLeaseData;
+import org.tavall.qa.domain.execution.TaskBoardExecutionCheckpointPayloadData;
 import org.tavall.qa.request.execution.TaskBoardExecutionCheckpointRequest;
 import org.tavall.qa.request.execution.TaskBoardExecutionLeaseRequest;
 
@@ -19,4 +20,5 @@ public interface ITaskBoardExecutionCheckpointDataHandler {
     TaskBoardExecutionCheckpointData appendCheckpoint(TaskBoardExecutionCheckpointRequest request, UUID actorAccountId, Instant now);
     Optional<TaskBoardExecutionLeaseData> currentLease(UUID taskId);
     List<TaskBoardExecutionCheckpointData> checkpoints(UUID taskId, UUID runId, int limit);
+    Optional<TaskBoardExecutionCheckpointPayloadData> loadPayload(UUID taskId, UUID checkpointId);
 }

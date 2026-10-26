@@ -31,6 +31,6 @@ public record TaskBoardExecutionCheckpointData(UUID checkpointId, UUID taskId, U
     }
 
     public URI payloadReference() {
-        return URI.create("tavall-storage://artifacts/sha256/" + payloadSha256);
+        return URI.create("tavall-qa://tasks/" + taskId + "/execution-checkpoints/" + checkpointId + "/payload");
     }
 }

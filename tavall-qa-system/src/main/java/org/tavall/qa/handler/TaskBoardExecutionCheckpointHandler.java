@@ -9,6 +9,7 @@ import org.tavall.qa.domain.auth.QaEnvironmentGrant;
 import org.tavall.qa.domain.auth.QaSubjectContext;
 import org.tavall.qa.domain.execution.TaskBoardExecutionCheckpointData;
 import org.tavall.qa.domain.execution.TaskBoardExecutionLeaseData;
+import org.tavall.qa.domain.execution.TaskBoardExecutionCheckpointPayloadData;
 import org.tavall.qa.persistence.ITaskBoardDataHandler;
 import org.tavall.qa.persistence.ITaskBoardExecutionCheckpointDataHandler;
 import org.tavall.qa.request.execution.TaskBoardExecutionCheckpointRequest;
@@ -73,6 +74,12 @@ public final class TaskBoardExecutionCheckpointHandler extends GenerationOwnedDe
     public List<TaskBoardExecutionCheckpointData> checkpoints(QaSubjectContext subject, UUID taskId, UUID runId, int limit) {
         authorize(subject, taskId);
         return getInstance().taskBoardExecutionCheckpointDataHandler().checkpoints(taskId, runId, limit);
+    }
+
+    @Override
+    public Optional<TaskBoardExecutionCheckpointPayloadData> loadPayload(QaSubjectContext subject, UUID taskId, UUID checkpointId) {
+        authorize(subject, taskId);
+        return getInstance().taskBoardExecutionCheckpointDataHandler().loadPayload(taskId, checkpointId);
     }
 
     private void authorize(QaSubjectContext subject, UUID taskId) {
