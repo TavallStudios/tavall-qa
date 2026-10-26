@@ -56,8 +56,8 @@ Subsequent source `6bed27ee0cd7369f88c29cc0d2cce518851a6edd` adds atomic latest-
 ### Current Locations
 | Surface | Sync State | Location | Last Updated | Evidence |
 | --- | --- | --- | --- | --- |
-| GitHub | `PR_DRAFT` | `TavallStudios/tavall-qa/docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | 2026-10-25 2:17 AM PDT | Original docs PR #2; checkpoint implementation PR #3 |
-| Notion | `1:1_DRAFT_PR` | [Notion twin](https://app.notion.com/p/40438458ddfd812fb5f1d73a310307d1) | 2026-10-25 2:17 AM PDT | Existing typed page retained; checkpoint content update pending |
+| GitHub | `PR_DRAFT` | `TavallStudios/tavall-qa/docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | 2026-10-26 12:28 PM PDT | Original docs PR #2; checkpoint implementation PR #3 |
+| Notion | `1:1_DRAFT_PR` | [Notion twin](https://app.notion.com/p/40438458ddfd812fb5f1d73a310307d1) | 2026-10-26 12:28 PM PDT | Existing typed page retained; checkpoint content update pending |
 
 ### Update History
 | Timestamp | Surface | Event | Location | Previous Location | Evidence | Notes |
@@ -65,4 +65,5 @@ Subsequent source `6bed27ee0cd7369f88c29cc0d2cce518851a6edd` adds atomic latest-
 | 2026-10-25 2:17 AM PDT | GitHub | `UPDATED` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same file | Branch `docs/qa-board-examples-20261025` | Added verified source references, current design scope and footer. |
 
 | 2026-10-26 10:59 AM PDT | GitHub | `UPDATED` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same logical document from PR #2 | PR #3, source `fd44ada` and exact CI receipts | Documented real DI/Database checkpoint implementation; kept runtime, payload and provider-continuation gates separate. |
+| 2026-10-26 12:28 PM PDT | GitHub | `UPDATED` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same document | QA #3, source `63a3bbc` | Reconciled typed body persistence and current source-guarded resume candidate; PostgreSQL acceptance remains tied to `1fe4770`. |
 </details>

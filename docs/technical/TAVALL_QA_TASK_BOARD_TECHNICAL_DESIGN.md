@@ -104,8 +104,8 @@ Acceptance binds to exact source SHAs for each participating repository and the 
 ### Current Locations
 | Surface | Sync State | Location | Last Updated | Evidence |
 | --- | --- | --- | --- | --- |
-| GitHub | `1:1_DRAFT_PR` | `TavallStudios/tavall-qa/docs/technical/TAVALL_QA_TASK_BOARD_TECHNICAL_DESIGN.md` | 2026-10-25 2:17 AM PDT | [Draft PR](https://github.com/TavallStudios/tavall-qa/pull/2); linked Notion twin |
-| Notion | `1:1_DRAFT_PR` | [Notion twin](https://app.notion.com/p/40438458ddfd8142b3fef192175a7bfa) | 2026-10-25 2:17 AM PDT | Created Notion twin https://app.notion.com/p/40438458ddfd8142b3fef192175a7bfa |
+| GitHub | `1:1_DRAFT_PR` | `TavallStudios/tavall-qa/docs/technical/TAVALL_QA_TASK_BOARD_TECHNICAL_DESIGN.md` | 2026-10-26 12:28 PM PDT | [Draft PR](https://github.com/TavallStudios/tavall-qa/pull/2); linked Notion twin |
+| Notion | `1:1_DRAFT_PR` | [Notion twin](https://app.notion.com/p/40438458ddfd8142b3fef192175a7bfa) | 2026-10-26 12:28 PM PDT | Created Notion twin https://app.notion.com/p/40438458ddfd8142b3fef192175a7bfa |
 
 ### Update History
 | Timestamp | Surface | Event | Location | Previous Location | Evidence | Notes |
@@ -113,4 +113,5 @@ Acceptance binds to exact source SHAs for each participating repository and the 
 | 2026-10-25 2:17 AM PDT | GitHub | `UPDATED` | `docs/technical/TAVALL_QA_TASK_BOARD_TECHNICAL_DESIGN.md` | Same file | Branch `docs/qa-board-examples-20261025` | Added verified source references, current design scope and footer. |
 
 | 2026-10-26 10:59 AM PDT | GitHub | `UPDATED` | `docs/technical/TAVALL_QA_TASK_BOARD_TECHNICAL_DESIGN.md` | Same logical document from PR #2 | PR #3, source `fd44ada` and exact CI receipts | Documented real DI/Database checkpoint implementation; kept runtime, payload and provider-continuation gates separate. |
+| 2026-10-26 12:28 PM PDT | GitHub | `UPDATED` | `docs/technical/TAVALL_QA_TASK_BOARD_TECHNICAL_DESIGN.md` | Same document | QA #3, source `63a3bbc` | Reconciled typed body persistence and current source-guarded resume candidate; PostgreSQL acceptance remains tied to `1fe4770`. |
 </details>
