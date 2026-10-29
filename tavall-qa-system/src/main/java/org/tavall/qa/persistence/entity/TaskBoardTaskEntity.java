@@ -31,6 +31,11 @@ public class TaskBoardTaskEntity {
     public static final String FIND_BY_PROJECT =
             "TaskBoardTaskEntity.findByProject";
 
+    /** Shares the canonical task mutation lock with durable execution state transitions. */
+    public static String lockKey(UUID taskId) {
+        return "tavall-qa:task:" + java.util.Objects.requireNonNull(taskId, "taskId");
+    }
+
     @Id
     @Column(name = "task_id", nullable = false, length = 36)
     private String taskId;
