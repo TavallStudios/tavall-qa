@@ -18,7 +18,7 @@ public final class QaRoutes {
     public static final String WORKSPACE_TASK = "/workspace/{projectKey}/tasks/{taskId}";
     public static final String MESSAGES = "/messages/{key}";
 
-    // Mutations
+    // Server-side mutations
     public static final String PROJECTS_MUTATION = "/projects";
     public static final String TASKS_MUTATION = "/projects/{projectKey}/tasks";
     public static final String TASK_MUTATION = "/projects/{projectKey}/tasks/{taskId}";
@@ -31,16 +31,18 @@ public final class QaRoutes {
     public static final String TASK_REJECT_MUTATION = "/projects/{projectKey}/tasks/{taskId}/reject";
     public static final String ASSIGNMENTS_MUTATION = "/projects/{projectKey}/tasks/{taskId}/assignments";
     public static final String ASSIGNMENT_REVOKE_MUTATION = "/projects/{projectKey}/tasks/{taskId}/assignments/{assignmentId}/revoke";
-    public static final String EXECUTION_ROOT = "/api/qa/tasks/{taskId}/execution";
-    public static final String EXECUTION_RESUME_MUTATION = EXECUTION_ROOT + "/resume";
-    public static final String EXECUTION_RETRY_MUTATION = EXECUTION_ROOT + "/retry";
-    public static final String EXECUTION_CANCEL_MUTATION = EXECUTION_ROOT + "/cancel";
+    public static final String EXECUTION_RESUME_MUTATION = "/projects/{projectKey}/tasks/{taskId}/resume";
+    public static final String EXECUTION_RELEASE_MUTATION = "/projects/{projectKey}/tasks/{taskId}/lease/release";
+    public static final String EXECUTION_CANCEL_MUTATION = EXECUTION_RELEASE_MUTATION;
 
-    // Direct backend execution endpoints served by tavall-web PR #87
-    public static final String BACKEND_EXECUTION_TASK = "/api/execution/tasks/{taskId}";
+    // Direct backend execution endpoints served by tavall-web Routes.Api.QaExecution
+    public static final String BACKEND_EXECUTION_ROOT = "/api/execution";
+    public static final String BACKEND_EXECUTION_TASK = BACKEND_EXECUTION_ROOT + "/tasks/{taskId}";
     public static final String BACKEND_EXECUTION_LEASE = BACKEND_EXECUTION_TASK + "/lease";
+    public static final String BACKEND_EXECUTION_RENEW = BACKEND_EXECUTION_LEASE + "/renew";
     public static final String BACKEND_EXECUTION_RELEASE = BACKEND_EXECUTION_LEASE + "/release";
     public static final String BACKEND_EXECUTION_CHECKPOINTS = BACKEND_EXECUTION_TASK + "/checkpoints";
+    public static final String BACKEND_EXECUTION_PAYLOAD = BACKEND_EXECUTION_CHECKPOINTS + "/{checkpointId}/payload";
     public static final String BACKEND_EXECUTION_RESUME = BACKEND_EXECUTION_TASK + "/resume";
 
     // Legacy paths
@@ -90,24 +92,30 @@ public final class QaRoutes {
         return "/task-board/" + projectKey.trim() + "/tasks/" + taskId;
     }
 
-    public static String executionResume(UUID taskId) {
+    public static String executionResume(String projectKey, UUID taskId) {
+        Objects.requireNonNull(projectKey, "projectKey");
         Objects.requireNonNull(taskId, "taskId");
-        return "/api/qa/tasks/" + taskId + "/execution/resume";
+        return "/projects/" + projectKey.trim() + "/tasks/" + taskId + "/resume";
     }
 
-    public static String executionRetry(UUID taskId) {
+    public static String executionRelease(String projectKey, UUID taskId) {
+        Objects.requireNonNull(projectKey, "projectKey");
         Objects.requireNonNull(taskId, "taskId");
-        return "/api/qa/tasks/" + taskId + "/execution/retry";
+        return "/projects/" + projectKey.trim() + "/tasks/" + taskId + "/lease/release";
     }
 
-    public static String executionCancel(UUID taskId) {
-        Objects.requireNonNull(taskId, "taskId");
-        return "/api/qa/tasks/" + taskId + "/execution/cancel";
+    public static String executionCancel(String projectKey, UUID taskId) {
+        return executionRelease(projectKey, taskId);
     }
 
-    public static String backendExecutionResume(UUID taskId) {
+    public static String backendExecutionTask(UUID taskId) {
         Objects.requireNonNull(taskId, "taskId");
-        return "/api/execution/tasks/" + taskId + "/resume";
+        return "/api/execution/tasks/" + taskId;
+    }
+
+    public static String backendExecutionLease(UUID taskId) {
+        Objects.requireNonNull(taskId, "taskId");
+        return "/api/execution/tasks/" + taskId + "/lease";
     }
 
     public static String backendExecutionRelease(UUID taskId) {
@@ -115,19 +123,13 @@ public final class QaRoutes {
         return "/api/execution/tasks/" + taskId + "/lease/release";
     }
 
-    public static final class Execution {
-        public static final String ROOT = "/api/qa/tasks/{taskId}/execution";
-        public static final String RESUME = ROOT + "/resume";
-        public static final String RETRY = ROOT + "/retry";
-        public static final String CANCEL = ROOT + "/cancel";
+    public static String backendExecutionCheckpoints(UUID taskId) {
+        Objects.requireNonNull(taskId, "taskId");
+        return "/api/execution/tasks/" + taskId + "/checkpoints";
+    }
 
-        public static final String BACKEND_ROOT = "/api/execution/tasks/{taskId}";
-        public static final String BACKEND_LEASE = BACKEND_ROOT + "/lease";
-        public static final String BACKEND_RELEASE = BACKEND_LEASE + "/release";
-        public static final String BACKEND_CHECKPOINTS = BACKEND_ROOT + "/checkpoints";
-        public static final String BACKEND_RESUME = BACKEND_ROOT + "/resume";
-
-        private Execution() {
-        }
+    public static String backendExecutionResume(UUID taskId) {
+        Objects.requireNonNull(taskId, "taskId");
+        return "/api/execution/tasks/" + taskId + "/resume";
     }
 }

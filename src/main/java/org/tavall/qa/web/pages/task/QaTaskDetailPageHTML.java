@@ -655,13 +655,12 @@ public final class QaTaskDetailPageHTML {
         }
         section.child(evidenceLinksSection);
 
-        // 7. Actions: Resume / Retry / Cancel
+        // 7. Actions: Resume / Cancel (lease release)
         // Actions must respect the existing role checks (contributor/QA reviewer/admin)
         boolean allowResume = (isAdmin || isQaReviewer || isContributor) && execution.canResume();
-        boolean allowRetry = (isAdmin || isQaReviewer || isContributor) && execution.canRetry();
         boolean allowCancel = (isAdmin || isQaReviewer) && execution.canCancel();
 
-        if (allowResume || allowRetry || allowCancel) {
+        if (allowResume || allowCancel) {
             HTMLElement actionsDiv = HTML.div().classes(QaCSS.PUBLIC_STAFF_FORM_ACTIONS);
 
             UUID parsedTaskId;
@@ -671,15 +670,15 @@ public final class QaTaskDetailPageHTML {
                 parsedTaskId = null;
             }
 
-            String resumeUrl = parsedTaskId != null ? QaRoutes.executionResume(parsedTaskId) : QaRoutes.EXECUTION_ROOT + "/resume";
-            String retryUrl = parsedTaskId != null ? QaRoutes.executionRetry(parsedTaskId) : QaRoutes.EXECUTION_ROOT + "/retry";
-            String cancelUrl = parsedTaskId != null ? QaRoutes.executionCancel(parsedTaskId) : QaRoutes.EXECUTION_ROOT + "/cancel";
+            String resumeUrl = parsedTaskId != null
+                    ? QaRoutes.executionResume(projectKey, parsedTaskId)
+                    : "/projects/" + projectKey + "/tasks/" + taskId + "/resume";
+            String cancelUrl = parsedTaskId != null
+                    ? QaRoutes.executionRelease(projectKey, parsedTaskId)
+                    : "/projects/" + projectKey + "/tasks/" + taskId + "/lease/release";
 
             if (allowResume) {
                 actionsDiv.child(executionActionForm(taskId, resumeUrl, "Resume execution", QaCSS.GOLD_BUTTON, execution.runId(), context));
-            }
-            if (allowRetry) {
-                actionsDiv.child(executionActionForm(taskId, retryUrl, "Retry execution", QaCSS.GOLD_BUTTON, execution.runId(), context));
             }
             if (allowCancel) {
                 actionsDiv.child(executionActionForm(taskId, cancelUrl, "Cancel execution", QaCSS.GHOST_BUTTON, execution.runId(), context));

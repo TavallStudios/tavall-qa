@@ -1,7 +1,7 @@
 package org.tavall.qa.web.pages.task;
 
-import org.tavall.qa.domain.execution.TaskBoardExecutionCheckpointData;
-import org.tavall.qa.domain.execution.TaskBoardExecutionLeaseData;
+import org.tavall.qa.web.client.QaExecutionCheckpointResponse;
+import org.tavall.qa.web.client.QaExecutionLeaseResponse;
 
 import java.util.Comparator;
 import java.util.List;
@@ -21,7 +21,6 @@ public record QaTaskExecutionView(
         List<QaTaskExecutionCheckpointView> checkpoints,
         List<QaTaskExecutionEvidenceLink> evidenceLinks,
         boolean canResume,
-        boolean canRetry,
         boolean canCancel
 ) {
     public QaTaskExecutionView {
@@ -47,35 +46,40 @@ public record QaTaskExecutionView(
                 checkpoints,
                 evidenceLinks,
                 true,
-                true,
                 true
         );
     }
 
     public static QaTaskExecutionView from(
-            TaskBoardExecutionLeaseData lease,
-            List<TaskBoardExecutionCheckpointData> checkpoints,
+            QaExecutionLeaseResponse lease,
+            List<QaExecutionCheckpointResponse> checkpoints
+    ) {
+        return from(lease, checkpoints, null, null, List.of(), true, true);
+    }
+
+    public static QaTaskExecutionView from(
+            QaExecutionLeaseResponse lease,
+            List<QaExecutionCheckpointResponse> checkpoints,
             String quotaRestriction,
             String blockedReason,
             List<QaTaskExecutionEvidenceLink> evidenceLinks,
             boolean canResume,
-            boolean canRetry,
             boolean canCancel
     ) {
-        String leaseHolder = lease != null ? lease.ownerAccountId().toString() : null;
+        String leaseHolder = lease != null && lease.ownerAccountId() != null ? lease.ownerAccountId().toString() : null;
         UUID runId = lease != null ? lease.runId() : null;
         String providerId = null;
         List<QaTaskExecutionCheckpointView> checkpointViews = List.of();
         if (checkpoints != null && !checkpoints.isEmpty()) {
-            List<TaskBoardExecutionCheckpointData> sorted = checkpoints.stream()
-                    .sorted(Comparator.comparingLong(TaskBoardExecutionCheckpointData::sequence))
+            List<QaExecutionCheckpointResponse> sorted = checkpoints.stream()
+                    .sorted(Comparator.comparingLong(QaExecutionCheckpointResponse::sequence))
                     .toList();
             checkpointViews = sorted.stream()
                     .map(cp -> new QaTaskExecutionCheckpointView(
                             cp.checkpointId(),
                             cp.sequence(),
                             cp.providerId(),
-                            cp.status().name(),
+                            cp.status() != null ? cp.status() : "UNKNOWN",
                             cp.recordedAt(),
                             ""
                     ))
@@ -91,7 +95,6 @@ public record QaTaskExecutionView(
                 checkpointViews,
                 evidenceLinks,
                 canResume,
-                canRetry,
                 canCancel
         );
     }
