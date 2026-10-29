@@ -24,6 +24,11 @@ import org.tavall.qa.web.pages.workspace.QaWorkspacePageContext;
 import org.tavall.qa.view.TaskBoardTaskView;
 import org.tavall.qa.view.TaskBoardEvidenceView;
 import org.tavall.qa.web.pages.task.QaTaskPageContext;
+import org.tavall.qa.web.pages.task.QaTaskExecutionView;
+import org.tavall.qa.web.pages.task.QaTaskExecutionCheckpointView;
+import org.tavall.qa.web.pages.task.QaTaskExecutionEvidenceLink;
+import org.tavall.qa.web.pages.task.QaExecutionEvidenceType;
+import org.tavall.qa.web.routes.QaRoutes;
 import org.tavall.qa.web.pages.main.QaMainBoardPage;
 import org.tavall.qa.web.pages.project.QaProjectDetailPage;
 import org.tavall.qa.web.pages.task.QaTaskDetailPage;
@@ -305,4 +310,278 @@ class QaPagesTest {
         assertFalse(staleWorkspaceHtml.contains("Accept task with this evidence"));
     }
 
+    @Test
+    @DisplayName("Task Detail execution section renders diagnostics and actions for authorized staff")
+    void taskDetailExecutionSectionRenderedForAuthorizedStaff() {
+        UUID taskId = UUID.randomUUID();
+        UUID runId = UUID.randomUUID();
+        UUID checkpointId1 = UUID.randomUUID();
+        UUID checkpointId2 = UUID.randomUUID();
+        Instant now = Instant.now();
+
+        TaskBoardProject project = new TaskBoardProject(
+                "tavall-pvp", "Tavall PvP", "Competitive arena", TaskBoardProjectStatus.ACTIVE,
+                TaskBoardAudience.PUBLIC, 0, now, now
+        );
+        TaskBoardTask task = new TaskBoardTask(
+                taskId, "tavall-pvp", "ffa", "Fix knockback vector", "Fix knockback vector",
+                "Internal description", "Summary", TaskBoardTaskStatus.ACTIVE, TaskBoardTaskPriority.HIGH,
+                TaskBoardQaStatus.NHV, TaskBoardAudience.PUBLIC, 3, false, "github", "", false,
+                UUID.randomUUID(), UUID.randomUUID(), null, null, null, null, 0, now, now
+        );
+        TaskBoardTaskView taskView = new TaskBoardTaskView(project, task, List.of(), List.of(), List.of(), List.of(), List.of());
+
+        QaTaskExecutionCheckpointView cp1 = new QaTaskExecutionCheckpointView(
+                checkpointId1, 1, "codex-tj", "QUEUED", now.minusSeconds(300), "Initialize worktree lease"
+        );
+        QaTaskExecutionCheckpointView cp2 = new QaTaskExecutionCheckpointView(
+                checkpointId2, 2, "codex-tj", "RUNNING", now.minusSeconds(120), "Executing unit tests"
+        );
+
+        List<QaTaskExecutionEvidenceLink> links = List.of(
+                QaTaskExecutionEvidenceLink.compile("Gradle compileJava logs", "https://ci.tavall.org/builds/9001/compile"),
+                QaTaskExecutionEvidenceLink.test("JUnit test results", "https://ci.tavall.org/builds/9001/test"),
+                QaTaskExecutionEvidenceLink.ci("GitHub Actions CI run", "https://github.com/TavallStudios/tavall-web-qa/actions/runs/12345")
+        );
+
+        QaTaskExecutionView execution = new QaTaskExecutionView(
+                "operator-401",
+                "codex-tj",
+                runId,
+                "Tier-2 Codex API limit: 80% quota utilized",
+                "Awaiting compilation evidence check",
+                List.of(cp1, cp2),
+                links,
+                true,
+                true,
+                true
+        );
+
+        QaTaskPageContext context = new QaTaskPageContext(
+                "_csrf", "test-csrf-token", java.util.Optional.empty(), Set.of(),
+                Set.of(QaEnvironmentGrant.DEV), Set.of(QaEnvironmentGrant.DEV), Set.of(), Set.of(),
+                java.util.Optional.of(execution)
+        );
+
+        QaTaskDetailPage page = QaTaskDetailPage.build(taskView, true, true, context);
+        String html = renderer.render(page).body();
+
+        // 1. Header and metadata
+        assertTrue(html.contains("Execution &amp; Diagnostics") || html.contains("Execution & Diagnostics"));
+        assertTrue(html.contains("Lease Holder"));
+        assertTrue(html.contains("operator-401"));
+        assertTrue(html.contains("Provider ID"));
+        assertTrue(html.contains("codex-tj"));
+        assertTrue(html.contains("Run ID"));
+        assertTrue(html.contains(runId.toString()));
+        assertTrue(html.contains("Quota Restriction"));
+        assertTrue(html.contains("Tier-2 Codex API limit: 80% quota utilized"));
+        assertTrue(html.contains("Blocked Reason"));
+        assertTrue(html.contains("Awaiting compilation evidence check"));
+
+        // 2. Checkpoints
+        assertTrue(html.contains("Ordered Checkpoints"));
+        assertTrue(html.contains("Checkpoint #1 · QUEUED"));
+        assertTrue(html.contains("Checkpoint #2 · RUNNING"));
+        assertTrue(html.contains("Next action: Initialize worktree lease"));
+        assertTrue(html.contains("Next action: Executing unit tests"));
+        assertTrue(html.contains(checkpointId1.toString()));
+        assertTrue(html.contains(checkpointId2.toString()));
+
+        // 3. Evidence links
+        assertTrue(html.contains("Compile, Test &amp; CI Evidence") || html.contains("Compile, Test & CI Evidence"));
+        assertTrue(html.contains("Gradle compileJava logs"));
+        assertTrue(html.contains("https://ci.tavall.org/builds/9001/compile"));
+        assertTrue(html.contains("JUnit test results"));
+        assertTrue(html.contains("https://ci.tavall.org/builds/9001/test"));
+        assertTrue(html.contains("GitHub Actions CI run"));
+        assertTrue(html.contains("https://github.com/TavallStudios/tavall-web-qa/actions/runs/12345"));
+
+        // 4. Action buttons and routes
+        assertTrue(html.contains("/api/qa/tasks/" + taskId + "/execution/resume"));
+        assertTrue(html.contains("/api/qa/tasks/" + taskId + "/execution/retry"));
+        assertTrue(html.contains("/api/qa/tasks/" + taskId + "/execution/cancel"));
+        assertTrue(html.contains("Resume execution"));
+        assertTrue(html.contains("Retry execution"));
+        assertTrue(html.contains("Cancel execution"));
+        assertTrue(html.contains("test-csrf-token"));
+    }
+
+    @Test
+    @DisplayName("Public views must not show execution internals")
+    void publicViewsDoNotShowExecutionInternals() {
+        UUID taskId = UUID.randomUUID();
+        UUID runId = UUID.randomUUID();
+        Instant now = Instant.now();
+
+        TaskBoardProject project = new TaskBoardProject(
+                "tavall-pvp", "Tavall PvP", "Competitive arena", TaskBoardProjectStatus.ACTIVE,
+                TaskBoardAudience.PUBLIC, 0, now, now
+        );
+        TaskBoardTask task = new TaskBoardTask(
+                taskId, "tavall-pvp", "ffa", "Fix knockback vector", "Fix knockback vector",
+                "Internal description", "Summary", TaskBoardTaskStatus.ACTIVE, TaskBoardTaskPriority.HIGH,
+                TaskBoardQaStatus.NHV, TaskBoardAudience.PUBLIC, 3, false, "github", "", false,
+                UUID.randomUUID(), UUID.randomUUID(), null, null, null, null, 0, now, now
+        );
+        TaskBoardTaskView taskView = new TaskBoardTaskView(project, task, List.of(), List.of(), List.of(), List.of(), List.of());
+
+        QaTaskExecutionView execution = new QaTaskExecutionView(
+                "secret-operator-uuid",
+                "internal-provider-xyz",
+                runId,
+                "Internal rate limit",
+                "Secret blocked reason",
+                List.of(new QaTaskExecutionCheckpointView(UUID.randomUUID(), 1, "internal-provider-xyz", "RUNNING", now, "Run private step")),
+                List.of(QaTaskExecutionEvidenceLink.ci("Internal CI", "https://private-ci.internal/build/1")),
+                true,
+                true,
+                true
+        );
+
+        // Public read-only context (no staff/reviewer/contributor roles)
+        QaTaskPageContext publicContext = QaTaskPageContext.readOnly().withExecution(execution);
+
+        QaTaskDetailPage page = QaTaskDetailPage.build(taskView, false, false, publicContext);
+        String html = renderer.render(page).body();
+
+        // Must not contain any execution internals
+        assertFalse(html.contains("Execution & Diagnostics"));
+        assertFalse(html.contains("Execution &amp; Diagnostics"));
+        assertFalse(html.contains("secret-operator-uuid"));
+        assertFalse(html.contains("internal-provider-xyz"));
+        assertFalse(html.contains("Internal rate limit"));
+        assertFalse(html.contains("Secret blocked reason"));
+        assertFalse(html.contains("Run private step"));
+        assertFalse(html.contains("private-ci.internal"));
+        assertFalse(html.contains("/execution/resume"));
+        assertFalse(html.contains("/execution/retry"));
+        assertFalse(html.contains("/execution/cancel"));
+    }
+
+    @Test
+    @DisplayName("Execution actions respect role checks: contributor cannot cancel, reviewer and admin can")
+    void executionActionsRespectRoleChecks() {
+        UUID taskId = UUID.randomUUID();
+        UUID runId = UUID.randomUUID();
+        Instant now = Instant.now();
+
+        TaskBoardProject project = new TaskBoardProject(
+                "tavall-pvp", "Tavall PvP", "Competitive arena", TaskBoardProjectStatus.ACTIVE,
+                TaskBoardAudience.PUBLIC, 0, now, now
+        );
+        TaskBoardTask task = new TaskBoardTask(
+                taskId, "tavall-pvp", "ffa", "Fix knockback vector", "Fix knockback vector",
+                "Internal description", "Summary", TaskBoardTaskStatus.ACTIVE, TaskBoardTaskPriority.HIGH,
+                TaskBoardQaStatus.NHV, TaskBoardAudience.PUBLIC, 3, false, "github", "", false,
+                UUID.randomUUID(), UUID.randomUUID(), null, null, null, null, 0, now, now
+        );
+        TaskBoardTaskView taskView = new TaskBoardTaskView(project, task, List.of(), List.of(), List.of(), List.of(), List.of());
+
+        QaTaskExecutionView execution = new QaTaskExecutionView(
+                "worker-1", "codex", runId, null, null, List.of(), List.of(), true, true, true
+        );
+
+        // 1. Contributor (evidence submission grant, but not reviewer or admin)
+        QaTaskPageContext contributorContext = new QaTaskPageContext(
+                "_csrf", "token", java.util.Optional.empty(), Set.of(),
+                Set.of(QaEnvironmentGrant.DEV), Set.of(), Set.of(), Set.of(),
+                java.util.Optional.of(execution)
+        );
+        QaTaskDetailPage contributorPage = QaTaskDetailPage.build(taskView, false, false, contributorContext);
+        String contributorHtml = renderer.render(contributorPage).body();
+
+        assertTrue(contributorHtml.contains("Resume execution"));
+        assertTrue(contributorHtml.contains("Retry execution"));
+        assertFalse(contributorHtml.contains("Cancel execution"));
+
+        // 2. QA Reviewer (review grant)
+        QaTaskPageContext reviewerContext = new QaTaskPageContext(
+                "_csrf", "token", java.util.Optional.empty(), Set.of(),
+                Set.of(), Set.of(QaEnvironmentGrant.DEV), Set.of(), Set.of(),
+                java.util.Optional.of(execution)
+        );
+        QaTaskDetailPage reviewerPage = QaTaskDetailPage.build(taskView, false, false, reviewerContext);
+        String reviewerHtml = renderer.render(reviewerPage).body();
+
+        assertTrue(reviewerHtml.contains("Resume execution"));
+        assertTrue(reviewerHtml.contains("Retry execution"));
+        assertTrue(reviewerHtml.contains("Cancel execution"));
+
+        // 3. Admin (canManage = true)
+        QaTaskPageContext adminContext = new QaTaskPageContext(
+                "_csrf", "token", java.util.Optional.empty(), Set.of(),
+                Set.of(), Set.of(), Set.of(), Set.of(),
+                java.util.Optional.of(execution)
+        );
+        QaTaskDetailPage adminPage = QaTaskDetailPage.build(taskView, true, false, adminContext);
+        String adminHtml = renderer.render(adminPage).body();
+
+        assertTrue(adminHtml.contains("Resume execution"));
+        assertTrue(adminHtml.contains("Retry execution"));
+        assertTrue(adminHtml.contains("Cancel execution"));
+    }
+
+    @Test
+    @DisplayName("Checkpoints are rendered in ascending sequence order regardless of input order")
+    void checkpointsRenderedInAscendingOrder() {
+        UUID taskId = UUID.randomUUID();
+        UUID runId = UUID.randomUUID();
+        Instant now = Instant.now();
+
+        TaskBoardProject project = new TaskBoardProject(
+                "tavall-pvp", "Tavall PvP", "Competitive arena", TaskBoardProjectStatus.ACTIVE,
+                TaskBoardAudience.PUBLIC, 0, now, now
+        );
+        TaskBoardTask task = new TaskBoardTask(
+                taskId, "tavall-pvp", "ffa", "Task", "Task",
+                "Desc", "Sum", TaskBoardTaskStatus.ACTIVE, TaskBoardTaskPriority.NORMAL,
+                TaskBoardQaStatus.NHV, TaskBoardAudience.PUBLIC, 1, false, "github", "", false,
+                UUID.randomUUID(), UUID.randomUUID(), null, null, null, null, 0, now, now
+        );
+        TaskBoardTaskView taskView = new TaskBoardTaskView(project, task, List.of(), List.of(), List.of(), List.of(), List.of());
+
+        // Pass checkpoints in unordered sequence: 5, 1, 3
+        QaTaskExecutionCheckpointView cp5 = new QaTaskExecutionCheckpointView(UUID.randomUUID(), 5, "p1", "RUNNING", now, "Step 5");
+        QaTaskExecutionCheckpointView cp1 = new QaTaskExecutionCheckpointView(UUID.randomUUID(), 1, "p1", "QUEUED", now, "Step 1");
+        QaTaskExecutionCheckpointView cp3 = new QaTaskExecutionCheckpointView(UUID.randomUUID(), 3, "p1", "RUNNING", now, "Step 3");
+
+        QaTaskExecutionView execution = new QaTaskExecutionView(
+                "worker", "p1", runId, null, null, List.of(cp5, cp1, cp3), List.of(), false, false, false
+        );
+
+        QaTaskDetailPage page = QaTaskDetailPage.build(taskView, true, false, QaTaskPageContext.readOnly(), execution);
+        String html = renderer.render(page).body();
+
+        int pos1 = html.indexOf("Checkpoint #1");
+        int pos3 = html.indexOf("Checkpoint #3");
+        int pos5 = html.indexOf("Checkpoint #5");
+
+        assertTrue(pos1 > 0 && pos3 > 0 && pos5 > 0);
+        assertTrue(pos1 < pos3);
+        assertTrue(pos3 < pos5);
+    }
+
+    @Test
+    @DisplayName("QaRoutes execution routes and helpers match backend contracts")
+    void executionRoutesMatchBackendContracts() {
+        UUID taskId = UUID.randomUUID();
+
+        org.junit.jupiter.api.Assertions.assertEquals("/api/qa/tasks/" + taskId + "/execution/resume", QaRoutes.executionResume(taskId));
+        org.junit.jupiter.api.Assertions.assertEquals("/api/qa/tasks/" + taskId + "/execution/retry", QaRoutes.executionRetry(taskId));
+        org.junit.jupiter.api.Assertions.assertEquals("/api/qa/tasks/" + taskId + "/execution/cancel", QaRoutes.executionCancel(taskId));
+        org.junit.jupiter.api.Assertions.assertEquals("/api/execution/tasks/" + taskId + "/resume", QaRoutes.backendExecutionResume(taskId));
+        org.junit.jupiter.api.Assertions.assertEquals("/api/execution/tasks/" + taskId + "/lease/release", QaRoutes.backendExecutionRelease(taskId));
+
+        org.junit.jupiter.api.Assertions.assertEquals("/api/qa/tasks/{taskId}/execution", QaRoutes.Execution.ROOT);
+        org.junit.jupiter.api.Assertions.assertEquals("/api/qa/tasks/{taskId}/execution/resume", QaRoutes.Execution.RESUME);
+        org.junit.jupiter.api.Assertions.assertEquals("/api/qa/tasks/{taskId}/execution/retry", QaRoutes.Execution.RETRY);
+        org.junit.jupiter.api.Assertions.assertEquals("/api/qa/tasks/{taskId}/execution/cancel", QaRoutes.Execution.CANCEL);
+
+        org.junit.jupiter.api.Assertions.assertEquals("/api/execution/tasks/{taskId}", QaRoutes.Execution.BACKEND_ROOT);
+        org.junit.jupiter.api.Assertions.assertEquals("/api/execution/tasks/{taskId}/lease", QaRoutes.Execution.BACKEND_LEASE);
+        org.junit.jupiter.api.Assertions.assertEquals("/api/execution/tasks/{taskId}/lease/release", QaRoutes.Execution.BACKEND_RELEASE);
+        org.junit.jupiter.api.Assertions.assertEquals("/api/execution/tasks/{taskId}/checkpoints", QaRoutes.Execution.BACKEND_CHECKPOINTS);
+        org.junit.jupiter.api.Assertions.assertEquals("/api/execution/tasks/{taskId}/resume", QaRoutes.Execution.BACKEND_RESUME);
+    }
 }

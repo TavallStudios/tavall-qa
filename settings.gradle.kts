@@ -97,7 +97,11 @@ if (!tavallWebBuild.isNullOrBlank()) {
 
 val tavallQaBuild = providers.gradleProperty("tavallQaBuild")
     .orElse(providers.environmentVariable("TAVALL_QA_BUILD"))
-    .orElse(providers.provider { file("/srv/dev-storage/workspaces/tavall-qa/repo_root").takeIf { it.isDirectory }?.absolutePath ?: "" })
+    .orElse(providers.provider {
+        file("/srv/dev-storage/workspaces/tavall-qa/working/execution-checkpoints-01a175ae").takeIf { it.isDirectory }?.absolutePath
+            ?: file("/srv/dev-storage/workspaces/tavall-qa/repo_root").takeIf { it.isDirectory }?.absolutePath
+            ?: ""
+    })
     .orNull
 if (!tavallQaBuild.isNullOrBlank()) {
     val buildDirectory = file(tavallQaBuild).canonicalFile
