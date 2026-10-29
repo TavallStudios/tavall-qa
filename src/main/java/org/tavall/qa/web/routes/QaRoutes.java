@@ -35,15 +35,6 @@ public final class QaRoutes {
     public static final String EXECUTION_RELEASE_MUTATION = "/projects/{projectKey}/tasks/{taskId}/lease/release";
     public static final String EXECUTION_CANCEL_MUTATION = EXECUTION_RELEASE_MUTATION;
 
-    // Direct backend execution endpoints served by tavall-web Routes.Api.QaExecution
-    public static final String BACKEND_EXECUTION_ROOT = "/api/execution";
-    public static final String BACKEND_EXECUTION_TASK = BACKEND_EXECUTION_ROOT + "/tasks/{taskId}";
-    public static final String BACKEND_EXECUTION_LEASE = BACKEND_EXECUTION_TASK + "/lease";
-    public static final String BACKEND_EXECUTION_RENEW = BACKEND_EXECUTION_LEASE + "/renew";
-    public static final String BACKEND_EXECUTION_RELEASE = BACKEND_EXECUTION_LEASE + "/release";
-    public static final String BACKEND_EXECUTION_CHECKPOINTS = BACKEND_EXECUTION_TASK + "/checkpoints";
-    public static final String BACKEND_EXECUTION_PAYLOAD = BACKEND_EXECUTION_CHECKPOINTS + "/{checkpointId}/payload";
-    public static final String BACKEND_EXECUTION_RESUME = BACKEND_EXECUTION_TASK + "/resume";
 
     // Legacy paths
     public static final String LEGACY_ROOT = "/task-board";

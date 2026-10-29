@@ -29,9 +29,6 @@ import org.tavall.qa.web.pages.task.QaTaskExecutionCheckpointView;
 import org.tavall.qa.web.pages.task.QaTaskExecutionEvidenceLink;
 import org.tavall.qa.web.pages.task.QaExecutionEvidenceType;
 import org.tavall.qa.web.routes.QaRoutes;
-import org.tavall.qa.web.client.QaExecutionCheckpointResponse;
-import org.tavall.qa.web.client.QaExecutionLeaseResponse;
-import org.tavall.qa.web.client.QaTaskExecutionClient;
 import org.tavall.qa.web.pages.main.QaMainBoardPage;
 import org.tavall.qa.web.pages.project.QaProjectDetailPage;
 import org.tavall.qa.web.pages.task.QaTaskDetailPage;
@@ -583,89 +580,5 @@ class QaPagesTest {
         assertEquals("/api/execution/tasks/" + taskId + "/checkpoints", QaRoutes.backendExecutionCheckpoints(taskId));
         assertEquals("/api/execution/tasks/" + taskId + "/resume", QaRoutes.backendExecutionResume(taskId));
 
-        assertEquals("/api/execution/tasks/{taskId}", QaRoutes.BACKEND_EXECUTION_TASK);
-        assertEquals("/api/execution/tasks/{taskId}/lease", QaRoutes.BACKEND_EXECUTION_LEASE);
-        assertEquals("/api/execution/tasks/{taskId}/lease/release", QaRoutes.BACKEND_EXECUTION_RELEASE);
-        assertEquals("/api/execution/tasks/{taskId}/checkpoints", QaRoutes.BACKEND_EXECUTION_CHECKPOINTS);
-        assertEquals("/api/execution/tasks/{taskId}/resume", QaRoutes.BACKEND_EXECUTION_RESUME);
-    }
-
-    @Test
-    @DisplayName("Populated execution view comes from backend lease and checkpoint responses")
-    void populatedExecutionViewFromBackendResponses() {
-        UUID taskId = UUID.randomUUID();
-        UUID runId = UUID.randomUUID();
-        UUID leaseId = UUID.randomUUID();
-        UUID ownerAccountId = UUID.randomUUID();
-        Instant now = Instant.now();
-
-        QaExecutionLeaseResponse lease = new QaExecutionLeaseResponse(
-                taskId,
-                runId,
-                leaseId,
-                ownerAccountId,
-                1L,
-                2L,
-                "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-                now.plusSeconds(3600)
-        );
-
-        QaExecutionCheckpointResponse cp2 = new QaExecutionCheckpointResponse(
-                UUID.randomUUID(), taskId, runId, leaseId, 2L,
-                "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-                "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
-                "codex-worker-2", "RUNNING", ownerAccountId, now.minusSeconds(60)
-        );
-        QaExecutionCheckpointResponse cp1 = new QaExecutionCheckpointResponse(
-                UUID.randomUUID(), taskId, runId, leaseId, 1L,
-                "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-                "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
-                "codex-worker-1", "QUEUED", ownerAccountId, now.minusSeconds(180)
-        );
-
-        QaTaskExecutionClient mockClient = new QaTaskExecutionClient() {
-            @Override
-            public Optional<QaExecutionLeaseResponse> fetchLease(UUID tId) {
-                return tId.equals(taskId) ? Optional.of(lease) : Optional.empty();
-            }
-
-            @Override
-            public List<QaExecutionCheckpointResponse> fetchCheckpoints(UUID tId, UUID rId) {
-                return tId.equals(taskId) && rId.equals(runId) ? List.of(cp2, cp1) : List.of();
-            }
-        };
-
-        // 1. Public view (isStaff = false) must return empty execution view
-        Optional<QaTaskExecutionView> publicExecution = mockClient.populateExecutionView(taskId, false);
-        assertTrue(publicExecution.isEmpty());
-
-        QaTaskPageContext publicContext = QaTaskPageContext.readOnly().withExecution(mockClient, taskId, false);
-        assertTrue(publicContext.execution().isEmpty());
-
-        // 2. Authorized staff view (isStaff = true) populates from backend lease & checkpoints
-        Optional<QaTaskExecutionView> staffExecution = mockClient.populateExecutionView(taskId, true);
-        assertTrue(staffExecution.isPresent());
-
-        QaTaskExecutionView view = staffExecution.get();
-        assertEquals(ownerAccountId.toString(), view.leaseHolder());
-        assertEquals(runId, view.runId());
-        assertEquals("codex-worker-2", view.providerId());
-        assertTrue(view.canResume());
-        assertTrue(view.canCancel());
-
-        // Checkpoints sorted in ascending sequence order
-        assertEquals(2, view.checkpoints().size());
-        assertEquals(1L, view.checkpoints().get(0).sequence());
-        assertEquals("QUEUED", view.checkpoints().get(0).status());
-        assertEquals(2L, view.checkpoints().get(1).sequence());
-        assertEquals("RUNNING", view.checkpoints().get(1).status());
-
-        // Context with populated execution
-        QaTaskPageContext staffContext = new QaTaskPageContext(
-                "_csrf", "token", Optional.empty(), Set.of(),
-                Set.of(QaEnvironmentGrant.DEV), Set.of(), Set.of(), Set.of()
-        ).withExecution(mockClient, taskId, true);
-        assertTrue(staffContext.execution().isPresent());
-        assertEquals(view, staffContext.execution().get());
     }
 }

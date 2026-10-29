@@ -1,7 +1,6 @@
 package org.tavall.qa.web.pages.task;
 
 import org.tavall.qa.domain.auth.QaEnvironmentGrant;
-import org.tavall.qa.web.client.QaTaskExecutionClient;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -62,17 +61,5 @@ public record QaTaskPageContext(
                 commentEnvironments,
                 Optional.ofNullable(executionView)
         );
-    }
-
-    /**
-     * Populates execution data from the QA execution backend client for authorized staff only.
-     * If {@code isStaff} is false or client is null, returns this context with no execution data,
-     * ensuring public views remain free of execution internals.
-     */
-    public QaTaskPageContext withExecution(QaTaskExecutionClient client, UUID taskId, boolean isStaff) {
-        if (client == null || !isStaff || taskId == null) {
-            return this;
-        }
-        return withExecution(client.populateExecutionView(taskId, true).orElse(null));
     }
 }
