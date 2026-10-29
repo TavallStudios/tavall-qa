@@ -32,6 +32,28 @@ PostgreSQL ──> sole durable Task Board and QA authority
 
 The QA source module is classified as `SYSTEM` because it owns the Task Board capability and its implementation fan-in. Its module/artifact identity is `tavall-qa-system`; its runtime owner remains the existing Web application. A separate QA process, auth service, or database is not justified by the current lifecycle or consumers.
 
+## Real production patterns and next QA Board integration
+
+The current `tavall-qa` repository already has mapped-JPA and typed Task Board logic. Treat the following as authoritative **source examples**, not snippets to copy into a competing service:
+
+- [`TaskBoardQueryHandler`](https://github.com/TavallStudios/tavall-qa/blob/85779a99e8ab338c0366e3958d2a58da3023747b/tavall-qa-system/src/main/java/org/tavall/qa/handler/TaskBoardQueryHandler.java) implements the `ITaskBoardQueryHandler` boundary, obtains `ITaskBoardDataHandler`, and emits public/staff projections. A new web/Notion adapter must request filtered views from this owner rather than query task rows directly.
+- [`TaskBoardTaskEntity`](https://github.com/TavallStudios/tavall-qa/blob/85779a99e8ab338c0366e3958d2a58da3023747b/tavall-qa-system/src/main/java/org/tavall/qa/persistence/entity/TaskBoardTaskEntity.java) persists source reference, account/verification identity, task revisions and evidence linkage. Notion/GitHub synchronization should match stable external IDs to the owning QA task and handle revision conflicts, **not invent a second status authority**.
+- [`TaskBoardMutationHandler`](https://github.com/TavallStudios/tavall-qa/blob/85779a99e8ab338c0366e3958d2a58da3023747b/tavall-qa-system/src/main/java/org/tavall/qa/handler/TaskBoardMutationHandler.java) is the owning mutation boundary. Do not create direct database writes in browser actions or provider hooks.
+
+##### Why
+Task acceptance, evidence and human verification must use one atomic, audited authority. A dashboard action, GitHub label or Notion checkbox does not independently establish QA acceptance.
+
+### Approved October 2026 consumers
+
+- **Task projection:** Notion planning tasks may map 1:1 to executable QA task identities, with GitHub issue/PR refs mirrored for traceability. Resolve conflicts and keep role/owner/source evidence; retain the older Linear operating model as migration history until reconciled.
+- **WebMCP migration:** Proposed WebMCP task/QA views become Tavall Account-role-aware QA Board views. Existing `agent-webmcp` bounded service operations remain distinct until audited and explicitly migrated, not automatically deleted.
+- **Agent provider continuity:** Open Harness may checkpoint provider sessions, while QA owns task state and evidence, Tavall AI owns roles, and Account controls scope.
+- **Visual acceptance:** Web QA UI must reuse the approved product-specific Forge information architecture, with actual desktop/mobile screenshot and denied-state tests. No invented public progress, no implicit authorization from a hidden UI element.
+
+### Acceptance gates
+
+Verify actor/tenant grant on each read/write, source task revision and idempotent external synchronization, role-aware public/staff views, revocation and rejected evidence, migration `027`/`028` on a real ephemeral PostgreSQL test database, and same-source Web E2E. Record executed tests, exact SHA and runtime deployment in PROGRESSION rather than calling this design proof of availability.
+
 ## Authorization boundary
 
 The authenticated Tavall Account principal is resolved to a stable Account ID. Each request reads the current Account status, active QA entitlement grants, linked Minecraft identity, and active organization context with the `tavall-web` service binding. QA runs inside the shared Web runtime, so it does not invent a separate `qa` service binding. QA class, tier, environment grants, task assignment, and capability remain independent facts. No Spring `ROLE_STAFF`, SSO provider, hostname, display name, or tier alone grants QA authority.
@@ -59,3 +81,19 @@ Historical Task Board UI and PR lineage under `tavall-mc` are reference material
 The current progress aggregator computes weighted public progress inside the QA authority. Cache/event publication, CMS widgets, roadmap projections, curated Discord milestones, and public receipts must attach to existing Tavall owners through typed contracts after those owners and consumers are verified. No placeholder subscriber or duplicate progress store is introduced. The PvP QA repository and PRs referenced as #155 and #179–182 must be verified by repository identity before any source or VQC progression is treated as authoritative.
 
 Acceptance binds to exact source SHAs for each participating repository and the actual Tavall Web DEVELOPMENT/STAGING runtime. Required checks include direct HTTP privacy and authorization, mapped-JPA migration/persistence behavior, task assignment/evidence/review/acceptance/Human Verify and invalidation, desktop/mobile browser behavior at the accepted layouts, shared runtime composition, and health/routing. Source, CI, artifact, migration, deployment, DNS, and public browser acceptance are recorded separately; none is inferred from the presence of a host config or a local build. Current local source-test results are recorded in the module progression documents; PostgreSQL, remote CI, browser, and deployment gates are tracked independently.
+
+<details>
+<summary>Documentation Update State</summary>
+
+### Current Locations
+| Surface | Sync State | Location | Last Updated | Evidence |
+| --- | --- | --- | --- | --- |
+| GitHub | `1:1_DRAFT_PR` | `TavallStudios/tavall-qa/docs/technical/TAVALL_QA_TASK_BOARD_TECHNICAL_DESIGN.md` | 2026-10-25 2:17 AM PDT | [Draft PR](https://github.com/TavallStudios/tavall-qa/pull/2); linked Notion twin |
+| Notion | `1:1_DRAFT_PR` | [Notion twin](https://app.notion.com/p/40438458ddfd8142b3fef192175a7bfa) | 2026-10-25 2:17 AM PDT | Created Notion twin https://app.notion.com/p/40438458ddfd8142b3fef192175a7bfa |
+
+### Update History
+| Timestamp | Surface | Event | Location | Previous Location | Evidence | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-25 2:17 AM PDT | GitHub | `UPDATED` | `docs/technical/TAVALL_QA_TASK_BOARD_TECHNICAL_DESIGN.md` | Same file | Branch `docs/qa-board-examples-20261025` | Added verified source references, current design scope and footer. |
+
+</details>
