@@ -81,8 +81,8 @@ class TaskBoardFileMirrorIntegrationTest {
     private DependencyMap dependencies;
     private TaskBoardDataHandler tasks;
     private TaskBoardMutationHandler mutations;
-    private TaskBoardExecutionCheckpointDataHandler checkpointData;
-    private TaskBoardExecutionCheckpointHandler checkpointHandler;
+    private ITaskBoardExecutionCheckpointDataHandler checkpointData;
+    private ITaskBoardExecutionCheckpointHandler checkpointHandler;
     private TaskBoardFileMirrorHandler mirrorHandler;
     private QaSubjectContext administrator;
     private FilesystemAtomicOperations atomicOps;
@@ -115,8 +115,8 @@ class TaskBoardFileMirrorIntegrationTest {
         dependencies.registerInstance(Clock.class, Clock.fixed(NOW, ZoneOffset.UTC));
         dependencies.registerInstance(TaskBoardFileMirrorSettings.class, new TaskBoardFileMirrorSettings(mirrorRoot));
 
-        mirrorHandler = dependencies.registerInstance(ITaskBoardFileMirrorHandler.class,
-                new TaskBoardFileMirrorHandler());
+        mirrorHandler = new TaskBoardFileMirrorHandler();
+        dependencies.registerInstance(ITaskBoardFileMirrorHandler.class, mirrorHandler);
         dependencies.registerInstance(TaskBoardFileMirrorHandler.class, mirrorHandler);
 
         tasks = new TaskBoardDataHandler(postgres.database());
@@ -125,12 +125,13 @@ class TaskBoardFileMirrorIntegrationTest {
 
         mutations = new TaskBoardMutationHandler(tasks, new TaskBoardActionTargetResolver());
 
-        checkpointData = dependencies.registerInstance(ITaskBoardExecutionCheckpointDataHandler.class,
-                new TaskBoardExecutionCheckpointDataHandler());
-        dependencies.registerInstance(TaskBoardExecutionCheckpointDataHandler.class, checkpointData);
+        checkpointData = new TaskBoardExecutionCheckpointDataHandler();
+        dependencies.registerInstance(ITaskBoardExecutionCheckpointDataHandler.class, checkpointData);
+        dependencies.registerInstance(TaskBoardExecutionCheckpointDataHandler.class, (TaskBoardExecutionCheckpointDataHandler) checkpointData);
 
-        checkpointHandler = dependencies.registerInstance(ITaskBoardExecutionCheckpointHandler.class,
-                new TaskBoardExecutionCheckpointHandler());
+        checkpointHandler = new TaskBoardExecutionCheckpointHandler();
+        dependencies.registerInstance(ITaskBoardExecutionCheckpointHandler.class, checkpointHandler);
+        dependencies.registerInstance(TaskBoardExecutionCheckpointHandler.class, (TaskBoardExecutionCheckpointHandler) checkpointHandler);
     }
 
     @Test
@@ -237,7 +238,7 @@ class TaskBoardFileMirrorIntegrationTest {
 
         mirrorHandler.setSimulateWriteFailure(false);
         TaskBoardFileMirrorReconcileResult reconcileResult = mirrorHandler.reconcile();
-        assertTrue(reconcileResult.reconciledCount() >= 1, "Reconcile must recover mirror file from PostgreSQL");
+        assertTrue(reconcileResult.driftsResolved() >= 1, "Reconcile must recover mirror file from PostgreSQL");
         assertTrue(Files.exists(taskFile), "Mirror file must now exist after reconcile");
     }
 
@@ -266,16 +267,16 @@ class TaskBoardFileMirrorIntegrationTest {
         Files.writeString(task2File, tamperedContent, StandardCharsets.UTF_8);
 
         TaskBoardFileMirrorVerificationReport report = mirrorHandler.verify();
-        assertFalse(report.inSync(), "Drift must be detected");
+        assertTrue(report.hasDrift(), "Drift must be detected");
         assertTrue(report.drifts().stream().anyMatch(d -> d.recordId().equals(task1.taskId().toString())
                 && d.driftType() == TaskBoardFileMirrorDriftType.MISSING_IN_MIRROR));
         assertTrue(report.drifts().stream().anyMatch(d -> d.recordId().equals(task2.taskId().toString())));
 
         TaskBoardFileMirrorReconcileResult reconcileResult = mirrorHandler.reconcile();
-        assertTrue(reconcileResult.reconciledCount() >= 2, "Reconcile must update both drifted records");
+        assertTrue(reconcileResult.driftsResolved() >= 2, "Reconcile must update both drifted records");
 
         TaskBoardFileMirrorVerificationReport cleanReport = mirrorHandler.verify();
-        assertTrue(cleanReport.inSync(), "Mirror must be completely in-sync after reconcile");
+        assertFalse(cleanReport.hasDrift(), "Mirror must be completely in-sync after reconcile");
         assertTrue(cleanReport.drifts().isEmpty(), "No drifts remaining");
 
         JsonNode restoredTask2Json = objectMapper.readTree(Files.readString(task2File, StandardCharsets.UTF_8));
@@ -293,7 +294,7 @@ class TaskBoardFileMirrorIntegrationTest {
         Files.writeString(corruptFile, "{ torn json payload without closing brace...", StandardCharsets.UTF_8);
 
         TaskBoardFileMirrorVerificationReport report = mirrorHandler.verify();
-        assertFalse(report.inSync());
+        assertTrue(report.hasDrift());
         assertTrue(report.drifts().stream().anyMatch(d -> d.recordId().equals(corruptId)
                 && d.driftType() == TaskBoardFileMirrorDriftType.CORRUPT_OR_TORN));
 
@@ -346,7 +347,7 @@ class TaskBoardFileMirrorIntegrationTest {
         assertTrue(loadedTask.isPresent(), "findTask must read directly from PostgreSQL");
         assertEquals("Authoritative Postgres Task", loadedTask.orElseThrow().title());
 
-        List<TaskBoardTask> projectTasks = tasks.findTasks(projectKey, null, 0, 10);
+        List<TaskBoardTask> projectTasks = tasks.findTasks(projectKey);
         assertEquals(1, projectTasks.size(), "findTasks must read directly from PostgreSQL");
 
         Optional<TaskBoardExecutionLeaseData> loadedLease = checkpointData.currentLease(task.taskId());
