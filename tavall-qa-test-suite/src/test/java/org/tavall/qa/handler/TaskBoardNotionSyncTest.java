@@ -16,6 +16,8 @@ import org.tavall.qa.domain.auth.QaCapability;
 import org.tavall.qa.domain.auth.QaEnvironmentGrant;
 import org.tavall.qa.domain.auth.QaSubjectContext;
 import org.tavall.qa.domain.notion.NotionDatabaseTaskMapping;
+import org.tavall.qa.domain.notion.NotionTaskMappingConfiguration;
+import org.tavall.qa.domain.notion.NotionTaskMappingRegistry;
 import org.tavall.qa.domain.notion.NotionTaskIngestResult;
 import org.tavall.qa.domain.notion.NotionTaskOutboundChange;
 import org.tavall.qa.domain.notion.NotionTaskSnapshot;
@@ -74,7 +76,8 @@ final class TaskBoardNotionSyncTest {
         queryHandler = new TaskBoardQueryHandler(dataHandler, new TaskBoardActionTargetResolver());
 
         Clock clock = Clock.fixed(baseTime, ZoneOffset.UTC);
-        syncHandler = new TaskBoardNotionSyncHandler(syncDataHandler, dataHandler, mutationHandler, clock);
+        NotionTaskMappingRegistry mappingRegistry = NotionTaskMappingRegistry.canonical();
+        syncHandler = new TaskBoardNotionSyncHandler(syncDataHandler, dataHandler, mutationHandler, mappingRegistry, clock);
         agentViewHandler = new TaskBoardAgentViewHandler(queryHandler, mutationHandler, dataHandler, syncHandler);
 
         manager = TaskBoardTestSubjects.manager(managerAccountId, managerMinecraftUuid);
@@ -448,6 +451,66 @@ final class TaskBoardNotionSyncTest {
         assertEquals(taskId, recoveredState.get().taskId());
         assertEquals("page-pvp-task-restart", recoveredState.get().notionPageId());
         assertEquals(Instant.parse("2026-10-30T09:00:00Z"), recoveredState.get().lastIngestedRevision());
+    }
+
+    @Test
+    void testUnknownDatabaseRejectedOnIngest() {
+        NotionTaskSnapshot snapshot = new NotionTaskSnapshot(
+                "ws-unknown",
+                "unregistered-db-404",
+                "page-unknown-01",
+                "https://notion.so/page-unknown-01",
+                Instant.parse("2026-10-30T09:00:00Z"),
+                "Unknown Task",
+                "Not started",
+                "Agent",
+                null,
+                "",
+                "",
+                "unknown",
+                "infra",
+                List.of(),
+                false,
+                "",
+                false,
+                "",
+                "",
+                false,
+                false
+        );
+
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> syncHandler.ingestSnapshot(manager, snapshot));
+        assertTrue(thrown.getMessage().contains("Unknown or unconfigured Notion database: unregistered-db-404"));
+    }
+
+    @Test
+    void testUnknownDatabaseRejectedOnOutboundQuery() {
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> syncHandler.findPendingOutboundChanges(manager, Optional.of("unregistered-db-404")));
+        assertTrue(thrown.getMessage().contains("Unknown or unconfigured Notion database: unregistered-db-404"));
+    }
+
+    @Test
+    void testNoNullClockOrRegistrySilentFallbacks() {
+        assertThrows(NullPointerException.class, () -> new TaskBoardNotionSyncHandler(
+                syncDataHandler, dataHandler, mutationHandler, NotionTaskMappingRegistry.canonical(), null
+        ));
+        assertThrows(NullPointerException.class, () -> new TaskBoardNotionSyncHandler(
+                syncDataHandler, dataHandler, mutationHandler, null, Clock.systemUTC()
+        ));
+        assertThrows(NullPointerException.class, () -> new TaskBoardNotionSyncHandler(
+                syncDataHandler, dataHandler, mutationHandler, null
+        ));
+    }
+
+    @Test
+    void testTypedVersionedMappingConfigurationIntegrity() {
+        NotionTaskMappingConfiguration config = NotionTaskMappingConfiguration.canonical();
+        assertEquals(1, config.schemaVersion());
+        assertTrue(config.findMapping("3a338458ddfd80eb9bbfcb8bc741e610").isPresent());
+        assertTrue(config.findMapping("b3f34d39223b43378a60531cd7e6fdbf").isPresent());
+        assertTrue(config.findMapping("unknown-db").isEmpty());
     }
 
     private NotionTaskSnapshot sampleSnapshot(

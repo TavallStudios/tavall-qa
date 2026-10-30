@@ -1,27 +1,41 @@
 version: 2
-
 source:
   repository: TavallStudios/tavall-qa
   provider: github
-
 build:
   type: gradle
   java: 25
   gradle: 9.6.1
-
 resources:
   mode: SYSTEM
-
 requiredChecks:
   - compilation
   - quality
-
 checks:
   compilation:
     executor: gradle
     tasks:
       - :tavall-qa-api:classes
+    networkMode: PUBLIC
   quality:
     executor: gradle
     tasks:
       - :tavall-qa-api:check
+    networkMode: PUBLIC
+dependencies:
+  - kind: source
+    identity: TavallStudios/tavall-logging
+    role: SHARED_DEP
+    selector: required-source
+    digest: e047172ab7c2be005baf0b2c4b46e230ead78417
+    sourceVersion: 1.0.0
+    versionProperty: tavallVersion
+    substitutions: 'org.tavall:tavall-logging=:'
+  - kind: source
+    identity: TavallStudios/tavall-custom-enum-java
+    role: SHARED_DEP
+    selector: required-source
+    digest: 2284168910f755a0d13a68fbc821cedc14d0a49b
+    sourceVersion: 1.0.0
+    versionProperty: tavallVersion
+    substitutions: 'org.tavall:tavall-custom-enum-java=:'

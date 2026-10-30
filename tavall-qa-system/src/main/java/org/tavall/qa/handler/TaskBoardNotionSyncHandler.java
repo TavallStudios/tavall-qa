@@ -44,9 +44,22 @@ public final class TaskBoardNotionSyncHandler implements ITaskBoardNotionSyncHan
     private final ITaskBoardNotionSyncDataHandler syncDataHandler;
     private final ITaskBoardDataHandler dataHandler;
     private final ITaskBoardMutationHandler mutationHandler;
+    private final org.tavall.qa.domain.notion.INotionTaskMappingRegistry mappingRegistry;
     private final Clock clock;
 
-    private final ConcurrentHashMap<String, NotionDatabaseTaskMapping> databaseMappings = new ConcurrentHashMap<>();
+    public TaskBoardNotionSyncHandler(
+            ITaskBoardNotionSyncDataHandler syncDataHandler,
+            ITaskBoardDataHandler dataHandler,
+            ITaskBoardMutationHandler mutationHandler,
+            org.tavall.qa.domain.notion.INotionTaskMappingRegistry mappingRegistry,
+            Clock clock
+    ) {
+        this.syncDataHandler = Objects.requireNonNull(syncDataHandler, "syncDataHandler");
+        this.dataHandler = Objects.requireNonNull(dataHandler, "dataHandler");
+        this.mutationHandler = Objects.requireNonNull(mutationHandler, "mutationHandler");
+        this.mappingRegistry = Objects.requireNonNull(mappingRegistry, "mappingRegistry");
+        this.clock = Objects.requireNonNull(clock, "clock");
+    }
 
     public TaskBoardNotionSyncHandler(
             ITaskBoardNotionSyncDataHandler syncDataHandler,
@@ -54,22 +67,13 @@ public final class TaskBoardNotionSyncHandler implements ITaskBoardNotionSyncHan
             ITaskBoardMutationHandler mutationHandler,
             Clock clock
     ) {
-        this.syncDataHandler = Objects.requireNonNull(syncDataHandler, "syncDataHandler");
-        this.dataHandler = Objects.requireNonNull(dataHandler, "dataHandler");
-        this.mutationHandler = Objects.requireNonNull(mutationHandler, "mutationHandler");
-        this.clock = clock != null ? clock : Clock.systemUTC();
-
-        // Register default canonical mappings
-        registerMapping(NotionDatabaseTaskMapping.canonicalPvpTasks());
-        registerMapping(NotionDatabaseTaskMapping.canonicalKingdomsTasks());
-    }
-
-    public TaskBoardNotionSyncHandler(
-            ITaskBoardNotionSyncDataHandler syncDataHandler,
-            ITaskBoardDataHandler dataHandler,
-            ITaskBoardMutationHandler mutationHandler
-    ) {
-        this(syncDataHandler, dataHandler, mutationHandler, Clock.systemUTC());
+        this(
+                syncDataHandler,
+                dataHandler,
+                mutationHandler,
+                org.tavall.qa.domain.notion.NotionTaskMappingRegistry.canonical(),
+                Objects.requireNonNull(clock, "clock")
+        );
     }
 
     @Override
@@ -310,6 +314,10 @@ public final class TaskBoardNotionSyncHandler implements ITaskBoardNotionSyncHan
         requireAuthorized(subject);
         Instant now = clock.instant();
 
+        if (databaseId != null && databaseId.isPresent() && !databaseId.get().isBlank()) {
+            resolveMapping(databaseId.get());
+        }
+
         List<NotionTaskSyncState> pendingStates = syncDataHandler.findPendingOutboundSyncStates(databaseId);
         List<NotionTaskOutboundChange> changes = new ArrayList<>();
 
@@ -393,7 +401,7 @@ public final class TaskBoardNotionSyncHandler implements ITaskBoardNotionSyncHan
     public void registerDatabaseMapping(QaSubjectContext subject, NotionDatabaseTaskMapping mapping) {
         Objects.requireNonNull(mapping, "mapping");
         requireAuthorized(subject);
-        registerMapping(mapping);
+        mappingRegistry.registerMapping(mapping);
     }
 
     @Override
@@ -401,7 +409,11 @@ public final class TaskBoardNotionSyncHandler implements ITaskBoardNotionSyncHan
         if (databaseId == null) {
             return Optional.empty();
         }
-        return Optional.ofNullable(databaseMappings.get(normalizeId(databaseId)));
+        return mappingRegistry.findMapping(databaseId);
+    }
+
+    public org.tavall.qa.domain.notion.INotionTaskMappingRegistry mappingRegistry() {
+        return mappingRegistry;
     }
 
     public void advanceOutboundRevision(UUID taskId) {
@@ -412,17 +424,12 @@ public final class TaskBoardNotionSyncHandler implements ITaskBoardNotionSyncHan
         });
     }
 
-    private void registerMapping(NotionDatabaseTaskMapping mapping) {
-        databaseMappings.put(normalizeId(mapping.databaseId()), mapping);
-    }
-
     private NotionDatabaseTaskMapping resolveMapping(String databaseId) {
-        NotionDatabaseTaskMapping mapping = databaseMappings.get(normalizeId(databaseId));
-        return mapping != null ? mapping : NotionDatabaseTaskMapping.canonicalPvpTasks();
-    }
-
-    private static String normalizeId(String id) {
-        return id == null ? "" : id.replace("-", "").toLowerCase();
+        if (databaseId == null || databaseId.isBlank()) {
+            throw new IllegalArgumentException("Notion databaseId must not be null or blank");
+        }
+        return mappingRegistry.findMapping(databaseId)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown or unconfigured Notion database: " + databaseId));
     }
 
     private void requireAuthorized(QaSubjectContext subject) {

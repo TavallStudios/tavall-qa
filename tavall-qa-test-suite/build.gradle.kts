@@ -13,3 +13,15 @@ dependencies {
     testImplementation("com.fasterxml.jackson.core:jackson-databind:2.18.3")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
+
+val executionCheckpointIntegrationTest by tasks.registering(Test::class) {
+    description = "Verifies checkpoint leases and mapped persistence against a real private PostgreSQL process."
+    group = "verification"
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform()
+    filter { includeTestsMatching("*TaskBoardExecutionPostgresIntegrationTest") }
+    systemProperty("tavall.qa.checkpoint.postgres.required", "true")
+    outputs.upToDateWhen { false }
+    outputs.doNotCacheIf("Requires fresh private PostgreSQL process and restart verification on the current Executor") { true }
+}

@@ -32,3 +32,8 @@ The current candidate is QA PR #1; the workflow guard change rejects tasks only 
 
 - Exact-source Tavall CI checks and repository review evidence.
 - Web HTTP privacy/security and browser acceptance against the shared runtime.
+
+
+## Execution continuation contracts — October 26, 2026
+
+[QA #3](https://github.com/TavallStudios/tavall-qa/pull/3) adds typed execution source, bounded lease and immutable checkpoint data, eight explicit execution states, request contracts, and private Handler/DataHandler interfaces. Execution completion remains separate from task acceptance and Human Verify. API sources passed the Java 25 diagnostic and exact-source production compilation at `b5b03346419616aa527ce437d2c4b0871585da96` in run `73f90694-dfc7-4768-98b7-cd6ac2c6c3cf`. Current mapped/runtime acceptance is tracked in [SYSTEM progression](TAVALL_QA_SYSTEM_PROGRESSION.md#execution-checkpoint-implementation-candidate--october-26-2026); Storage payload publication, AI resumption and Web transport remain incomplete.

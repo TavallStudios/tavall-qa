@@ -32,6 +32,28 @@ PostgreSQL ──> sole durable Task Board and QA authority
 
 The QA source module is classified as `SYSTEM` because it owns the Task Board capability and its implementation fan-in. Its module/artifact identity is `tavall-qa-system`; its runtime owner remains the existing Web application. A separate QA process, auth service, or database is not justified by the current lifecycle or consumers.
 
+## Real production patterns and next QA Board integration
+
+The current `tavall-qa` repository already has mapped-JPA and typed Task Board logic. Treat the following as authoritative **source examples**, not snippets to copy into a competing service:
+
+- [`TaskBoardQueryHandler`](https://github.com/TavallStudios/tavall-qa/blob/85779a99e8ab338c0366e3958d2a58da3023747b/tavall-qa-system/src/main/java/org/tavall/qa/handler/TaskBoardQueryHandler.java) implements the `ITaskBoardQueryHandler` boundary, obtains `ITaskBoardDataHandler`, and emits public/staff projections. A new web/Notion adapter must request filtered views from this owner rather than query task rows directly.
+- [`TaskBoardTaskEntity`](https://github.com/TavallStudios/tavall-qa/blob/85779a99e8ab338c0366e3958d2a58da3023747b/tavall-qa-system/src/main/java/org/tavall/qa/persistence/entity/TaskBoardTaskEntity.java) persists source reference, account/verification identity, task revisions and evidence linkage. Notion/GitHub synchronization should match stable external IDs to the owning QA task and handle revision conflicts, **not invent a second status authority**.
+- [`TaskBoardMutationHandler`](https://github.com/TavallStudios/tavall-qa/blob/85779a99e8ab338c0366e3958d2a58da3023747b/tavall-qa-system/src/main/java/org/tavall/qa/handler/TaskBoardMutationHandler.java) is the owning mutation boundary. Do not create direct database writes in browser actions or provider hooks.
+
+##### Why
+Task acceptance, evidence and human verification must use one atomic, audited authority. A dashboard action, GitHub label or Notion checkbox does not independently establish QA acceptance.
+
+### Approved October 2026 consumers
+
+- **Task projection:** Notion planning tasks may map 1:1 to executable QA task identities, with GitHub issue/PR refs mirrored for traceability. Resolve conflicts and keep role/owner/source evidence; retain the older Linear operating model as migration history until reconciled.
+- **WebMCP migration:** Proposed WebMCP task/QA views become Tavall Account-role-aware QA Board views. Existing `agent-webmcp` bounded service operations remain distinct until audited and explicitly migrated, not automatically deleted.
+- **Agent provider continuity:** Open Harness may checkpoint provider sessions, while QA owns task state and evidence, Tavall AI owns roles, and Account controls scope.
+- **Visual acceptance:** Web QA UI must reuse the approved product-specific Forge information architecture, with actual desktop/mobile screenshot and denied-state tests. No invented public progress, no implicit authorization from a hidden UI element.
+
+### Acceptance gates
+
+Verify actor/tenant grant on each read/write, source task revision and idempotent external synchronization, role-aware public/staff views, revocation and rejected evidence, migration `027`/`028` on a real ephemeral PostgreSQL test database, and same-source Web E2E. Record executed tests, exact SHA and runtime deployment in PROGRESSION rather than calling this design proof of availability.
+
 ## Authorization boundary
 
 The authenticated Tavall Account principal is resolved to a stable Account ID. Each request reads the current Account status, active QA entitlement grants, linked Minecraft identity, and active organization context with the `tavall-web` service binding. QA runs inside the shared Web runtime, so it does not invent a separate `qa` service binding. QA class, tier, environment grants, task assignment, and capability remain independent facts. No Spring `ROLE_STAFF`, SSO provider, hostname, display name, or tier alone grants QA authority.
@@ -47,6 +69,22 @@ Tavall Account remains the authority for identity, Account standing, and explici
 Evidence submission, evidence review, task acceptance, and Human Verify are separate mutations. Review can accept or reject evidence but awards no VQC. Task acceptance requires an accepted, current task fingerprint in the authorized environment, records `TASK_ACCEPTED`, sets the work status to `DONE`, and keeps QA state `NHV`. A qualifying accepted task adds one base VQC for the evidence submitter, uniquely keyed by task and Account. Human Verify remains a separate action requiring accepted current evidence, a current authorization check, active organization/service binding, and linked Minecraft identity. Rejection increments the task revision so older evidence cannot be reused. Material task changes invalidate prior verification and evidence fingerprints.
 
 The legacy `progress_task` path and `publicProgressTaskId` synchronization remain retired. Public weighted totals filter both project and task audience before counts or aggregation, and exclude cancelled tasks. Public projections omit Account/Minecraft identities, private evidence, QA notes, privileged source references, and staff destinations.
+
+## Durable execution leases and provider-neutral checkpoints
+
+The implementation candidate in [QA #3](https://github.com/TavallStudios/tavall-qa/pull/3) keeps execution continuation under the existing task authority. [`TaskBoardExecutionCheckpointHandler`](../../tavall-qa-system/src/main/java/org/tavall/qa/handler/TaskBoardExecutionCheckpointHandler.java) implements its typed API with `@DelegatesTo`, generated `DependencyAccess` and the owning dependency generation. Each private read and mutation checks current Account/service context, DEV qualification/assignment or Account-global QA authority, and task/project visibility. A browser or provider must receive its subject context from the existing server-side Account resolver.
+
+[`TaskBoardExecutionCheckpointDataHandler`](../../tavall-qa-system/src/main/java/org/tavall/qa/persistence/TaskBoardExecutionCheckpointDataHandler.java) consumes the checked-in Database `32aa272` entity API through `DependencyAccess<IPostgresDatabase>`. Its atomic operation receives only Tavall Database's typed entity context; Database retains transaction begin/flush/commit/rollback and EntityManager ownership. It uses the same [`TaskBoardTaskEntity.lockKey`](../../tavall-qa-system/src/main/java/org/tavall/qa/persistence/entity/TaskBoardTaskEntity.java) as ordinary task mutations, so a task revision cannot change between a checkpoint's fingerprint check and commit.
+
+[`TaskBoardExecutionLeaseEntity`](../../tavall-qa-system/src/main/java/org/tavall/qa/persistence/entity/TaskBoardExecutionLeaseEntity.java) owns one current bounded work lease per task. A lease has an actor, stable run/token identity, revision, checkpoint sequence, task fingerprint and expiry. Duplicate acquisition does not extend a lease. An expired token cannot be revived, including after another lease replaces the current row: the append-only [`TaskBoardExecutionLeaseTokenEntity`](../../tavall-qa-system/src/main/java/org/tavall/qa/persistence/entity/TaskBoardExecutionLeaseTokenEntity.java) records each issued token durably. A newly authorized token can resume the same run at its latest checkpoint sequence. Renewal and append use revision checks, and changed task requirements reject continuation. These durable identities belong in PostgreSQL; Registry or Cache cannot replace their authority.
+
+[`TaskBoardExecutionCheckpointEntity`](../../tavall-qa-system/src/main/java/org/tavall/qa/persistence/entity/TaskBoardExecutionCheckpointEntity.java) maps append-only history. A checkpoint records exact repository/branch/commit/diff identity, provider/state observation and the digest of its separately mapped typed continuation payload. Equal retries return the original checkpoint without another audit event; conflicting payloads or stale writers reject. Mapped timestamps use PostgreSQL microsecond precision before being returned, preserving revision equality after a database round trip. [Migration 034](../../tavall-qa-system/src/main/resources/schema/postgres/034_task_board_execution_checkpoints.sql) owns the new tables, sequence constraint, append-only triggers and audit events. The shared Web runtime must separately register and apply the migration through its existing owner.
+
+The immutable [`TaskBoardExecutionCheckpointPayloadData`](../../tavall-qa-api/src/main/java/org/tavall/qa/domain/execution/TaskBoardExecutionCheckpointPayloadData.java) preserves canonical task instructions, acceptance conditions, the outstanding patch or an existing immutable diff artifact, inspected/modified files and symbols, operation states, CI/artifact receipts, roles, Skills, exact policy sections, permission observations, required capabilities, known errors and the next action. [`TaskBoardExecutionCheckpointPayloadMapper`](../../tavall-qa-api/src/main/java/org/tavall/qa/mapping/TaskBoardExecutionCheckpointPayloadMapper.java) owns versioned, bounded JSON representation and its digest. The mapped [`PayloadEntity`](../../tavall-qa-system/src/main/java/org/tavall/qa/persistence/entity/TaskBoardExecutionCheckpointPayloadEntity.java) and pure JPA converter persist bulk context separately from history metadata. Deferred foreign keys bind envelope and body digests at commit, and both tables reject mutation. QA references private bodies with `tavall-qa://tasks/<task-id>/execution-checkpoints/<checkpoint-id>/payload`; it does not create another Cloud artifact publisher. Existing large diff/CI/artifact blobs retain their Storage owner.
+
+`loadPayload` rechecks current Account and task authority and verifies the body digest. `resumeCheckpoint` atomically checks the current task fingerprint, exact source/diff observation supplied by the authorized host, latest checkpoint sequence and payload before acquiring a bounded lease. A failed source check does not consume a lease. The host must obtain source observations from the real workspace and separately verify present capabilities and provider authorization before calling a model; QA does not inspect a remote filesystem from submitted strings. [`TavallQaConfiguration`](../../tavall-qa-system/src/main/java/org/tavall/qa/config/TavallQaConfiguration.java) owns the Spring-to-Tavall composition boundary. A new Spring composition replaces a changed task-data capability in the existing process map and registers a fresh generation-owned checkpoint handler; old handler references retire, and an externally supplied Clock is preserved. The Web transport and AI host orchestration are still independent integration gates. `COMPLETED` execution is an observation and does not accept a task, award VQC or grant Human Verify. Bodies are excluded from public Task Board projections.
+
+[`TaskBoardExecutionPostgresIntegrationTest`](../../tavall-qa-test-suite/src/test/java/org/tavall/qa/handler/TaskBoardExecutionPostgresIntegrationTest.java) is the required acceptance path for native private PostgreSQL, actual Database mappings and scoped DI. It covers idempotency, concurrent claims/writers, source-task invalidation, expiry, current authorization, append-only SQL enforcement and restart recovery. Its explicit integration task requires the fixture instead of accepting a skip. Execution results belong in module Progression; test source alone is not acceptance.
 
 ## Existing product surface
 
@@ -88,3 +126,21 @@ QA holds no Notion credentials and runs no recurring polling loop. External sync
    - Role-aware task discovery (`findAuthorizedAgentTasks`): filters tasks by explicit Account capability and task assignment.
    - Bounded task context (`findAgentTaskContext`): returns task-specific execution, evidence, comments, actions, and Notion planning context without dumping the workspace or project.
    - Execution updates (`updateAgentExecution`): authorized agents update execution status, add notes, and advance sync revision through owner APIs.
+
+<details>
+<summary>Documentation Update State</summary>
+
+### Current Locations
+| Surface | Sync State | Location | Last Updated | Evidence |
+| --- | --- | --- | --- | --- |
+| GitHub | `1:1_DRAFT_PR` | `TavallStudios/tavall-qa/docs/technical/TAVALL_QA_TASK_BOARD_TECHNICAL_DESIGN.md` | 2026-10-26 12:28 PM PDT | [Draft PR](https://github.com/TavallStudios/tavall-qa/pull/2); linked Notion twin |
+| Notion | `1:1_DRAFT_PR` | [Notion twin](https://app.notion.com/p/40438458ddfd8142b3fef192175a7bfa) | 2026-10-26 12:28 PM PDT | Created Notion twin https://app.notion.com/p/40438458ddfd8142b3fef192175a7bfa |
+
+### Update History
+| Timestamp | Surface | Event | Location | Previous Location | Evidence | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-25 2:17 AM PDT | GitHub | `UPDATED` | `docs/technical/TAVALL_QA_TASK_BOARD_TECHNICAL_DESIGN.md` | Same file | Branch `docs/qa-board-examples-20261025` | Added verified source references, current design scope and footer. |
+
+| 2026-10-26 10:59 AM PDT | GitHub | `UPDATED` | `docs/technical/TAVALL_QA_TASK_BOARD_TECHNICAL_DESIGN.md` | Same logical document from PR #2 | PR #3, source `fd44ada` and exact CI receipts | Documented real DI/Database checkpoint implementation; kept runtime, payload and provider-continuation gates separate. |
+| 2026-10-26 12:28 PM PDT | GitHub | `UPDATED` | `docs/technical/TAVALL_QA_TASK_BOARD_TECHNICAL_DESIGN.md` | Same document | QA #3, source `63a3bbc` | Reconciled typed body persistence and current source-guarded resume candidate; PostgreSQL acceptance remains tied to `1fe4770`. |
+</details>
