@@ -17,7 +17,7 @@ primaryPlugins:
     pluginVersion: "0.1.1-SNAPSHOT"
     versionProperty: tavallWebVersion
     pluginProjectPath: :tavall-web-frontend-gradle
-    substitutions: "org.tavall:tavall-web-frontend-codegen=:tavall-web-frontend-codegen,org.tavall:tavall-web-api=:tavall-web-api,org.tavall:tavall-web-frontend=:tavall-web-frontend"
+    substitutions: "org.tavall:tavall-web-frontend-gradle=:tavall-web-frontend-gradle,org.tavall:tavall-web-frontend-codegen=:tavall-web-frontend-codegen,org.tavall:tavall-web-api=:tavall-web-api,org.tavall:tavall-web-frontend=:tavall-web-frontend"
 
 dependencies:
   - kind: source
@@ -25,7 +25,7 @@ dependencies:
     role: SHARED_DEP
     selector: required-source
     digest: 1fc12f26a0a1d98aadd049a74d8bc0afb8b410d3
-    substitutions: "org.tavall:tavall-web-api=:tavall-web-api,org.tavall:tavall-web-frontend=:tavall-web-frontend,org.tavall:tavall-web-frontend-codegen=:tavall-web-frontend-codegen"
+    substitutions: "org.tavall:tavall-web-api=:tavall-web-api,org.tavall:tavall-web-frontend=:tavall-web-frontend,org.tavall:tavall-web-frontend-codegen=:tavall-web-frontend-codegen,org.tavall:tavall-web-frontend-gradle=:tavall-web-frontend-gradle"
   - kind: source
     identity: TavallStudios/tavall-qa
     role: SHARED_DEP
