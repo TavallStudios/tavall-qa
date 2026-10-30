@@ -11,6 +11,14 @@ The SYSTEM owns mapped-JPA Task Board persistence through Tavall Database's `IPo
 
 Evidence review, task acceptance, and Human Verify are independent operations. Acceptance requires accepted evidence for the current task fingerprint and environment; it marks the task `DONE` while preserving `NHV`. VQC is awarded once per accepted eligible task to the evidence submitter. Rejection is available only for `REVIEW`/`DONE` tasks and changes the task revision so previous evidence is stale. Human Verify requires the separate authorization, valid evidence, active service context, and linked Minecraft identity.
 
+## Phase 6 Notion 1:1 Task Mapping and WebMCP Task Views
+
+- Implemented typed `NotionDatabaseTaskMapping` with configurable property and status mappings, with preconfigured canonical PvP and Kingdoms schemas.
+- Implemented `TaskBoardNotionSyncHandler` with idempotent ingest, revision tracking via `last_edited_time`, conflict detection and resolution, archived/deleted task cancellation, and outbound sync export and acknowledgement.
+- Implemented `NotionTaskSyncStateEntity` with checked-in migration `035_task_board_notion_sync.sql` and `TaskBoardNotionSyncDataHandler` featuring file-backed redundancy mirror via `tavall-filesystem` (`FilesystemAtomicOperations`) surviving restarts.
+- Implemented `TaskBoardAgentViewHandler` delivering role-aware task discovery, bounded task-specific context without a workspace dump, and execution update capabilities through owner APIs.
+- Comprehensive test suite in `TaskBoardNotionSyncTest`: 10 tests verifying create, update, conflict, archive, duplicate ingest, ack replay, unauthorized caller denial, agent views, custom database mapping, and restart-surviving file-backed state.
+
 ## Validation
 
 - `./gradlew --no-daemon test` with `TAVALL_QA_TEST_POSTGRES_URL` set to a temporary PostgreSQL 17 container: 28 tests passed, 0 failures, 0 errors, 0 skips. The PostgreSQL test ran migrations 027/028 and exercised mapped persistence, concurrent acceptance retry/idempotency, rollback, stale-write rejection, Human Verify, and restart recovery.

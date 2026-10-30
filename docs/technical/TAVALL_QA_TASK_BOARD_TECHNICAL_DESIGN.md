@@ -59,3 +59,32 @@ Historical Task Board UI and PR lineage under `tavall-mc` are reference material
 The current progress aggregator computes weighted public progress inside the QA authority. Cache/event publication, CMS widgets, roadmap projections, curated Discord milestones, and public receipts must attach to existing Tavall owners through typed contracts after those owners and consumers are verified. No placeholder subscriber or duplicate progress store is introduced. The PvP QA repository and PRs referenced as #155 and #179–182 must be verified by repository identity before any source or VQC progression is treated as authoritative.
 
 Acceptance binds to exact source SHAs for each participating repository and the actual Tavall Web DEVELOPMENT/STAGING runtime. Required checks include direct HTTP privacy and authorization, mapped-JPA migration/persistence behavior, task assignment/evidence/review/acceptance/Human Verify and invalidation, desktop/mobile browser behavior at the accepted layouts, shared runtime composition, and health/routing. Source, CI, artifact, migration, deployment, DNS, and public browser acceptance are recorded separately; none is inferred from the presence of a host config or a local build. Current local source-test results are recorded in the module progression documents; PostgreSQL, remote CI, browser, and deployment gates are tracked independently.
+
+## Notion 1:1 Task Mapping and WebMCP Task Views
+
+**Authority:** Accepted Phase 6 platform integration decision (2026-10-30). Notion twin: [https://app.notion.com/p/40438458ddfd8142b3fef192175a7bfa](https://app.notion.com/p/40438458ddfd8142b3fef192175a7bfa).
+
+QA holds no Notion credentials and runs no recurring polling loop. External synchronization is driven by authorized agents (the orchestrator using its Notion connector) calling QA's owner APIs:
+
+1. **Idempotent Ingestion (`ITaskBoardNotionSyncHandler.ingestSnapshot`):**
+   - Agent submits typed `NotionTaskSnapshot` (workspace, database, page id, page URL, `last_edited_time` revision, mapped properties, archived/deleted flag).
+   - Resolves or creates exactly one QA task identity, keyed idempotently by Notion page ID.
+   - Per-database configurable mapping (`NotionDatabaseTaskMapping`): canonical schemas for Tavall PvP Tasks (`3a338458ddfd80eb9bbfcb8bc741e610`) and Kingdoms Tasks (`b3f34d39223b43378a60531cd7e6fdbf`), with support for custom database property mappings.
+   - Status mapping: Not started → BACKLOG, Up next → READY, In progress → ACTIVE, Done → DONE, Blocked → BLOCKED.
+   - Replay safety: snapshots with same or older `last_edited_time` are idempotent no-ops.
+   - Conflict resolution: when QA has pending unacknowledged outbound changes and Notion concurrently edits, conflict details are recorded in `NotionTaskSyncState` and deterministic resolution applies (QA DONE/HUMAN_VERIFIED execution state takes precedence; planning fields are updated).
+   - Archive/deleted handling: sets task status to CANCELLED and marks sync state archived/deleted.
+
+2. **Outbound Pending Export and Acknowledgement:**
+   - Pending outbound changes are exported via `findPendingOutboundChanges(subject, databaseId)` with monotonically increasing `syncRevision`.
+   - Agent acknowledges successful write to Notion via `acknowledgeOutboundSync(subject, request)`.
+   - Replay safety: stale or duplicate acknowledgements are safe no-ops.
+
+3. **File-Backed Durable State (`NotionTaskSyncState`):**
+   - Managed JPA entity `NotionTaskSyncStateEntity` and PostgreSQL migration `035_task_board_notion_sync.sql`.
+   - File redundancy mirror via `tavall-filesystem` (`FilesystemAtomicOperations`) at `<mirrorRoot>/qa/notion-sync/<pageId>.json` guarantees state survives restarts independently of PostgreSQL.
+
+4. **Agent-Facing Role-Aware Task Views (`ITaskBoardAgentViewHandler`):**
+   - Role-aware task discovery (`findAuthorizedAgentTasks`): filters tasks by explicit Account capability and task assignment.
+   - Bounded task context (`findAgentTaskContext`): returns task-specific execution, evidence, comments, actions, and Notion planning context without dumping the workspace or project.
+   - Execution updates (`updateAgentExecution`): authorized agents update execution status, add notes, and advance sync revision through owner APIs.

@@ -13,6 +13,14 @@ The current candidate is QA PR #1; the workflow guard change rejects tasks only 
 
 `QaSubjectContext` represents current Tavall Account facts: Account standing, linked Minecraft identity, organization/service binding, QA classes and tier, environment grants, explicit capabilities, and task-scoped assignment grants. A tier alone grants no capability. Technical QA remains subject to Tier III+ and active agreement requirements. This module contains contracts only; Web resolves current Account facts and the QA handler rechecks them at each operation.
 
+## Phase 6 Notion 1:1 Task Mapping and WebMCP Task Views
+
+- Added typed `NotionDatabaseTaskMapping` with configurable property/status mappings.
+- Added `NotionTaskSnapshot`, `NotionTaskSyncState`, `NotionTaskOutboundChange`, `NotionTaskSyncAckRequest`, `NotionTaskSyncAckResult`, and `NotionTaskIngestResult`.
+- Added agent-facing views `TaskBoardAgentTaskView` and `TaskBoardAgentTaskContextView` providing bounded task-specific context without a workspace dump.
+- Added `TaskBoardAgentExecutionUpdateRequest` for agent execution/evidence updates.
+- Added handler interfaces `ITaskBoardNotionSyncHandler`, `ITaskBoardAgentViewHandler`, and persistence contract `ITaskBoardNotionSyncDataHandler`.
+
 ## Validation
 
 - Exact local source composition: `./gradlew --no-daemon test` from the `tavall-qa` repository.
