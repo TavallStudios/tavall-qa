@@ -313,6 +313,9 @@ public final class TaskBoardFileMirrorHandler extends GenerationOwnedDependencyA
             throw new IOException("Simulated mirror write failure for " + recordType + "/" + id);
         }
         ObjectMapper mapper = getObjectMapper();
+        byte[] payloadBytes = mapper.writeValueAsBytes(payload);
+        String payloadSha256 = getFilesystemAtomicOperations().sha256(payloadBytes);
+
         ObjectNode record = mapper.createObjectNode();
         record.put("schemaVersion", SCHEMA_VERSION);
         record.put("ownerIdentity", OWNER_IDENTITY);
@@ -320,16 +323,10 @@ public final class TaskBoardFileMirrorHandler extends GenerationOwnedDependencyA
         record.put("recordId", id);
         record.put("revision", revision);
         record.put("updatedAt", updatedAt.truncatedTo(ChronoUnit.MICROS).toString());
+        record.put("payloadSha256", payloadSha256);
         record.set("payload", payload);
 
-        byte[] canonicalRecord = mapper.writeValueAsBytes(record);
-        String digest = getFilesystemAtomicOperations().sha256(canonicalRecord);
-
-        ObjectNode envelope = mapper.createObjectNode();
-        envelope.set("record", record);
-        envelope.put("sha256", digest);
-
-        byte[] bytes = mapper.writeValueAsBytes(envelope);
+        byte[] bytes = mapper.writeValueAsBytes(record);
 
         getFilesystemAtomicOperations().createContainedDirectories(getMirrorRoot(), "qa/" + recordType);
         Path target = resolveRecordFile(recordType, id);
@@ -401,16 +398,9 @@ public final class TaskBoardFileMirrorHandler extends GenerationOwnedDependencyA
         }
         try {
             byte[] bytes = Files.readAllBytes(file);
-            JsonNode envelope = getObjectMapper().readTree(bytes);
-            if (envelope == null || !envelope.isObject() || !envelope.path("record").isObject()) {
+            JsonNode recordNode = getObjectMapper().readTree(bytes);
+            if (recordNode == null || !recordNode.isObject()) {
                 throw new InvalidRecord("RECORD_SHAPE_INVALID");
-            }
-            JsonNode recordNode = envelope.path("record");
-            String expectedDigest = envelope.path("sha256").asText("");
-            byte[] canonical = getObjectMapper().writeValueAsBytes(recordNode);
-            String actualDigest = getFilesystemAtomicOperations().sha256(canonical);
-            if (expectedDigest.isBlank() || !expectedDigest.equals(actualDigest)) {
-                throw new InvalidRecord("RECORD_DIGEST_INVALID");
             }
             int schemaVersion = recordNode.path("schemaVersion").asInt(-1);
             if (schemaVersion != SCHEMA_VERSION) {
@@ -420,9 +410,23 @@ public final class TaskBoardFileMirrorHandler extends GenerationOwnedDependencyA
             if (!OWNER_IDENTITY.equals(owner)) {
                 throw new InvalidRecord("OWNER_IDENTITY_MISMATCH:" + owner);
             }
+            String actualRecordType = recordNode.path("recordType").asText("");
+            if (!recordType.equals(actualRecordType)) {
+                throw new InvalidRecord("RECORD_TYPE_MISMATCH:" + actualRecordType);
+            }
             String id = recordNode.path("recordId").asText("");
             if (!expectedId.equals(id)) {
                 throw new InvalidRecord("RECORD_KEY_MISMATCH:" + id);
+            }
+            JsonNode payloadNode = recordNode.path("payload");
+            if (!payloadNode.isObject()) {
+                throw new InvalidRecord("RECORD_PAYLOAD_INVALID");
+            }
+            String expectedDigest = recordNode.path("payloadSha256").asText("");
+            byte[] canonicalPayload = getObjectMapper().writeValueAsBytes(payloadNode);
+            String actualDigest = getFilesystemAtomicOperations().sha256(canonicalPayload);
+            if (expectedDigest.isBlank() || !expectedDigest.equals(actualDigest)) {
+                throw new InvalidRecord("RECORD_DIGEST_INVALID");
             }
             return Optional.of(recordNode);
         } catch (InvalidRecord invalid) {

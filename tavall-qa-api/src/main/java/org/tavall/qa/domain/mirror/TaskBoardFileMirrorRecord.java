@@ -13,6 +13,7 @@ public record TaskBoardFileMirrorRecord<T>(
         String recordId,
         long revision,
         Instant updatedAt,
+        String payloadSha256,
         T payload
 ) {
     public static final String OWNER_IDENTITY = "qa";
@@ -23,7 +24,20 @@ public record TaskBoardFileMirrorRecord<T>(
         Objects.requireNonNull(recordType, "recordType");
         Objects.requireNonNull(recordId, "recordId");
         Objects.requireNonNull(updatedAt, "updatedAt");
+        Objects.requireNonNull(payloadSha256, "payloadSha256");
         Objects.requireNonNull(payload, "payload");
+    }
+
+    public TaskBoardFileMirrorRecord(
+            int schemaVersion,
+            String ownerIdentity,
+            String recordType,
+            String recordId,
+            long revision,
+            Instant updatedAt,
+            T payload
+    ) {
+        this(schemaVersion, ownerIdentity, recordType, recordId, revision, updatedAt, "", payload);
     }
 
     public static <T> TaskBoardFileMirrorRecord<T> of(
@@ -31,6 +45,7 @@ public record TaskBoardFileMirrorRecord<T>(
             String recordId,
             long revision,
             Instant updatedAt,
+            String payloadSha256,
             T payload
     ) {
         return new TaskBoardFileMirrorRecord<>(
@@ -40,7 +55,18 @@ public record TaskBoardFileMirrorRecord<T>(
                 recordId,
                 revision,
                 updatedAt,
+                payloadSha256,
                 payload
         );
+    }
+
+    public static <T> TaskBoardFileMirrorRecord<T> of(
+            String recordType,
+            String recordId,
+            long revision,
+            Instant updatedAt,
+            T payload
+    ) {
+        return of(recordType, recordId, revision, updatedAt, "", payload);
     }
 }

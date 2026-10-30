@@ -203,7 +203,7 @@ class TaskBoardFileMirrorIntegrationTest {
                 "https://example.invalid/source", 0));
 
         TaskBoardExecutionLeaseRequest invalidAcquire = new TaskBoardExecutionLeaseRequest(task.taskId(),
-                UUID.randomUUID(), UUID.randomUUID(), "invalid-expected-fingerprint", Duration.ofMinutes(5));
+                UUID.randomUUID(), UUID.randomUUID(), "0".repeat(64), Duration.ofMinutes(5));
 
         assertThrows(TaskBoardConcurrentModificationException.class, () ->
                 checkpointHandler.acquireLease(administrator, invalidAcquire));
