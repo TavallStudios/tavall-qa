@@ -17,6 +17,9 @@ import org.tavall.qa.domain.TaskBoardTaskStatus;
 import org.tavall.qa.domain.execution.TaskBoardExecutionCheckpointData;
 import org.tavall.qa.domain.execution.TaskBoardExecutionLeaseData;
 import org.tavall.qa.domain.execution.TaskBoardExecutionCheckpointPayloadData;
+import org.tavall.qa.domain.mirror.TaskBoardFileMirrorDriftType;
+import org.tavall.qa.domain.mirror.TaskBoardFileMirrorRecordType;
+import org.tavall.qa.handler.ITaskBoardFileMirrorHandler;
 import org.tavall.qa.persistence.entity.TaskBoardAuditEntryEntity;
 import org.tavall.qa.persistence.entity.TaskBoardExecutionCheckpointEntity;
 import org.tavall.qa.persistence.entity.TaskBoardExecutionCheckpointPayloadEntity;
@@ -42,13 +45,16 @@ import java.util.UUID;
  */
 @DelegatesTo(ITaskBoardExecutionCheckpointDataHandler.class)
 public final class TaskBoardExecutionCheckpointDataHandler extends GenerationOwnedDependencyAccess
-        implements ITaskBoardExecutionCheckpointDataHandler, DependencyAccess<IPostgresDatabase> {
+        implements ITaskBoardExecutionCheckpointDataHandler,
+        DependencyAccess<IPostgresDatabase, ITaskBoardFileMirrorHandler> {
     @Override
     public TaskBoardExecutionLeaseData acquireLease(TaskBoardExecutionLeaseRequest request, UUID actorAccountId, Instant now) {
         Objects.requireNonNull(request, "request");
         Objects.requireNonNull(actorAccountId, "actorAccountId");
         Objects.requireNonNull(now, "now");
-        return requireEntities().executeAtomic(entities -> acquireLease(entities, request, actorAccountId, now));
+        TaskBoardExecutionLeaseData saved = requireEntities().executeAtomic(entities -> acquireLease(entities, request, actorAccountId, now));
+        mirrorLeaseSafely(saved);
+        return saved;
     }
 
     private TaskBoardExecutionLeaseData acquireLease(IPostgresEntityOperationContext entities,
@@ -97,7 +103,7 @@ public final class TaskBoardExecutionCheckpointDataHandler extends GenerationOwn
     public TaskBoardExecutionLeaseData renewLease(TaskBoardExecutionLeaseData expected, Duration duration,
             UUID actorAccountId, Instant now) {
         TaskBoardExecutionLeaseRequest.validateDuration(duration);
-        return requireEntities().executeAtomic(entities -> {
+        TaskBoardExecutionLeaseData saved = requireEntities().executeAtomic(entities -> {
             TaskBoardTask task = lockedTask(entities, expected.taskId());
             requireExecutable(task);
             TaskBoardExecutionLeaseData current = requireLease(entities, expected, actorAccountId, now, true);
@@ -105,34 +111,38 @@ public final class TaskBoardExecutionCheckpointDataHandler extends GenerationOwn
             TaskBoardExecutionLeaseData renewed = new TaskBoardExecutionLeaseData(current.taskId(), current.runId(),
                     current.leaseId(), current.ownerAccountId(), Math.addExact(current.revision(), 1),
                     current.checkpointSequence(), current.taskFingerprint(), now.plus(duration));
-            TaskBoardExecutionLeaseData saved = entities.save(TaskBoardExecutionLeaseEntity.fromDomain(renewed)).toDomain();
+            TaskBoardExecutionLeaseData result = entities.save(TaskBoardExecutionLeaseEntity.fromDomain(renewed)).toDomain();
             audit(entities, task, actorAccountId, TaskBoardAuditEventType.EXECUTION_LEASE_RENEWED,
                     "Execution lease renewed for run " + current.runId(), now);
-            return saved;
+            return result;
         });
+        mirrorLeaseSafely(saved);
+        return saved;
     }
 
     @Override
     public TaskBoardExecutionLeaseData releaseLease(TaskBoardExecutionLeaseData expected, UUID actorAccountId, Instant now) {
-        return requireEntities().executeAtomic(entities -> {
+        TaskBoardExecutionLeaseData saved = requireEntities().executeAtomic(entities -> {
             TaskBoardTask task = lockedTask(entities, expected.taskId());
             TaskBoardExecutionLeaseData current = requireLease(entities, expected, actorAccountId, now, false);
             if (!current.activeAt(now)) return current;
             TaskBoardExecutionLeaseData released = new TaskBoardExecutionLeaseData(current.taskId(), current.runId(),
                     current.leaseId(), current.ownerAccountId(), Math.addExact(current.revision(), 1),
                     current.checkpointSequence(), current.taskFingerprint(), now);
-            TaskBoardExecutionLeaseData saved = entities.save(TaskBoardExecutionLeaseEntity.fromDomain(released)).toDomain();
+            TaskBoardExecutionLeaseData result = entities.save(TaskBoardExecutionLeaseEntity.fromDomain(released)).toDomain();
             audit(entities, task, actorAccountId, TaskBoardAuditEventType.EXECUTION_LEASE_RELEASED,
                     "Execution lease released for run " + current.runId(), now);
-            return saved;
+            return result;
         });
+        mirrorLeaseSafely(saved);
+        return saved;
     }
 
     @Override
     public TaskBoardExecutionCheckpointData appendCheckpoint(TaskBoardExecutionCheckpointRequest request,
             UUID actorAccountId, Instant now) {
         Objects.requireNonNull(request, "request");
-        return requireEntities().executeAtomic(entities -> {
+        TaskBoardExecutionCheckpointData saved = requireEntities().executeAtomic(entities -> {
             TaskBoardExecutionLeaseData expected = request.expectedLease();
             TaskBoardTask task = lockedTask(entities, expected.taskId());
             requireExecutable(task);
@@ -165,15 +175,18 @@ public final class TaskBoardExecutionCheckpointDataHandler extends GenerationOwn
                 return stored;
             }
             if (!current.equals(expected)) throw conflict("Execution lease revision changed; reload before appending");
-            TaskBoardExecutionCheckpointData saved = entities.save(TaskBoardExecutionCheckpointEntity.fromDomain(checkpoint)).toDomain();
+            TaskBoardExecutionCheckpointData result = entities.save(TaskBoardExecutionCheckpointEntity.fromDomain(checkpoint)).toDomain();
             entities.save(payload);
             entities.save(TaskBoardExecutionLeaseEntity.fromDomain(new TaskBoardExecutionLeaseData(current.taskId(),
                     current.runId(), current.leaseId(), current.ownerAccountId(), Math.addExact(current.revision(), 1),
                     checkpoint.sequence(), current.taskFingerprint(), current.expiresAt())));
             audit(entities, task, actorAccountId, TaskBoardAuditEventType.EXECUTION_CHECKPOINT_RECORDED,
                     "Execution checkpoint " + checkpoint.sequence() + " recorded for run " + current.runId(), now);
-            return saved;
+            return result;
         });
+        mirrorCheckpointSafely(saved);
+        currentLease(saved.taskId()).ifPresent(this::mirrorLeaseSafely);
+        return saved;
     }
 
     @Override
@@ -211,7 +224,7 @@ public final class TaskBoardExecutionCheckpointDataHandler extends GenerationOwn
         Objects.requireNonNull(request, "request");
         Objects.requireNonNull(actorAccountId, "actorAccountId");
         Objects.requireNonNull(now, "now");
-        return requireEntities().executeAtomic(entities -> {
+        TaskBoardExecutionResumeResult result = requireEntities().executeAtomic(entities -> {
             TaskBoardExecutionLeaseRequest leaseRequest = request.leaseRequest();
             TaskBoardTask task = lockedTask(entities, leaseRequest.taskId());
             requireExecutable(task);
@@ -237,10 +250,48 @@ public final class TaskBoardExecutionCheckpointDataHandler extends GenerationOwn
             TaskBoardExecutionLeaseData lease = acquireLease(entities, leaseRequest, actorAccountId, now);
             return new TaskBoardExecutionResumeResult(lease, checkpoint, payload);
         });
+        mirrorLeaseSafely(result.lease());
+        return result;
+    }
+
+    private void mirrorLeaseSafely(TaskBoardExecutionLeaseData lease) {
+        if (lease == null) return;
+        findMirror().ifPresent(mirror -> {
+            try {
+                mirror.mirrorExecutionLease(lease);
+            } catch (RuntimeException exception) {
+                mirror.recordDrift(TaskBoardFileMirrorRecordType.EXECUTION_LEASE.directoryName(),
+                        lease.taskId().toString(),
+                        TaskBoardFileMirrorDriftType.MISSING_IN_MIRROR,
+                        "Mirror write failed: " + exception.getMessage());
+            }
+        });
+    }
+
+    private void mirrorCheckpointSafely(TaskBoardExecutionCheckpointData checkpoint) {
+        if (checkpoint == null) return;
+        findMirror().ifPresent(mirror -> {
+            try {
+                mirror.mirrorExecutionCheckpoint(checkpoint);
+            } catch (RuntimeException exception) {
+                mirror.recordDrift(TaskBoardFileMirrorRecordType.CHECKPOINT.directoryName(),
+                        checkpoint.checkpointId().toString(),
+                        TaskBoardFileMirrorDriftType.MISSING_IN_MIRROR,
+                        "Mirror write failed: " + exception.getMessage());
+            }
+        });
+    }
+
+    private Optional<ITaskBoardFileMirrorHandler> findMirror() {
+        try {
+            return Optional.ofNullable(getInstance().taskBoardFileMirrorHandler());
+        } catch (RuntimeException ignored) {
+            return Optional.empty();
+        }
     }
 
     private IPostgresEntityStore requireEntities() {
-        IPostgresDatabase database = getInstance();
+        IPostgresDatabase database = getInstance().postgresDatabase();
         if (!database.isAvailable() || !database.entities().isOpen()) {
             throw new TaskBoardStorageUnavailableException("Task execution checkpoint storage is unavailable");
         }

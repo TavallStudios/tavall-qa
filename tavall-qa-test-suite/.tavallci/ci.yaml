@@ -39,6 +39,12 @@ dependencies:
     sourceVersion: 1.0.0
     versionProperty: tavallVersion
     substitutions: 'org.tavall:tavall-custom-enum-java=:'
+  - kind: source
+    identity: TavallStudios/tavall-filesystem
+    role: SHARED_DEP
+    selector: required-source
+    digest: 398ab8b2afb49c4dacd865b31ba2980e78b71a51
+    substitutions: 'org.tavall.filesystem:tavall-filesystem-api=:tavall-filesystem-api,org.tavall.filesystem:tavall-filesystem=:tavall-filesystem'
 requiredChecks:
   - compilation
   - unit-tests

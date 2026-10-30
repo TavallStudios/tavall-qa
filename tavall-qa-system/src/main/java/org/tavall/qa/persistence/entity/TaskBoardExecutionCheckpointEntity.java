@@ -20,8 +20,11 @@ import java.util.UUID;
 @NamedQuery(name = TaskBoardExecutionCheckpointEntity.FIND_BY_RUN,
         query = "SELECT entity FROM TaskBoardExecutionCheckpointEntity entity "
                 + "WHERE entity.taskId = :taskId AND entity.runId = :runId ORDER BY entity.sequence DESC")
+@NamedQuery(name = TaskBoardExecutionCheckpointEntity.FIND_ALL,
+        query = "SELECT entity FROM TaskBoardExecutionCheckpointEntity entity ORDER BY entity.sequence DESC")
 public class TaskBoardExecutionCheckpointEntity {
     public static final String FIND_BY_RUN = "TaskBoardExecutionCheckpointEntity.findByRun";
+    public static final String FIND_ALL = "TaskBoardExecutionCheckpointEntity.findAll";
 
     @Id
     @Column(name = "checkpoint_id", nullable = false, length = 36)
