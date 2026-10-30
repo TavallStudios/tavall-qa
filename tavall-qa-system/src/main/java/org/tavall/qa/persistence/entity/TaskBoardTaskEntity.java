@@ -27,9 +27,15 @@ import java.util.UUID;
                 ORDER BY entity.sortOrder, entity.updatedAt DESC
                 """
 )
+@NamedQuery(
+        name = TaskBoardTaskEntity.FIND_ALL,
+        query = "SELECT entity FROM TaskBoardTaskEntity entity ORDER BY entity.updatedAt DESC"
+)
 public class TaskBoardTaskEntity {
     public static final String FIND_BY_PROJECT =
             "TaskBoardTaskEntity.findByProject";
+    public static final String FIND_ALL =
+            "TaskBoardTaskEntity.findAll";
 
     /** Shares the canonical task mutation lock with durable execution state transitions. */
     public static String lockKey(UUID taskId) {

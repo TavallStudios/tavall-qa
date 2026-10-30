@@ -3,6 +3,7 @@ package org.tavall.qa.persistence.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 import org.tavall.qa.domain.execution.TaskBoardExecutionLeaseData;
 
@@ -12,7 +13,12 @@ import java.util.UUID;
 /** Durable representation; transactions and entity lifecycle remain owned by Tavall Database. */
 @Entity
 @Table(name = "task_board_execution_lease")
+@NamedQuery(
+        name = TaskBoardExecutionLeaseEntity.FIND_ALL,
+        query = "SELECT entity FROM TaskBoardExecutionLeaseEntity entity"
+)
 public class TaskBoardExecutionLeaseEntity {
+    public static final String FIND_ALL = "TaskBoardExecutionLeaseEntity.findAll";
     @Id
     @Column(name = "task_id", nullable = false, length = 36)
     private String taskId;

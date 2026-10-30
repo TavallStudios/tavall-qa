@@ -3,6 +3,10 @@ package org.tavall.qa.persistence;
 import jakarta.persistence.LockModeType;
 import org.tavall.database.postgres.IPostgresDatabase;
 import org.tavall.database.postgres.entity.IPostgresEntityOperationContext;
+import org.tavall.dependency.DependencyAccess;
+import org.tavall.dependency.GenerationOwnedDependencyAccess;
+import org.tavall.dependency.annotations.DelegatesTo;
+import org.tavall.dependency.maps.interfaces.IDependencyMap;
 import org.tavall.qa.domain.TaskBoardAction;
 import org.tavall.qa.domain.TaskBoardAssignment;
 import org.tavall.qa.domain.TaskBoardAuditEntry;
@@ -18,6 +22,8 @@ import org.tavall.qa.domain.TaskBoardTaskFingerprint;
 import org.tavall.qa.domain.TaskBoardTaskStatus;
 import org.tavall.qa.domain.TaskBoardStorageUnavailableException;
 import org.tavall.qa.domain.TaskBoardVqcContribution;
+import org.tavall.qa.domain.mirror.TaskBoardFileMirrorDriftType;
+import org.tavall.qa.handler.ITaskBoardFileMirrorHandler;
 import org.tavall.qa.persistence.entity.TaskBoardActionEntity;
 import org.tavall.qa.persistence.entity.TaskBoardAssignmentEntity;
 import org.tavall.qa.persistence.entity.TaskBoardAuditEntryEntity;
@@ -34,7 +40,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-public final class TaskBoardDataHandler implements ITaskBoardDataHandler {
+@DelegatesTo(ITaskBoardDataHandler.class)
+public final class TaskBoardDataHandler extends GenerationOwnedDependencyAccess
+        implements ITaskBoardDataHandler, DependencyAccess<ITaskBoardFileMirrorHandler> {
     private static final String EVIDENCE_LOCK_PREFIX = "tavall-qa:evidence:";
     private static final String ASSIGNMENT_LOCK_PREFIX = "tavall-qa:assignment:";
     private static final String VQC_LOCK_PREFIX = "tavall-qa:vqc:";
@@ -115,7 +123,7 @@ public final class TaskBoardDataHandler implements ITaskBoardDataHandler {
         Objects.requireNonNull(task, "task");
         Objects.requireNonNull(expectedUpdatedAt, "expectedUpdatedAt");
         requireAudit(auditEntry, Optional.of(task.taskId()), task.projectKey());
-        return database.entities().executeAtomic(context -> {
+        TaskBoardTask committed = database.entities().executeAtomic(context -> {
             context.acquireAdvisoryTransactionLock(TaskBoardTaskEntity.lockKey(task.taskId()));
             Optional<TaskBoardTaskEntity> persisted = context.find(
                     TaskBoardTaskEntity.class,
@@ -137,6 +145,8 @@ public final class TaskBoardDataHandler implements ITaskBoardDataHandler {
             context.save(TaskBoardAuditEntryEntity.fromDomain(auditEntry));
             return saved.toDomain();
         });
+        mirrorTaskSafely(committed);
+        return committed;
     }
 
     @Override
@@ -366,7 +376,7 @@ public final class TaskBoardDataHandler implements ITaskBoardDataHandler {
         if (!evidence.taskId().equals(task.taskId()) || evidence.status() != TaskBoardEvidenceStatus.ACCEPTED) {
             throw new IllegalArgumentException("Task acceptance requires accepted evidence for the same task");
         }
-        return database.entities().executeAtomic(context -> {
+        TaskBoardTask committed = database.entities().executeAtomic(context -> {
             context.acquireAdvisoryTransactionLock(TaskBoardTaskEntity.lockKey(task.taskId()));
             TaskBoardTaskEntity persisted = context.find(
                             TaskBoardTaskEntity.class,
@@ -441,6 +451,32 @@ public final class TaskBoardDataHandler implements ITaskBoardDataHandler {
             }
             return saved.toDomain();
         });
+        mirrorTaskSafely(committed);
+        return committed;
+    }
+
+    private void mirrorTaskSafely(TaskBoardTask task) {
+        if (task == null) {
+            return;
+        }
+        ITaskBoardFileMirrorHandler mirror = findFileMirror();
+        if (mirror != null) {
+            try {
+                mirror.mirrorTask(task);
+            } catch (Exception exception) {
+                mirror.recordDrift("task", task.taskId().toString(),
+                        TaskBoardFileMirrorDriftType.MISSING_IN_MIRROR,
+                        "Failed to mirror task: " + exception.getMessage());
+            }
+        }
+    }
+
+    private ITaskBoardFileMirrorHandler findFileMirror() {
+        try {
+            return getInstance();
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
     @Override

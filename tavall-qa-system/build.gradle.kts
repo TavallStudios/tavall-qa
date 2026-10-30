@@ -28,8 +28,11 @@ tasks.named("compileJava") {
 dependencies {
     dependencyAccessLowerer("org.tavall:tavall-di:1.0.0")
     api(project(":tavall-qa-api"))
+    api("org.tavall.filesystem:tavall-filesystem-api:0.1.2")
+    implementation("org.tavall.filesystem:tavall-filesystem:0.1.2")
     implementation("org.tavall:tavall-database-postgres:1.0.0")
     implementation("org.tavall:tavall-di:1.0.0")
     implementation("jakarta.persistence:jakarta.persistence-api:3.1.0")
     implementation("org.springframework:spring-context:6.2.3")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.18.3")
 }

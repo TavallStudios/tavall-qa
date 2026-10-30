@@ -13,6 +13,12 @@ import org.tavall.qa.persistence.ITaskBoardExecutionCheckpointDataHandler;
 import org.tavall.qa.persistence.TaskBoardExecutionCheckpointDataHandler;
 import org.tavall.qa.handler.ITaskBoardExecutionCheckpointHandler;
 import org.tavall.qa.handler.TaskBoardExecutionCheckpointHandler;
+import org.tavall.qa.handler.ITaskBoardFileMirrorHandler;
+import org.tavall.qa.handler.TaskBoardFileMirrorHandler;
+import org.tavall.qa.domain.mirror.TaskBoardFileMirrorSettings;
+import org.tavall.filesystem.api.FilesystemAtomicOperations;
+import org.tavall.filesystem.system.atomic.AtomicFilesystemOperations;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.Objects;
 import java.time.Clock;
@@ -77,5 +83,27 @@ public class TavallQaConfiguration {
         }
         return dependencyMap.registerInstance(ITaskBoardExecutionCheckpointHandler.class,
                 new TaskBoardExecutionCheckpointHandler());
+    }
+
+    @Bean
+    public ITaskBoardFileMirrorHandler taskBoardFileMirrorHandler() {
+        if (dependencyMap.findInstance(TaskBoardFileMirrorSettings.class) == null) {
+            dependencyMap.registerInstance(TaskBoardFileMirrorSettings.class, TaskBoardFileMirrorSettings.createDefault());
+        }
+        if (dependencyMap.findInstance(FilesystemAtomicOperations.class) == null) {
+            dependencyMap.registerInstance(FilesystemAtomicOperations.class, new AtomicFilesystemOperations());
+        }
+        if (dependencyMap.findInstance(ObjectMapper.class) == null) {
+            dependencyMap.registerInstance(ObjectMapper.class, new ObjectMapper());
+        }
+        if (dependencyMap.findInstance(Clock.class) == null) {
+            dependencyMap.registerInstance(Clock.class, Clock.systemUTC());
+        }
+        ITaskBoardFileMirrorHandler existing = dependencyMap.findInstance(ITaskBoardFileMirrorHandler.class);
+        if (existing != null) {
+            return existing;
+        }
+        return dependencyMap.registerInstance(ITaskBoardFileMirrorHandler.class,
+                new TaskBoardFileMirrorHandler());
     }
 }
