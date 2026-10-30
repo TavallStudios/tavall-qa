@@ -26,6 +26,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import java.util.Comparator;
+import java.util.UUID;
 
 /**
  * Direction A Task Detail layout:
@@ -53,6 +54,17 @@ public final class QaTaskDetailPageHTML {
             boolean canManage,
             boolean canHumanVerify,
             QaTaskPageContext pageContext
+    ) {
+        QaTaskExecutionView execution = pageContext != null ? pageContext.execution().orElse(null) : null;
+        return build(taskView, canManage, canHumanVerify, pageContext, execution);
+    }
+
+    public static HTMLDocument build(
+            TaskBoardTaskView taskView,
+            boolean canManage,
+            boolean canHumanVerify,
+            QaTaskPageContext pageContext,
+            QaTaskExecutionView execution
     ) {
         if (taskView == null || taskView.task() == null) {
             return renderEmpty();
@@ -97,7 +109,8 @@ public final class QaTaskDetailPageHTML {
                         .toList(),
                 canManage,
                 canHumanVerify,
-                pageContext
+                pageContext,
+                execution
         );
     }
 
@@ -106,7 +119,7 @@ public final class QaTaskDetailPageHTML {
             boolean canManage,
             boolean canHumanVerify
     ) {
-        return build(taskPage, canManage, canHumanVerify, QaTaskPageContext.readOnly());
+        return build(taskPage, canManage, canHumanVerify, QaTaskPageContext.readOnly(), null);
     }
 
     public static HTMLDocument build(
@@ -114,6 +127,17 @@ public final class QaTaskDetailPageHTML {
             boolean canManage,
             boolean canHumanVerify,
             QaTaskPageContext pageContext
+    ) {
+        QaTaskExecutionView execution = pageContext != null ? pageContext.execution().orElse(null) : null;
+        return build(taskPage, canManage, canHumanVerify, pageContext, execution);
+    }
+
+    public static HTMLDocument build(
+            TaskBoardTaskPageView taskPage,
+            boolean canManage,
+            boolean canHumanVerify,
+            QaTaskPageContext pageContext,
+            QaTaskExecutionView execution
     ) {
         if (taskPage == null) {
             return renderEmpty();
@@ -141,7 +165,8 @@ public final class QaTaskDetailPageHTML {
                 taskPage.publicEvidence(),
                 canManage,
                 canHumanVerify,
-                pageContext
+                pageContext,
+                execution
         );
     }
 
@@ -180,7 +205,8 @@ public final class QaTaskDetailPageHTML {
             List<TaskBoardPublicEvidenceView> evidence,
             boolean canManage,
             boolean canHumanVerify,
-            QaTaskPageContext pageContext
+            QaTaskPageContext pageContext,
+            QaTaskExecutionView execution
     ) {
         HTMLElement shell = HTML.div().classes(
                 QaCSS.QA_APP,
@@ -283,6 +309,16 @@ public final class QaTaskDetailPageHTML {
 
         if (assignedEvidence != null && !assignedEvidence.isEmpty()) {
             mainCol.child(assignedEvidenceSection(projectKey, taskIdStr, statusName, assignedEvidence, pageContext));
+        }
+
+        boolean isContributor = pageContext != null && !pageContext.evidenceEnvironments().isEmpty();
+        boolean isQaReviewer = (pageContext != null && !pageContext.reviewEnvironments().isEmpty()) || canHumanVerify;
+        boolean isAdmin = canManage;
+        boolean isAuthorizedForExecution = isContributor || isQaReviewer || isAdmin;
+
+        // Public views must not show execution internals
+        if (execution != null && isAuthorizedForExecution) {
+            mainCol.child(executionSection(projectKey, taskIdStr, execution, isContributor, isQaReviewer, isAdmin, pageContext));
         }
 
         if (pageContext != null && !pageContext.evidenceEnvironments().isEmpty()) {
@@ -518,7 +554,168 @@ public final class QaTaskDetailPageHTML {
         return HTML.label().child(HTML.span().text(label)).child(select);
     }
 
+    private static HTMLElement executionSection(
+            String projectKey,
+            String taskId,
+            QaTaskExecutionView execution,
+            boolean isContributor,
+            boolean isQaReviewer,
+            boolean isAdmin,
+            QaTaskPageContext context
+    ) {
+        HTMLElement section = HTML.article().classes(QaCSS.PUBLIC_SECTION_CARD);
+        section.child(HTML.h3().text("Execution & Diagnostics"));
+
+        // Facts dl for execution metadata
+        HTMLElement facts = HTML.dl().classes(QaCSS.PUBLIC_TASK_FACTS);
+
+        // 1. Lease holder
+        String leaseText = execution.leaseHolder() != null && !execution.leaseHolder().isBlank()
+                ? execution.leaseHolder()
+                : "None (Unleased)";
+        facts.child(HTML.div()
+                .child(HTML.dt().text("Lease Holder"))
+                .child(HTML.dd().text(leaseText)));
+
+        // 2. Provider ID
+        String providerText = execution.providerId() != null && !execution.providerId().isBlank()
+                ? execution.providerId()
+                : "None";
+        facts.child(HTML.div()
+                .child(HTML.dt().text("Provider ID"))
+                .child(HTML.dd().text(providerText)));
+
+        // 3. Run ID
+        String runText = execution.runId() != null
+                ? execution.runId().toString()
+                : "None";
+        facts.child(HTML.div()
+                .child(HTML.dt().text("Run ID"))
+                .child(HTML.dd().text(runText)));
+
+        // 4. Current quota restriction / blocked reason
+        String quotaText = execution.quotaRestriction() != null && !execution.quotaRestriction().isBlank()
+                ? execution.quotaRestriction()
+                : "None";
+        facts.child(HTML.div()
+                .child(HTML.dt().text("Quota Restriction"))
+                .child(HTML.dd().text(quotaText)));
+
+        String blockedText = execution.blockedReason() != null && !execution.blockedReason().isBlank()
+                ? execution.blockedReason()
+                : "None (Active)";
+        facts.child(HTML.div()
+                .child(HTML.dt().text("Blocked Reason"))
+                .child(HTML.dd().text(blockedText)));
+
+        section.child(facts);
+
+        // 5. Ordered Checkpoints
+        HTMLElement checkpointsCard = HTML.div();
+        checkpointsCard.child(HTML.h4().text("Ordered Checkpoints"));
+        List<QaTaskExecutionCheckpointView> sortedCheckpoints = execution.checkpoints().stream()
+                .sorted(Comparator.comparingLong(QaTaskExecutionCheckpointView::sequence))
+                .toList();
+
+        if (sortedCheckpoints.isEmpty()) {
+            checkpointsCard.child(HTML.p().classes(QaCSS.PUBLIC_BOARD_EMPTY)
+                    .text("No execution checkpoints recorded."));
+        } else {
+            for (QaTaskExecutionCheckpointView checkpoint : sortedCheckpoints) {
+                HTMLElement entry = HTML.div().classes(QaCSS.PUBLIC_STAFF_VERIFICATION_FACTS);
+                entry.child(HTML.div()
+                        .child(HTML.strong().text("Checkpoint #" + checkpoint.sequence() + " · " + checkpoint.status()))
+                        .child(HTML.span().text(checkpoint.providerId() + " · " + DATE_FORMATTER.format(checkpoint.recordedAt()))));
+                if (checkpoint.nextAction() != null && !checkpoint.nextAction().isBlank()) {
+                    entry.child(HTML.p().text("Next action: " + checkpoint.nextAction()));
+                }
+                entry.child(HTML.p().text("Checkpoint ID: " + checkpoint.checkpointId()));
+                checkpointsCard.child(entry);
+            }
+        }
+        section.child(checkpointsCard);
+
+        // 6. Compile / Test / CI Evidence Links
+        HTMLElement evidenceLinksSection = HTML.div();
+        evidenceLinksSection.child(HTML.h4().text("Compile, Test & CI Evidence"));
+        if (execution.evidenceLinks().isEmpty()) {
+            evidenceLinksSection.child(HTML.p().classes(QaCSS.PUBLIC_BOARD_EMPTY)
+                    .text("No compile, test, or CI evidence links available."));
+        } else {
+            for (QaTaskExecutionEvidenceLink link : execution.evidenceLinks()) {
+                HTMLElement linkItem = HTML.div().classes(QaCSS.PUBLIC_STAFF_VERIFICATION_FACTS);
+                linkItem.child(HTML.div()
+                        .child(HTML.strong().text(link.label()))
+                        .child(HTML.span().text(link.type().name())));
+                linkItem.child(HTML.a()
+                        .attribute(HTMLAttribute.HREF, link.url())
+                        .text("Open " + link.type().name().toLowerCase() + " evidence"));
+                evidenceLinksSection.child(linkItem);
+            }
+        }
+        section.child(evidenceLinksSection);
+
+        // 7. Actions: Resume / Cancel (lease release)
+        // Actions must respect the existing role checks (contributor/QA reviewer/admin)
+        boolean allowResume = (isAdmin || isQaReviewer || isContributor) && execution.canResume();
+        boolean allowCancel = (isAdmin || isQaReviewer) && execution.canCancel();
+
+        if (allowResume || allowCancel) {
+            HTMLElement actionsDiv = HTML.div().classes(QaCSS.PUBLIC_STAFF_FORM_ACTIONS);
+
+            UUID parsedTaskId;
+            try {
+                parsedTaskId = UUID.fromString(taskId);
+            } catch (IllegalArgumentException ignored) {
+                parsedTaskId = null;
+            }
+
+            String resumeUrl = parsedTaskId != null
+                    ? QaRoutes.executionResume(projectKey, parsedTaskId)
+                    : "/projects/" + projectKey + "/tasks/" + taskId + "/resume";
+            String cancelUrl = parsedTaskId != null
+                    ? QaRoutes.executionRelease(projectKey, parsedTaskId)
+                    : "/projects/" + projectKey + "/tasks/" + taskId + "/lease/release";
+
+            if (allowResume) {
+                actionsDiv.child(executionActionForm(taskId, resumeUrl, "Resume execution", QaCSS.GOLD_BUTTON, execution.runId(), context));
+            }
+            if (allowCancel) {
+                actionsDiv.child(executionActionForm(taskId, cancelUrl, "Cancel execution", QaCSS.GHOST_BUTTON, execution.runId(), context));
+            }
+
+            section.child(actionsDiv);
+        }
+
+        return section;
+    }
+
+    private static HTMLElement executionActionForm(
+            String taskId,
+            String actionUrl,
+            String label,
+            QaCSS buttonClass,
+            UUID runId,
+            QaTaskPageContext context
+    ) {
+        HTMLElement form = HTML.form().classes(QaCSS.PUBLIC_STAFF_FORM)
+                .attribute(HTMLAttribute.METHOD, "post")
+                .attribute(HTMLAttribute.ACTION, actionUrl);
+        addRequestContext(form, context);
+        form.child(hidden("taskId", taskId));
+        if (runId != null) {
+            form.child(hidden("runId", runId.toString()));
+        }
+        form.child(HTML.button().classes(buttonClass)
+                .attribute(HTMLAttribute.TYPE, "submit")
+                .text(label));
+        return form;
+    }
+
     private static void addRequestContext(HTMLElement form, QaTaskPageContext context) {
+        if (context == null) {
+            return;
+        }
         if (!context.csrfToken().isBlank()) {
             form.child(hidden(context.csrfParameterName(), context.csrfToken()));
         }

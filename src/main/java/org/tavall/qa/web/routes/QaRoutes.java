@@ -18,7 +18,7 @@ public final class QaRoutes {
     public static final String WORKSPACE_TASK = "/workspace/{projectKey}/tasks/{taskId}";
     public static final String MESSAGES = "/messages/{key}";
 
-    // Mutations
+    // Server-side mutations
     public static final String PROJECTS_MUTATION = "/projects";
     public static final String TASKS_MUTATION = "/projects/{projectKey}/tasks";
     public static final String TASK_MUTATION = "/projects/{projectKey}/tasks/{taskId}";
@@ -31,6 +31,10 @@ public final class QaRoutes {
     public static final String TASK_REJECT_MUTATION = "/projects/{projectKey}/tasks/{taskId}/reject";
     public static final String ASSIGNMENTS_MUTATION = "/projects/{projectKey}/tasks/{taskId}/assignments";
     public static final String ASSIGNMENT_REVOKE_MUTATION = "/projects/{projectKey}/tasks/{taskId}/assignments/{assignmentId}/revoke";
+    public static final String EXECUTION_RESUME_MUTATION = "/projects/{projectKey}/tasks/{taskId}/resume";
+    public static final String EXECUTION_RELEASE_MUTATION = "/projects/{projectKey}/tasks/{taskId}/lease/release";
+    public static final String EXECUTION_CANCEL_MUTATION = EXECUTION_RELEASE_MUTATION;
+
 
     // Legacy paths
     public static final String LEGACY_ROOT = "/task-board";
@@ -77,5 +81,46 @@ public final class QaRoutes {
         Objects.requireNonNull(projectKey, "projectKey");
         Objects.requireNonNull(taskId, "taskId");
         return "/task-board/" + projectKey.trim() + "/tasks/" + taskId;
+    }
+
+    public static String executionResume(String projectKey, UUID taskId) {
+        Objects.requireNonNull(projectKey, "projectKey");
+        Objects.requireNonNull(taskId, "taskId");
+        return "/projects/" + projectKey.trim() + "/tasks/" + taskId + "/resume";
+    }
+
+    public static String executionRelease(String projectKey, UUID taskId) {
+        Objects.requireNonNull(projectKey, "projectKey");
+        Objects.requireNonNull(taskId, "taskId");
+        return "/projects/" + projectKey.trim() + "/tasks/" + taskId + "/lease/release";
+    }
+
+    public static String executionCancel(String projectKey, UUID taskId) {
+        return executionRelease(projectKey, taskId);
+    }
+
+    public static String backendExecutionTask(UUID taskId) {
+        Objects.requireNonNull(taskId, "taskId");
+        return "/api/execution/tasks/" + taskId;
+    }
+
+    public static String backendExecutionLease(UUID taskId) {
+        Objects.requireNonNull(taskId, "taskId");
+        return "/api/execution/tasks/" + taskId + "/lease";
+    }
+
+    public static String backendExecutionRelease(UUID taskId) {
+        Objects.requireNonNull(taskId, "taskId");
+        return "/api/execution/tasks/" + taskId + "/lease/release";
+    }
+
+    public static String backendExecutionCheckpoints(UUID taskId) {
+        Objects.requireNonNull(taskId, "taskId");
+        return "/api/execution/tasks/" + taskId + "/checkpoints";
+    }
+
+    public static String backendExecutionResume(UUID taskId) {
+        Objects.requireNonNull(taskId, "taskId");
+        return "/api/execution/tasks/" + taskId + "/resume";
     }
 }
