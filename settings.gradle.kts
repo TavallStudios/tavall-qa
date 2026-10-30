@@ -77,3 +77,21 @@ includeSourceComposite(
     "tavall-di-source",
     mapOf("tavall-di" to ":")
 )
+includeSourceComposite(
+    "TAVALL_CUSTOM_ENUM_JAVA_BUILD",
+    "tavall-custom-enum-java-source",
+    mapOf("tavall-custom-enum-java" to ":")
+)
+includeSourceComposite(
+    "TAVALL_LOGGING_BUILD",
+    "tavall-logging-source",
+    mapOf("tavall-logging" to ":")
+)
+includeSourceComposite(
+    "TAVALL_FILESYSTEM_BUILD",
+    "tavall-filesystem-source",
+    mapOf(
+        "tavall-filesystem-api" to ":tavall-filesystem-api",
+        "tavall-filesystem" to ":tavall-filesystem"
+    )
+)
