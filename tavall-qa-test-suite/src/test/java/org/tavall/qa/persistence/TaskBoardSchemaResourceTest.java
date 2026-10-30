@@ -44,6 +44,22 @@ final class TaskBoardSchemaResourceTest {
         assertTrue(migration.contains("task_board_audit_no_truncate"));
     }
 
+    @Test
+    void notionSyncMigrationOwnsDurableSyncState() throws IOException {
+        String migration = resource("schema/postgres/035_task_board_notion_sync.sql");
+
+        assertTrue(migration.contains("CREATE TABLE IF NOT EXISTS notion_task_sync_state"));
+        assertTrue(migration.contains("sync_id VARCHAR(36) PRIMARY KEY"));
+        assertTrue(migration.contains("task_id VARCHAR(36) NOT NULL REFERENCES task_board_task(task_id)"));
+        assertTrue(migration.contains("notion_database_id VARCHAR(64) NOT NULL"));
+        assertTrue(migration.contains("notion_page_id VARCHAR(64) NOT NULL"));
+        assertTrue(migration.contains("last_ingested_revision TIMESTAMPTZ"));
+        assertTrue(migration.contains("last_outbound_revision BIGINT NOT NULL DEFAULT 0"));
+        assertTrue(migration.contains("last_acknowledged_outbound_revision BIGINT NOT NULL DEFAULT 0"));
+        assertTrue(migration.contains("has_conflict BOOLEAN NOT NULL DEFAULT FALSE"));
+        assertTrue(migration.contains("uq_notion_sync_page_id UNIQUE (notion_page_id)"));
+    }
+
     private String resource(String path) throws IOException {
         ClassLoader classLoader = TaskBoardSchemaResourceTest.class.getClassLoader();
         try (InputStream inputStream = classLoader.getResourceAsStream(path)) {

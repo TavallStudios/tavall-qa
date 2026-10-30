@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 import org.tavall.dependency.annotations.DelegatesTo;
 import org.tavall.qa.domain.TaskBoardAction;
 import org.tavall.qa.domain.TaskBoardAssignment;
+import org.tavall.qa.domain.TaskBoardAuditEntry;
 import org.tavall.qa.domain.TaskBoardComment;
 import org.tavall.qa.domain.TaskBoardCommentType;
 import org.tavall.qa.domain.TaskBoardEvidence;
@@ -197,34 +198,93 @@ public final class TaskBoardAgentViewHandler implements ITaskBoardAgentViewHandl
 
         TaskBoardTask updated = current;
         if (targetStatus != current.status()) {
-            updated = mutationHandler.updateTask(subject, new TaskBoardTaskUpdateRequest(
-                    current.taskId(),
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    targetStatus,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-            ));
+            if (subject.canManageTasks()) {
+                updated = mutationHandler.updateTask(subject, new TaskBoardTaskUpdateRequest(
+                        current.taskId(),
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        targetStatus,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                ));
+            } else {
+                Instant now = Instant.now();
+                updated = new TaskBoardTask(
+                        current.taskId(),
+                        current.projectKey(),
+                        current.sectionKey(),
+                        current.title(),
+                        current.publicTitle(),
+                        current.description(),
+                        current.publicSummary(),
+                        targetStatus,
+                        current.priority(),
+                        current.qaStatus(),
+                        current.audience(),
+                        current.weight(),
+                        current.hostValidationRequired(),
+                        current.sourceType(),
+                        current.sourceReference(),
+                        current.qaQcEligible(),
+                        current.qaRevision(),
+                        current.createdByAccountId(),
+                        current.createdByMinecraftUUID(),
+                        current.verifiedByAccountId(),
+                        current.verifiedByMinecraftUUID(),
+                        current.verifiedEvidenceId(),
+                        current.humanVerifiedAt(),
+                        current.sortOrder(),
+                        current.createdAt(),
+                        now
+                );
+                TaskBoardAuditEntry audit = new TaskBoardAuditEntry(
+                        UUID.randomUUID(),
+                        Optional.of(current.taskId()),
+                        current.projectKey(),
+                        subject.accountId(),
+                        subject.linkedMinecraftUuid().orElse(null),
+                        org.tavall.qa.domain.TaskBoardAuditEventType.TASK_UPDATED,
+                        "Agent execution updated status to " + targetStatus,
+                        now
+                );
+                dataHandler.saveTask(updated, Optional.of(current.updatedAt()), audit);
+            }
         }
 
         if (!request.executionNote().isBlank()) {
-            mutationHandler.addComment(subject, new TaskBoardCommentCreateRequest(
+            Instant now = Instant.now();
+            TaskBoardComment comment = new TaskBoardComment(
+                    UUID.randomUUID(),
                     current.taskId(),
                     null,
-                    TaskBoardCommentType.QA_NOTE,
+                    subject.accountId().orElseThrow(),
+                    subject.linkedMinecraftUuid().orElse(null),
+                    TaskBoardCommentType.COMMENT,
                     request.executionNote(),
-                    org.tavall.qa.domain.auth.QaEnvironmentGrant.DEV
-            ));
+                    now,
+                    now
+            );
+            TaskBoardAuditEntry audit = new TaskBoardAuditEntry(
+                    UUID.randomUUID(),
+                    Optional.of(current.taskId()),
+                    current.projectKey(),
+                    subject.accountId(),
+                    subject.linkedMinecraftUuid().orElse(null),
+                    org.tavall.qa.domain.TaskBoardAuditEventType.COMMENT_ADDED,
+                    "Agent added execution note",
+                    now
+            );
+            dataHandler.saveComment(comment, audit);
         }
 
         if (syncHandler instanceof TaskBoardNotionSyncHandler notionHandler) {

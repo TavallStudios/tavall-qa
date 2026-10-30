@@ -14,6 +14,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -177,13 +178,13 @@ public final class TaskBoardNotionSyncDataHandler implements ITaskBoardNotionSyn
             return;
         }
         try {
-            byte[] bytes = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(state);
+            com.fasterxml.jackson.databind.node.ObjectNode node = encodeState(state);
+            byte[] bytes = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(node);
             Path directory = atomicOps.createContainedDirectories(mirrorRoot, NOTION_SYNC_SUBDIR);
             String safeFileName = sanitizeFileName(state.notionPageId()) + ".json";
             Path target = atomicOps.resolveContained(mirrorRoot, NOTION_SYNC_SUBDIR + "/" + safeFileName);
             atomicOps.replaceAtomically(target, bytes);
         } catch (Exception exception) {
-            // File redundancy failure must not silently crash main flow, but log
             System.getLogger(TaskBoardNotionSyncDataHandler.class.getName())
                     .log(System.Logger.Level.WARNING, "Failed to mirror Notion sync state to file: " + exception.getMessage());
         }
@@ -202,7 +203,8 @@ public final class TaskBoardNotionSyncDataHandler implements ITaskBoardNotionSyn
                 stream.filter(path -> path.toString().endsWith(".json")).forEach(path -> {
                     try {
                         byte[] bytes = Files.readAllBytes(path);
-                        NotionTaskSyncState state = objectMapper.readValue(bytes, NotionTaskSyncState.class);
+                        com.fasterxml.jackson.databind.JsonNode node = objectMapper.readTree(bytes);
+                        NotionTaskSyncState state = decodeState(node);
                         cache(state);
                     } catch (Exception ignored) {
                     }
@@ -210,6 +212,48 @@ public final class TaskBoardNotionSyncDataHandler implements ITaskBoardNotionSyn
             }
         } catch (Exception ignored) {
         }
+    }
+
+    private com.fasterxml.jackson.databind.node.ObjectNode encodeState(NotionTaskSyncState state) {
+        com.fasterxml.jackson.databind.node.ObjectNode node = objectMapper.createObjectNode();
+        node.put("syncId", state.syncId().toString());
+        node.put("taskId", state.taskId().toString());
+        node.put("notionDatabaseId", state.notionDatabaseId());
+        node.put("notionPageId", state.notionPageId());
+        node.put("notionPageUrl", state.notionPageUrl());
+        if (state.lastIngestedRevision() != null) {
+            node.put("lastIngestedRevision", state.lastIngestedRevision().toString());
+        } else {
+            node.putNull("lastIngestedRevision");
+        }
+        node.put("lastOutboundRevision", state.lastOutboundRevision());
+        node.put("lastAcknowledgedOutboundRevision", state.lastAcknowledgedOutboundRevision());
+        node.put("hasConflict", state.hasConflict());
+        node.put("conflictDetails", state.conflictDetails());
+        node.put("archived", state.archived());
+        node.put("deleted", state.deleted());
+        node.put("createdAt", state.createdAt().toString());
+        node.put("updatedAt", state.updatedAt().toString());
+        return node;
+    }
+
+    private NotionTaskSyncState decodeState(com.fasterxml.jackson.databind.JsonNode node) {
+        return new NotionTaskSyncState(
+                UUID.fromString(node.get("syncId").asText()),
+                UUID.fromString(node.get("taskId").asText()),
+                node.get("notionDatabaseId").asText(),
+                node.get("notionPageId").asText(),
+                node.get("notionPageUrl").asText(),
+                node.hasNonNull("lastIngestedRevision") ? Instant.parse(node.get("lastIngestedRevision").asText()) : null,
+                node.get("lastOutboundRevision").asLong(),
+                node.get("lastAcknowledgedOutboundRevision").asLong(),
+                node.get("hasConflict").asBoolean(),
+                node.hasNonNull("conflictDetails") ? node.get("conflictDetails").asText() : "",
+                node.get("archived").asBoolean(),
+                node.get("deleted").asBoolean(),
+                Instant.parse(node.get("createdAt").asText()),
+                Instant.parse(node.get("updatedAt").asText())
+        );
     }
 
     private static String sanitizeFileName(String input) {
