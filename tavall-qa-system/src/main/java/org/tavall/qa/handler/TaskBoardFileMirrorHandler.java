@@ -558,7 +558,8 @@ public final class TaskBoardFileMirrorHandler extends GenerationOwnedDependencyA
         ObjectNode source = node.putObject("source");
         source.put("repository", checkpoint.source().repository());
         source.put("branch", checkpoint.source().branch());
-        source.put("commitSha", checkpoint.source().commitSha());
+        source.put("commit", checkpoint.source().commit());
+        source.put("commitSha", checkpoint.source().commit());
         source.put("diffSha256", checkpoint.source().diffSha256());
 
         node.put("payloadSha256", checkpoint.payloadSha256());
@@ -571,10 +572,13 @@ public final class TaskBoardFileMirrorHandler extends GenerationOwnedDependencyA
 
     private TaskBoardExecutionCheckpointData decodeCheckpoint(JsonNode node) {
         JsonNode sourceNode = node.path("source");
+        String commit = sourceNode.hasNonNull("commit")
+                ? sourceNode.path("commit").asText()
+                : sourceNode.path("commitSha").asText();
         TaskBoardExecutionSourceData source = new TaskBoardExecutionSourceData(
                 sourceNode.path("repository").asText(),
                 sourceNode.path("branch").asText(),
-                sourceNode.path("commitSha").asText(),
+                commit,
                 sourceNode.path("diffSha256").asText()
         );
         return new TaskBoardExecutionCheckpointData(

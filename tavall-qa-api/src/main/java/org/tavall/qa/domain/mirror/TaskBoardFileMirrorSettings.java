@@ -15,6 +15,14 @@ public record TaskBoardFileMirrorSettings(
         Objects.requireNonNull(mirrorRoot, "mirrorRoot");
     }
 
+    public static TaskBoardFileMirrorSettings createDefault() {
+        String env = System.getenv(DEFAULT_MIRROR_ROOT_ENV);
+        if (env != null && !env.isBlank()) {
+            return new TaskBoardFileMirrorSettings(Path.of(env.trim()));
+        }
+        return new TaskBoardFileMirrorSettings(Path.of("/srv/dev-storage/qa/mirror"));
+    }
+
     public static TaskBoardFileMirrorSettings fromEnvironmentOrDefault(Path defaultRoot) {
         String env = System.getenv(DEFAULT_MIRROR_ROOT_ENV);
         if (env != null && !env.isBlank()) {

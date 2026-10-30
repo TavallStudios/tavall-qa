@@ -17,6 +17,7 @@ import org.tavall.qa.handler.ITaskBoardFileMirrorHandler;
 import org.tavall.qa.handler.TaskBoardFileMirrorHandler;
 import org.tavall.qa.domain.mirror.TaskBoardFileMirrorSettings;
 import org.tavall.filesystem.api.FilesystemAtomicOperations;
+import org.tavall.filesystem.system.atomic.AtomicFilesystemOperations;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.Objects;
@@ -90,7 +91,7 @@ public class TavallQaConfiguration {
             dependencyMap.registerInstance(TaskBoardFileMirrorSettings.class, TaskBoardFileMirrorSettings.createDefault());
         }
         if (dependencyMap.findInstance(FilesystemAtomicOperations.class) == null) {
-            dependencyMap.registerInstance(FilesystemAtomicOperations.class, new FilesystemAtomicOperations());
+            dependencyMap.registerInstance(FilesystemAtomicOperations.class, new AtomicFilesystemOperations());
         }
         if (dependencyMap.findInstance(ObjectMapper.class) == null) {
             dependencyMap.registerInstance(ObjectMapper.class, new ObjectMapper());

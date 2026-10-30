@@ -12,6 +12,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.tavall.database.postgres.IPostgresDatabase;
 import org.tavall.dependency.maps.DependencyMap;
 import org.tavall.filesystem.api.FilesystemAtomicOperations;
+import org.tavall.filesystem.system.atomic.AtomicFilesystemOperations;
 import org.tavall.qa.auth.TaskBoardTestSubjects;
 import org.tavall.qa.domain.TaskBoardAudience;
 import org.tavall.qa.domain.TaskBoardConcurrentModificationException;
@@ -104,7 +105,7 @@ class TaskBoardFileMirrorIntegrationTest {
         administrator = TaskBoardTestSubjects.active(UUID.randomUUID(), UUID.randomUUID(), Set.of(), Optional.empty(),
                 Set.of(QaEnvironmentGrant.DEV), Set.of(), List.of(), false, true);
 
-        atomicOps = new FilesystemAtomicOperations();
+        atomicOps = new AtomicFilesystemOperations();
         objectMapper = new ObjectMapper();
 
         dependencies = new DependencyMap();
