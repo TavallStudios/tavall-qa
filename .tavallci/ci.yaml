@@ -16,20 +16,29 @@ requiredChecks:
   - compilation
   - unit-tests
   - quality
+  - integration
 checks:
   compilation:
     executor: gradle
     tasks:
       - :tavall-qa-api:classes
       - :tavall-qa-system:classes
+    networkMode: PUBLIC
   unit-tests:
     executor: gradle
     tasks:
       - :tavall-qa-test-suite:test
+    networkMode: PUBLIC
   quality:
     executor: gradle
     tasks:
       - check
+    networkMode: PUBLIC
+  integration:
+    executor: gradle
+    tasks:
+      - :tavall-qa-test-suite:executionCheckpointIntegrationTest
+    networkMode: PUBLIC
 dependencies:
   - kind: source
     identity: TavallStudios/tavall-logging
