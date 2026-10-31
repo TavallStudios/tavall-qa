@@ -45,6 +45,15 @@ final class TaskBoardSchemaResourceTest {
     }
 
     @Test
+    void devExecutionAssignmentMigrationRestrictsTheCapability() throws IOException {
+        String migration = resource("schema/postgres/036_task_board_dev_execution_assignment.sql");
+
+        assertTrue(migration.contains("'TECHNICAL_DEV_EXECUTION'"));
+        assertTrue(migration.contains("task_board_assignment_dev_execution_check"));
+        assertTrue(migration.contains("environment = 'DEV' AND required_qa_class = 'TECHNICAL'"));
+    }
+
+    @Test
     void notionSyncMigrationOwnsDurableSyncState() throws IOException {
         String migration = resource("schema/postgres/035_task_board_notion_sync.sql");
 

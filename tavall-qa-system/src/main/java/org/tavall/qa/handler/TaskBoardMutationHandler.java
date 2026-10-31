@@ -56,7 +56,8 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
             QaCapability.SUBMIT_EVIDENCE,
             QaCapability.REVIEW_EVIDENCE,
             QaCapability.ADD_COMMENT,
-            QaCapability.HUMAN_VERIFY
+            QaCapability.HUMAN_VERIFY,
+            QaCapability.TECHNICAL_DEV_EXECUTION
     );
 
     private final ITaskBoardDataHandler dataHandler;
@@ -364,6 +365,11 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
         if (request.requiredClass().orElse(null) == QaClass.TECHNICAL) {
             require(request.minimumTier().filter(tier -> tier.isAtLeast(QaTier.TIER_III)).isPresent(),
                     "Technical QA assignments require a Tier III minimum");
+        }
+        if (request.capability() == QaCapability.TECHNICAL_DEV_EXECUTION) {
+            require(request.environment() == QaEnvironmentGrant.DEV
+                            && request.requiredClass().orElse(null) == QaClass.TECHNICAL,
+                    "DEV execution assignments are limited to DEV and require the Technical QA class");
         }
         Instant now = Instant.now();
         TaskBoardAssignment assignment = new TaskBoardAssignment(

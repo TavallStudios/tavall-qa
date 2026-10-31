@@ -261,6 +261,26 @@ final class TaskBoardMutationHandlerTest {
         ));
     }
 
+    @Test
+    void devExecutionAssignmentIsLimitedToTechnicalDevWork() {
+        TaskBoardTask task = createTask(manager, false);
+        UUID executor = UUID.randomUUID();
+
+        var assignment = mutationHandler.assignTask(manager, new TaskBoardAssignmentCreateRequest(
+                task.taskId(), executor, QaCapability.TECHNICAL_DEV_EXECUTION, QaEnvironmentGrant.DEV,
+                Optional.of(QaClass.TECHNICAL), Optional.of(QaTier.TIER_III), "Agent DEV execution"));
+        assertEquals(QaCapability.TECHNICAL_DEV_EXECUTION, assignment.capability());
+
+        assertThrows(SecurityException.class, () -> mutationHandler.assignTask(manager,
+                new TaskBoardAssignmentCreateRequest(task.taskId(), executor,
+                        QaCapability.TECHNICAL_DEV_EXECUTION, QaEnvironmentGrant.DEV,
+                        Optional.of(QaClass.REGULAR), Optional.of(QaTier.TIER_III), "Wrong class")));
+        assertThrows(SecurityException.class, () -> mutationHandler.assignTask(manager,
+                new TaskBoardAssignmentCreateRequest(task.taskId(), executor,
+                        QaCapability.TECHNICAL_DEV_EXECUTION, QaEnvironmentGrant.STAGING,
+                        Optional.of(QaClass.TECHNICAL), Optional.of(QaTier.TIER_III), "Wrong environment")));
+    }
+
     private void assign(UUID taskId, UUID assigneeId, QaCapability capability) {
         mutationHandler.assignTask(manager, new TaskBoardAssignmentCreateRequest(
                 taskId,
