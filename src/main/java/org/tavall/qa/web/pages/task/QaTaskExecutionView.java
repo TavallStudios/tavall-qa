@@ -17,11 +17,27 @@ public record QaTaskExecutionView(
         List<QaTaskExecutionCheckpointView> checkpoints,
         List<QaTaskExecutionEvidenceLink> evidenceLinks,
         boolean canResume,
-        boolean canCancel
+        boolean canCancel,
+        List<QaTaskAgentContextView> agentContexts
 ) {
     public QaTaskExecutionView {
         checkpoints = checkpoints == null ? List.of() : List.copyOf(checkpoints);
         evidenceLinks = evidenceLinks == null ? List.of() : List.copyOf(evidenceLinks);
+        agentContexts = agentContexts == null ? List.of() : List.copyOf(agentContexts);
+    }
+
+    public QaTaskExecutionView(
+            String leaseHolder,
+            String providerId,
+            UUID runId,
+            String quotaRestriction,
+            String blockedReason,
+            List<QaTaskExecutionCheckpointView> checkpoints,
+            List<QaTaskExecutionEvidenceLink> evidenceLinks,
+            boolean canResume,
+            boolean canCancel
+    ) {
+        this(leaseHolder, providerId, runId, quotaRestriction, blockedReason, checkpoints, evidenceLinks, canResume, canCancel, List.of());
     }
 
     public static QaTaskExecutionView of(
@@ -42,7 +58,47 @@ public record QaTaskExecutionView(
                 checkpoints,
                 evidenceLinks,
                 true,
-                true
+                true,
+                List.of()
+        );
+    }
+
+    public static QaTaskExecutionView of(
+            String leaseHolder,
+            String providerId,
+            UUID runId,
+            String quotaRestriction,
+            String blockedReason,
+            List<QaTaskExecutionCheckpointView> checkpoints,
+            List<QaTaskExecutionEvidenceLink> evidenceLinks,
+            List<QaTaskAgentContextView> agentContexts
+    ) {
+        return new QaTaskExecutionView(
+                leaseHolder,
+                providerId,
+                runId,
+                quotaRestriction,
+                blockedReason,
+                checkpoints,
+                evidenceLinks,
+                true,
+                true,
+                agentContexts
+        );
+    }
+
+    public QaTaskExecutionView withAgentContexts(List<QaTaskAgentContextView> agentContexts) {
+        return new QaTaskExecutionView(
+                leaseHolder,
+                providerId,
+                runId,
+                quotaRestriction,
+                blockedReason,
+                checkpoints,
+                evidenceLinks,
+                canResume,
+                canCancel,
+                agentContexts
         );
     }
 

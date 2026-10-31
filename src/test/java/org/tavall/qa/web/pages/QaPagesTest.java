@@ -25,6 +25,7 @@ import org.tavall.qa.view.TaskBoardTaskView;
 import org.tavall.qa.view.TaskBoardEvidenceView;
 import org.tavall.qa.web.pages.task.QaTaskPageContext;
 import org.tavall.qa.web.pages.task.QaTaskExecutionView;
+import org.tavall.qa.web.pages.task.QaTaskAgentContextView;
 import org.tavall.qa.web.pages.task.QaTaskExecutionCheckpointView;
 import org.tavall.qa.web.pages.task.QaTaskExecutionEvidenceLink;
 import org.tavall.qa.web.pages.task.QaExecutionEvidenceType;
@@ -355,7 +356,8 @@ class QaPagesTest {
                 List.of(cp1, cp2),
                 links,
                 true,
-                true
+                true,
+                List.of()
         );
 
         QaTaskPageContext context = new QaTaskPageContext(
@@ -435,7 +437,8 @@ class QaPagesTest {
                 List.of(new QaTaskExecutionCheckpointView(UUID.randomUUID(), 1, "internal-provider-xyz", "RUNNING", now, "Run private step")),
                 List.of(QaTaskExecutionEvidenceLink.ci("Internal CI", "https://private-ci.internal/build/1")),
                 true,
-                true
+                true,
+                List.of()
         );
 
         // Public read-only context (no staff/reviewer/contributor roles)
@@ -477,7 +480,7 @@ class QaPagesTest {
         TaskBoardTaskView taskView = new TaskBoardTaskView(project, task, List.of(), List.of(), List.of(), List.of(), List.of());
 
         QaTaskExecutionView execution = new QaTaskExecutionView(
-                "worker-1", "codex", runId, null, null, List.of(), List.of(), true, true
+                "worker-1", "codex", runId, null, null, List.of(), List.of(), true, true, List.of()
         );
 
         // 1. Contributor (evidence submission grant, but not reviewer or admin)
@@ -545,7 +548,7 @@ class QaPagesTest {
         QaTaskExecutionCheckpointView cp3 = new QaTaskExecutionCheckpointView(UUID.randomUUID(), 3, "p1", "RUNNING", now, "Step 3");
 
         QaTaskExecutionView execution = new QaTaskExecutionView(
-                "worker", "p1", runId, null, null, List.of(cp5, cp1, cp3), List.of(), false, false
+                "worker", "p1", runId, null, null, List.of(cp5, cp1, cp3), List.of(), false, false, List.of()
         );
 
         QaTaskDetailPage page = QaTaskDetailPage.build(taskView, true, false, QaTaskPageContext.readOnly(), execution);
@@ -580,5 +583,129 @@ class QaPagesTest {
         assertEquals("/api/execution/tasks/" + taskId + "/checkpoints", QaRoutes.backendExecutionCheckpoints(taskId));
         assertEquals("/api/execution/tasks/" + taskId + "/resume", QaRoutes.backendExecutionResume(taskId));
 
+    }
+
+    @Test
+    @DisplayName("Agent context viewer renders two agents with distinct colors, escaped content, bounded diff preview and empty state")
+    void agentContextViewerRenderingWithTwoAgentsAndEmptyState() {
+        UUID taskId = UUID.randomUUID();
+        Instant now = Instant.now();
+        TaskBoardProject project = new TaskBoardProject(
+                "tavall-pvp", "Tavall PvP", "Competitive arena", TaskBoardProjectStatus.ACTIVE,
+                TaskBoardAudience.PUBLIC, 0, now, now
+        );
+        TaskBoardTask task = new TaskBoardTask(
+                taskId, "tavall-pvp", "ffa", "Task", "Task",
+                "Desc", "Sum", TaskBoardTaskStatus.ACTIVE, TaskBoardTaskPriority.NORMAL,
+                TaskBoardQaStatus.NHV, TaskBoardAudience.PUBLIC, 1, false, "github", "", false,
+                UUID.randomUUID(), UUID.randomUUID(), null, null, null, null, 0, now, now
+        );
+        TaskBoardTaskView taskView = new TaskBoardTaskView(project, task, List.of(), List.of(), List.of(), List.of(), List.of());
+
+        // 1. Empty state
+        QaTaskExecutionView emptyExecution = new QaTaskExecutionView(
+                "worker", "p1", UUID.randomUUID(), null, null, List.of(), List.of(), false, false, List.of()
+        );
+        QaTaskDetailPage emptyPage = QaTaskDetailPage.build(taskView, true, false, QaTaskPageContext.readOnly(), emptyExecution);
+        String emptyHtml = renderer.render(emptyPage).body();
+        assertTrue(emptyHtml.contains("Live Agent Contexts"));
+        assertTrue(emptyHtml.contains("No agent contexts recorded."));
+
+        // 2. Two agents with distinct colors, escaped content, and bounded diff preview
+        UUID agentAccount1 = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        UUID agentAccount2 = UUID.fromString("00000000-0000-0000-0000-000000000002");
+        UUID runId1 = UUID.randomUUID();
+        UUID runId2 = UUID.randomUUID();
+
+        String color1 = QaTaskAgentContextView.colorTokenFor(agentAccount1);
+        String color2 = QaTaskAgentContextView.colorTokenFor(agentAccount2);
+        assertNotNull(color1);
+        assertNotNull(color2);
+        assertFalse(color1.equals(color2), "Two agents should have distinct colors");
+
+        // Prepare large diff > 16 KiB
+        String largePatch = "+ added line\n".repeat(2000);
+        assertTrue(largePatch.length() > 16 * 1024);
+
+        // Prepare more than 64 files to verify bounding
+        List<String> manyFiles = java.util.stream.IntStream.range(0, 100)
+                .mapToObj(i -> "file-" + i + ".txt")
+                .toList();
+
+        QaTaskAgentContextView agent1 = new QaTaskAgentContextView(
+                agentAccount1,
+                "codex-tj",
+                color1,
+                runId1,
+                "RUNNING",
+                now.minusSeconds(60),
+                "Executing <script>alert('xss')</script> & checking files",
+                manyFiles,
+                List.of("src/Main.java", "build.gradle"),
+                "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+                largePatch,
+                List.of("docs/README.md", "docs/AUTH.md"),
+                List.of("evidence://ref-1")
+        );
+
+        // Verify bounds on record
+        assertEquals(QaTaskAgentContextView.MAX_LIST_ENTRIES, agent1.inspectedFiles().size());
+        assertTrue(agent1.diffPreview().contains("truncated to 16 KiB"));
+
+        QaTaskAgentContextView agent2 = new QaTaskAgentContextView(
+                agentAccount2,
+                "claude-opus",
+                color2,
+                runId2,
+                "COMPLETED",
+                now.minusSeconds(10),
+                "Finalizing code review & validation",
+                List.of("tests/Test.java"),
+                List.of(),
+                null,
+                "",
+                List.of(),
+                List.of()
+        );
+
+        QaTaskExecutionView execution = new QaTaskExecutionView(
+                "operator", "multi-agent", runId1, null, null, List.of(), List.of(), true, true,
+                List.of(agent1, agent2)
+        );
+
+        QaTaskDetailPage page = QaTaskDetailPage.build(taskView, true, false, QaTaskPageContext.readOnly(), execution);
+        String html = renderer.render(page).body();
+
+        // Check agents are present
+        assertTrue(html.contains("Live Agent Contexts"));
+        assertFalse(html.contains("No agent contexts recorded."));
+
+        // Colors
+        assertTrue(html.contains(color1));
+        assertTrue(html.contains(color2));
+
+        // Agent labels and statuses
+        assertTrue(html.contains("codex-tj · RUNNING"));
+        assertTrue(html.contains("claude-opus · COMPLETED"));
+
+        // Agent account IDs and Run IDs
+        assertTrue(html.contains(agentAccount1.toString()));
+        assertTrue(html.contains(agentAccount2.toString()));
+        assertTrue(html.contains(runId1.toString()));
+        assertTrue(html.contains(runId2.toString()));
+
+        // Escaped content
+        assertTrue(html.contains("&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt; &amp; checking files"));
+        assertFalse(html.contains("<script>alert('xss')</script>"));
+
+        // Bounded preview rendered
+        assertTrue(html.contains("truncated to 16 KiB"));
+        assertTrue(html.contains("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"));
+
+        // Files and references rendered
+        assertTrue(html.contains("src/Main.java"));
+        assertTrue(html.contains("docs/README.md"));
+        assertTrue(html.contains("evidence://ref-1"));
+        assertTrue(html.contains("tests/Test.java"));
     }
 }

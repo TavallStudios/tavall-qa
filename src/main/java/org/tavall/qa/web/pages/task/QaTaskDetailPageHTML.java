@@ -635,7 +635,10 @@ public final class QaTaskDetailPageHTML {
         }
         section.child(checkpointsCard);
 
-        // 6. Compile / Test / CI Evidence Links
+        // 6. Live Agent Contexts
+        section.child(agentContextsSection(execution.agentContexts()));
+
+        // 7. Compile / Test / CI Evidence Links
         HTMLElement evidenceLinksSection = HTML.div();
         evidenceLinksSection.child(HTML.h4().text("Compile, Test & CI Evidence"));
         if (execution.evidenceLinks().isEmpty()) {
@@ -688,6 +691,96 @@ public final class QaTaskDetailPageHTML {
         }
 
         return section;
+    }
+
+    private static HTMLElement agentContextsSection(List<QaTaskAgentContextView> agentContexts) {
+        HTMLElement agentContextsCard = HTML.div();
+        agentContextsCard.child(HTML.h4().text("Live Agent Contexts"));
+        if (agentContexts == null || agentContexts.isEmpty()) {
+            agentContextsCard.child(HTML.p().classes(QaCSS.PUBLIC_BOARD_EMPTY)
+                    .text("No agent contexts recorded."));
+            return agentContextsCard;
+        }
+
+        for (QaTaskAgentContextView agent : agentContexts) {
+            HTMLElement entry = HTML.div().classes(QaCSS.PUBLIC_STAFF_VERIFICATION_FACTS)
+                    .attribute(HTMLAttribute.STYLE, "border-left: 4px solid " + agent.colorToken() + ";");
+
+            HTMLElement header = HTML.div();
+            header.child(HTML.strong().text(agent.agentLabel() + " · " + agent.status()));
+            header.child(HTML.span().text(DATE_FORMATTER.format(agent.recordedAt())));
+            entry.child(header);
+
+            entry.child(HTML.p().text("Agent Account: ").child(HTML.code().classes(TavallForgeCSS.FORGE_CODE).text(agent.agentAccountId().toString())));
+
+            if (agent.runId() != null) {
+                entry.child(HTML.p().text("Run ID: ").child(HTML.code().classes(TavallForgeCSS.FORGE_CODE).text(agent.runId().toString())));
+            }
+
+            if (agent.nextAction() != null && !agent.nextAction().isBlank()) {
+                entry.child(HTML.p().text("Next action: " + agent.nextAction()));
+            }
+
+            if (!agent.inspectedFiles().isEmpty()) {
+                HTMLElement inspectedBlock = HTML.div();
+                inspectedBlock.child(HTML.strong().text("Inspected files (" + agent.inspectedFiles().size() + "):"));
+                HTMLElement list = HTML.ul();
+                for (String file : agent.inspectedFiles()) {
+                    list.child(HTML.li().child(HTML.code().classes(TavallForgeCSS.FORGE_CODE).text(file)));
+                }
+                inspectedBlock.child(list);
+                entry.child(inspectedBlock);
+            }
+
+            if (!agent.modifiedFiles().isEmpty()) {
+                HTMLElement modifiedBlock = HTML.div();
+                modifiedBlock.child(HTML.strong().text("Modified files (" + agent.modifiedFiles().size() + "):"));
+                HTMLElement list = HTML.ul();
+                for (String file : agent.modifiedFiles()) {
+                    list.child(HTML.li().child(HTML.code().classes(TavallForgeCSS.FORGE_CODE).text(file)));
+                }
+                modifiedBlock.child(list);
+                entry.child(modifiedBlock);
+            }
+
+            boolean hasSha = agent.diffSha256() != null && !agent.diffSha256().isBlank();
+            boolean hasPreview = agent.diffPreview() != null && !agent.diffPreview().isBlank();
+            if (hasSha || hasPreview) {
+                HTMLElement diffBlock = HTML.div();
+                if (hasSha) {
+                    diffBlock.child(HTML.p().text("Diff SHA-256: ").child(HTML.code().classes(TavallForgeCSS.FORGE_CODE).text(agent.diffSha256())));
+                }
+                if (hasPreview) {
+                    diffBlock.child(HTML.pre().child(HTML.code().classes(TavallForgeCSS.FORGE_CODE).text(agent.diffPreview())));
+                }
+                entry.child(diffBlock);
+            }
+
+            if (!agent.documents().isEmpty()) {
+                HTMLElement docsBlock = HTML.div();
+                docsBlock.child(HTML.strong().text("Documents (" + agent.documents().size() + "):"));
+                HTMLElement list = HTML.ul();
+                for (String doc : agent.documents()) {
+                    list.child(HTML.li().child(HTML.code().classes(TavallForgeCSS.FORGE_CODE).text(doc)));
+                }
+                docsBlock.child(list);
+                entry.child(docsBlock);
+            }
+
+            if (!agent.evidence().isEmpty()) {
+                HTMLElement evidenceBlock = HTML.div();
+                evidenceBlock.child(HTML.strong().text("Evidence references (" + agent.evidence().size() + "):"));
+                HTMLElement list = HTML.ul();
+                for (String ev : agent.evidence()) {
+                    list.child(HTML.li().child(HTML.code().classes(TavallForgeCSS.FORGE_CODE).text(ev)));
+                }
+                evidenceBlock.child(list);
+                entry.child(evidenceBlock);
+            }
+
+            agentContextsCard.child(entry);
+        }
+        return agentContextsCard;
     }
 
     private static HTMLElement executionActionForm(
