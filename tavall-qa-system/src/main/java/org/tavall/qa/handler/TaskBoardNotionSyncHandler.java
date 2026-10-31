@@ -332,7 +332,7 @@ public final class TaskBoardNotionSyncHandler implements ITaskBoardNotionSyncHan
             String outboundStatus = mapping.mapOutboundStatus(task.status());
             boolean blocked = task.status() == TaskBoardTaskStatus.BLOCKED;
             boolean evidenceComplete = task.completed() || task.humanVerified();
-            String currentStep = task.qaStatus().name();
+            String currentStep = task.qaStatus().displayName();
 
             changes.add(new NotionTaskOutboundChange(
                     state.syncId(),

@@ -8,7 +8,6 @@ import org.tavall.qa.domain.TaskBoardTask;
 import org.tavall.qa.domain.notion.NotionTaskSyncState;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -22,7 +21,7 @@ public record TaskBoardAgentTaskContextView(
         List<TaskBoardComment> comments,
         List<TaskBoardEvidence> evidence,
         List<TaskBoardAssignment> assignments,
-        Map<String, String> planningContext
+        TaskBoardAgentPlanningContext planningContext
 ) {
     public TaskBoardAgentTaskContextView {
         Objects.requireNonNull(task, "task");
@@ -31,6 +30,6 @@ public record TaskBoardAgentTaskContextView(
         comments = comments == null ? List.of() : List.copyOf(comments);
         evidence = evidence == null ? List.of() : List.copyOf(evidence);
         assignments = assignments == null ? List.of() : List.copyOf(assignments);
-        planningContext = planningContext == null ? Map.of() : Map.copyOf(planningContext);
+        Objects.requireNonNull(planningContext, "planningContext");
     }
 }

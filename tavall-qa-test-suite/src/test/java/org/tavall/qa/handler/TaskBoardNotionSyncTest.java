@@ -281,6 +281,7 @@ final class TaskBoardNotionSyncTest {
         NotionTaskOutboundChange change = pending.get(0);
         assertEquals("page-pvp-task-106", change.notionPageId());
         assertEquals("In progress", change.status());
+        assertEquals("Needs human verification", change.currentStep());
         assertEquals(1, change.syncRevision());
 
         // Acknowledge sync revision 1
@@ -343,7 +344,9 @@ final class TaskBoardNotionSyncTest {
         assertEquals(taskId, context.task().taskId());
         assertTrue(context.syncState().isPresent());
         assertEquals("page-pvp-task-108", context.syncState().get().notionPageId());
-        assertEquals("tavall-pvp", context.planningContext().get("projectKey"));
+        assertEquals("tavall-pvp", context.planningContext().projectKey());
+        assertEquals(org.tavall.qa.domain.TaskBoardTaskFingerprint.compute(context.task()),
+                context.planningContext().taskFingerprint());
 
         // Dev agent can update execution and add notes
         TaskBoardTask updated = agentViewHandler.updateAgentExecution(devAgent, new TaskBoardAgentExecutionUpdateRequest(

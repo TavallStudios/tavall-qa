@@ -18,14 +18,14 @@ import org.tavall.qa.persistence.ITaskBoardDataHandler;
 import org.tavall.qa.request.TaskBoardAgentExecutionUpdateRequest;
 import org.tavall.qa.request.TaskBoardCommentCreateRequest;
 import org.tavall.qa.request.TaskBoardTaskUpdateRequest;
+import org.tavall.qa.domain.TaskBoardTaskFingerprint;
+import org.tavall.qa.view.TaskBoardAgentPlanningContext;
 import org.tavall.qa.view.TaskBoardAgentTaskContextView;
 import org.tavall.qa.view.TaskBoardAgentTaskView;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -142,23 +142,13 @@ public final class TaskBoardAgentViewHandler implements ITaskBoardAgentViewHandl
         List<TaskBoardAssignment> assignments = dataHandler.findAssignments(taskId);
         Optional<NotionTaskSyncState> syncState = syncHandler.findSyncStateByTaskId(subject, taskId);
 
-        Map<String, String> planningContext = new HashMap<>();
-        planningContext.put("taskId", taskId.toString());
-        planningContext.put("projectKey", task.projectKey());
-        planningContext.put("qaRevision", String.valueOf(task.qaRevision()));
-        planningContext.put("sourceType", task.sourceType());
-        planningContext.put("sourceReference", task.sourceReference());
-
-        syncState.ifPresent(state -> {
-            planningContext.put("notionPageId", state.notionPageId());
-            planningContext.put("notionPageUrl", state.notionPageUrl());
-            planningContext.put("notionDatabaseId", state.notionDatabaseId());
-            planningContext.put("lastIngestedRevision", String.valueOf(state.lastIngestedRevision()));
-            planningContext.put("hasConflict", String.valueOf(state.hasConflict()));
-            if (state.hasConflict()) {
-                planningContext.put("conflictDetails", state.conflictDetails());
-            }
-        });
+        TaskBoardAgentPlanningContext planningContext = new TaskBoardAgentPlanningContext(
+                taskId,
+                task.projectKey(),
+                task.qaRevision(),
+                task.sourceType(),
+                task.sourceReference(),
+                TaskBoardTaskFingerprint.compute(task));
 
         return Optional.of(new TaskBoardAgentTaskContextView(
                 task,
