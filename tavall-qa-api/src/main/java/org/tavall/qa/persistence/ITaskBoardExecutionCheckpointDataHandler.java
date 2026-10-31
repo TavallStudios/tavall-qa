@@ -22,6 +22,7 @@ public interface ITaskBoardExecutionCheckpointDataHandler {
     TaskBoardExecutionCheckpointData appendCheckpoint(TaskBoardExecutionCheckpointRequest request, UUID actorAccountId, Instant now);
     Optional<TaskBoardExecutionLeaseData> currentLease(UUID taskId);
     List<TaskBoardExecutionCheckpointData> checkpoints(UUID taskId, UUID runId, int limit);
+    List<TaskBoardExecutionCheckpointData> recentCheckpoints(UUID taskId, int limit);
     Optional<TaskBoardExecutionCheckpointPayloadData> loadPayload(UUID taskId, UUID checkpointId);
     TaskBoardExecutionResumeResult resumeCheckpoint(TaskBoardExecutionResumeRequest request, UUID actorAccountId, Instant now);
 }

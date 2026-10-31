@@ -79,6 +79,12 @@ public final class TaskBoardExecutionCheckpointHandler extends GenerationOwnedDe
     }
 
     @Override
+    public List<TaskBoardExecutionCheckpointData> recentCheckpoints(QaSubjectContext subject, UUID taskId, int limit) {
+        authorize(subject, taskId);
+        return getInstance().taskBoardExecutionCheckpointDataHandler().recentCheckpoints(taskId, limit);
+    }
+
+    @Override
     public Optional<TaskBoardExecutionCheckpointPayloadData> loadPayload(QaSubjectContext subject, UUID taskId, UUID checkpointId) {
         authorize(subject, taskId);
         return getInstance().taskBoardExecutionCheckpointDataHandler().loadPayload(taskId, checkpointId);

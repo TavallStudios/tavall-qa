@@ -192,6 +192,15 @@ public final class TaskBoardExecutionCheckpointDataHandler extends GenerationOwn
     }
 
     @Override
+    public List<TaskBoardExecutionCheckpointData> recentCheckpoints(UUID taskId, int limit) {
+        if (limit < 1 || limit > 100) throw new IllegalArgumentException("Checkpoint history limit must be within 1..100");
+        return requireEntities().findNamed(TaskBoardExecutionCheckpointEntity.class,
+                TaskBoardExecutionCheckpointEntity.FIND_RECENT_BY_TASK,
+                Map.of("taskId", Objects.requireNonNull(taskId, "taskId").toString()), limit)
+                .stream().map(TaskBoardExecutionCheckpointEntity::toDomain).toList();
+    }
+
+    @Override
     public Optional<TaskBoardExecutionCheckpointPayloadData> loadPayload(UUID taskId, UUID checkpointId) {
         Objects.requireNonNull(taskId, "taskId");
         Objects.requireNonNull(checkpointId, "checkpointId");

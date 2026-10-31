@@ -82,6 +82,9 @@ class TaskBoardExecutionPostgresIntegrationTest {
         assertEquals(recorded, context.handler().appendCheckpoint(context.actor(), request));
         assertEquals(request.payload(), context.handler().loadPayload(context.actor(), lease.taskId(), recorded.checkpointId()).orElseThrow());
         assertEquals(1, context.handler().checkpoints(context.actor(), lease.taskId(), lease.runId(), 10).size());
+        assertEquals(List.of(recorded), context.handler().recentCheckpoints(context.actor(), lease.taskId(), 10));
+        assertThrows(IllegalArgumentException.class, () -> context.handler().recentCheckpoints(context.actor(), lease.taskId(), 101));
+        assertThrows(SecurityException.class, () -> context.handler().recentCheckpoints(QaSubjectContext.anonymous(), lease.taskId(), 10));
         assertEquals(1, context.tasks().findAuditEntries(lease.taskId()).stream()
                 .filter(event -> event.eventType() == TaskBoardAuditEventType.EXECUTION_CHECKPOINT_RECORDED).count());
         assertThrows(TaskBoardConcurrentModificationException.class, () -> context.handler().appendCheckpoint(context.actor(),
