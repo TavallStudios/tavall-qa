@@ -114,6 +114,26 @@ class TaskBoardExternalKeyUpsertPostgresIntegrationTest {
         assertFalse(linkedReplay.updated());
         assertEquals(preexisting.taskId(), linkedReplay.task().taskId());
         assertEquals(2, data.findTasks(projectKey).size(), "Linking a prior QA task must not create a duplicate");
+
+        var linkedReplayWithoutIdHint = mutations.upsertTask(manager, new TaskBoardTaskUpsertRequest("ledger/preexisting",
+                new TaskBoardTaskCreateRequest(projectKey, "legacy", "Previously registered worker",
+                        "Previously registered worker", "old scope", "old scope", TaskBoardTaskPriority.NORMAL,
+                        TaskBoardAudience.STAFF, 1, false, false, "ledger", "source://preexisting", 0),
+                TaskBoardTaskStatus.BACKLOG));
+        assertFalse(linkedReplayWithoutIdHint.created());
+        assertFalse(linkedReplayWithoutIdHint.updated());
+        assertEquals(preexisting.taskId(), linkedReplayWithoutIdHint.task().taskId());
+
+        var changedWithoutIdHint = mutations.upsertTask(manager, new TaskBoardTaskUpsertRequest("ledger/preexisting",
+                new TaskBoardTaskCreateRequest(projectKey, "legacy", "Previously registered worker",
+                        "Previously registered worker", "updated scope", "updated scope", TaskBoardTaskPriority.NORMAL,
+                        TaskBoardAudience.STAFF, 1, false, false, "ledger", "source://preexisting", 0),
+                TaskBoardTaskStatus.READY));
+        assertTrue(changedWithoutIdHint.updated());
+        assertEquals(preexisting.taskId(), changedWithoutIdHint.task().taskId());
+        assertEquals(2, data.findAuditEntries(preexisting.taskId()).stream()
+                .filter(event -> event.eventType() == TaskBoardAuditEventType.TASK_UPSERTED).count());
+        assertEquals(2, data.findTasks(projectKey).size(), "Keyed updates must preserve linked identity without an ID hint");
     }
 
     private static org.tavall.qa.domain.TaskBoardTaskUpsertResult upsert(TaskBoardMutationHandler mutations,

@@ -192,9 +192,6 @@ public final class TaskBoardDataHandler implements ITaskBoardDataHandler {
             TaskBoardTask current = context.find(TaskBoardTaskEntity.class, currentId, LockModeType.PESSIMISTIC_WRITE)
                     .orElseThrow(() -> new TaskBoardConcurrentModificationException("Task disappeared during external-key upsert"))
                     .toDomain();
-            if (!current.taskId().equals(task.taskId())) {
-                throw new IllegalStateException("External key is already bound to a different stable task identity");
-            }
             if (existingTaskId.isPresent() && !existingTaskId.orElseThrow().equals(current.taskId())) {
                 throw new IllegalStateException("External key is already bound to a different requested task identity");
             }
@@ -203,9 +200,16 @@ public final class TaskBoardDataHandler implements ITaskBoardDataHandler {
             }
             TaskBoardTask updated = updatedFromCandidate(current, task);
             TaskBoardTaskEntity saved = context.save(TaskBoardTaskEntity.fromDomain(updated, key));
-            context.save(TaskBoardAuditEntryEntity.fromDomain(auditEntry));
+            context.save(TaskBoardAuditEntryEntity.fromDomain(auditForTask(auditEntry, current.taskId())));
             return new TaskBoardTaskUpsertResult(saved.toDomain(), false, true);
         });
+    }
+
+    private static TaskBoardAuditEntry auditForTask(TaskBoardAuditEntry auditEntry, UUID taskId) {
+        if (auditEntry.taskId().filter(taskId::equals).isPresent()) return auditEntry;
+        return new TaskBoardAuditEntry(auditEntry.eventId(), Optional.of(taskId), auditEntry.projectKey(),
+                auditEntry.actorAccountId(), auditEntry.actorMinecraftUuid(), auditEntry.eventType(), auditEntry.summary(),
+                auditEntry.occurredAt());
     }
 
     private static TaskBoardTask updatedFromCandidate(TaskBoardTask current, TaskBoardTask candidate) {
