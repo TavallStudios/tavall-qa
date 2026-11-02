@@ -20,7 +20,10 @@ val executionCheckpointIntegrationTest by tasks.registering(Test::class) {
     testClassesDirs = sourceSets.test.get().output.classesDirs
     classpath = sourceSets.test.get().runtimeClasspath
     useJUnitPlatform()
-    filter { includeTestsMatching("*TaskBoardExecutionPostgresIntegrationTest") }
+    filter {
+        includeTestsMatching("*TaskBoardExecutionPostgresIntegrationTest")
+        includeTestsMatching("*TaskBoardExternalKeyUpsertPostgresIntegrationTest")
+    }
     systemProperty("tavall.qa.checkpoint.postgres.required", "true")
     outputs.upToDateWhen { false }
     outputs.doNotCacheIf("Requires fresh private PostgreSQL process and restart verification on the current Executor") { true }

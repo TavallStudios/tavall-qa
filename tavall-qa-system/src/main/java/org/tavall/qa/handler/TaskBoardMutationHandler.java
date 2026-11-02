@@ -14,6 +14,7 @@ import org.tavall.qa.domain.TaskBoardEvidenceStatus;
 import org.tavall.qa.domain.TaskBoardProject;
 import org.tavall.qa.domain.TaskBoardQaStatus;
 import org.tavall.qa.domain.TaskBoardTask;
+import org.tavall.qa.domain.TaskBoardTaskUpsertResult;
 import org.tavall.qa.domain.TaskBoardTaskFingerprint;
 import org.tavall.qa.domain.TaskBoardTaskPriority;
 import org.tavall.qa.domain.TaskBoardTaskStatus;
@@ -36,6 +37,7 @@ import org.tavall.qa.request.TaskBoardProjectCreateRequest;
 import org.tavall.qa.request.TaskBoardTaskCreateRequest;
 import org.tavall.qa.request.TaskBoardTaskAcceptanceRequest;
 import org.tavall.qa.request.TaskBoardTaskUpdateRequest;
+import org.tavall.qa.request.TaskBoardTaskUpsertRequest;
 
 import java.net.URI;
 import java.time.Instant;
@@ -45,6 +47,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
 @Component
@@ -153,6 +156,34 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
                 now
         );
         return dataHandler.saveTask(task, Optional.empty(), auditEntry);
+    }
+
+    @Override
+    public TaskBoardTaskUpsertResult upsertTask(QaSubjectContext subject, TaskBoardTaskUpsertRequest request) {
+        Objects.requireNonNull(request, "request");
+        requireAccount(subject);
+        require(subject.canManageTasks(), "Task management capability required");
+        requireAvailable();
+
+        TaskBoardTaskCreateRequest input = request.task();
+        String projectKey = normalizeProjectKey(input.projectKey());
+        String sectionKey = normalizeSectionKey(input.sectionKey());
+        dataHandler.findProject(projectKey)
+                .orElseThrow(() -> new IllegalArgumentException("Task Board project not found: " + projectKey));
+        String externalKey = request.externalKey();
+        UUID taskId = request.existingTaskId() != null
+                ? request.existingTaskId()
+                : UUID.nameUUIDFromBytes(("tavall-qa-task:" + externalKey).getBytes(StandardCharsets.UTF_8));
+        Instant now = Instant.now();
+        TaskBoardTask task = new TaskBoardTask(taskId, projectKey, sectionKey, input.title(), input.publicTitle(),
+                input.description(), input.publicSummary(), request.status(), Objects.requireNonNull(input.priority(), "priority"),
+                TaskBoardQaStatus.NHV, Objects.requireNonNull(input.audience(), "audience"), input.weight(),
+                input.hostValidationRequired(), input.sourceType(), input.sourceReference(), input.qaQcEligible(),
+                subject.accountId().orElseThrow(), subject.linkedMinecraftUuid().orElse(null), null, null, null, null,
+                input.sortOrder(), now, now);
+        TaskBoardAuditEntry auditEntry = audit(subject, Optional.of(taskId), projectKey,
+                TaskBoardAuditEventType.TASK_UPSERTED, "Upserted task from external key " + externalKey, now);
+        return dataHandler.upsertTask(externalKey, task, Optional.ofNullable(request.existingTaskId()), auditEntry);
     }
 
     @Override

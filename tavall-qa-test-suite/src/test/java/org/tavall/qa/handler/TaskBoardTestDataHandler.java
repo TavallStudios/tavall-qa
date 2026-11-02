@@ -8,6 +8,7 @@ import org.tavall.qa.domain.TaskBoardEvidence;
 import org.tavall.qa.domain.TaskBoardEvidenceStatus;
 import org.tavall.qa.domain.TaskBoardProject;
 import org.tavall.qa.domain.TaskBoardTask;
+import org.tavall.qa.domain.TaskBoardTaskUpsertResult;
 import org.tavall.qa.domain.TaskBoardVqcContribution;
 import org.tavall.qa.persistence.ITaskBoardDataHandler;
 
@@ -22,6 +23,7 @@ import java.util.UUID;
 final class TaskBoardTestDataHandler implements ITaskBoardDataHandler {
     private final Map<String, TaskBoardProject> projects = new LinkedHashMap<>();
     private final Map<UUID, TaskBoardTask> tasks = new LinkedHashMap<>();
+    private final Map<String, UUID> externalTasks = new LinkedHashMap<>();
     private final Map<UUID, TaskBoardAction> actions = new LinkedHashMap<>();
     private final Map<UUID, TaskBoardComment> comments = new LinkedHashMap<>();
     private final Map<UUID, TaskBoardAssignment> assignments = new LinkedHashMap<>();
@@ -64,6 +66,23 @@ final class TaskBoardTestDataHandler implements ITaskBoardDataHandler {
         tasks.put(task.taskId(), task);
         audit.add(auditEntry);
         return task;
+    }
+
+    @Override
+    public synchronized TaskBoardTaskUpsertResult upsertTask(String externalKey, TaskBoardTask task,
+            Optional<UUID> existingTaskId, TaskBoardAuditEntry auditEntry) {
+        UUID existingId = externalTasks.get(externalKey);
+        if (existingId != null) return new TaskBoardTaskUpsertResult(tasks.get(existingId), false, false);
+        UUID taskId = existingTaskId.orElse(task.taskId());
+        if (tasks.containsKey(taskId)) {
+            if (existingTaskId.isEmpty()) throw new IllegalStateException("Task already exists");
+            externalTasks.put(externalKey, taskId);
+            return new TaskBoardTaskUpsertResult(tasks.get(taskId), false, true);
+        }
+        externalTasks.put(externalKey, task.taskId());
+        tasks.put(task.taskId(), task);
+        audit.add(auditEntry);
+        return new TaskBoardTaskUpsertResult(task, true, false);
     }
 
     @Override

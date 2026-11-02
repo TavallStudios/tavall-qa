@@ -27,9 +27,14 @@ import java.util.UUID;
                 ORDER BY entity.sortOrder, entity.updatedAt DESC
                 """
 )
+@NamedQuery(
+        name = TaskBoardTaskEntity.FIND_BY_EXTERNAL_KEY,
+        query = "SELECT entity FROM TaskBoardTaskEntity entity WHERE entity.externalKey = :externalKey"
+)
 public class TaskBoardTaskEntity {
     public static final String FIND_BY_PROJECT =
             "TaskBoardTaskEntity.findByProject";
+    public static final String FIND_BY_EXTERNAL_KEY = "TaskBoardTaskEntity.findByExternalKey";
 
     /** Shares the canonical task mutation lock with durable execution state transitions. */
     public static String lockKey(UUID taskId) {
@@ -42,6 +47,9 @@ public class TaskBoardTaskEntity {
 
     @Column(name = "project_key", nullable = false, length = 96)
     private String projectKey;
+
+    @Column(name = "external_key", length = 255)
+    private String externalKey;
 
     @Column(name = "section_key", nullable = false, length = 128)
     private String sectionKey;
@@ -153,6 +161,16 @@ public class TaskBoardTaskEntity {
 
     public static TaskBoardTaskEntity fromDomain(TaskBoardTask task) {
         return new TaskBoardTaskEntity(task);
+    }
+
+    public static TaskBoardTaskEntity fromDomain(TaskBoardTask task, String externalKey) {
+        TaskBoardTaskEntity entity = new TaskBoardTaskEntity(task);
+        entity.externalKey = externalKey;
+        return entity;
+    }
+
+    public String externalKey() {
+        return externalKey;
     }
 
     public TaskBoardTask toDomain() {

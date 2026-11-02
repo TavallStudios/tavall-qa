@@ -8,6 +8,7 @@ import org.tavall.qa.domain.TaskBoardStorageUnavailableException;
 import org.tavall.qa.domain.TaskBoardEvidence;
 import org.tavall.qa.domain.TaskBoardProject;
 import org.tavall.qa.domain.TaskBoardTask;
+import org.tavall.qa.domain.TaskBoardTaskUpsertResult;
 import org.tavall.qa.domain.TaskBoardEvidence;
 import org.tavall.qa.domain.TaskBoardVqcContribution;
 
@@ -54,6 +55,12 @@ public final class UnavailableTaskBoardDataHandler implements ITaskBoardDataHand
             Optional<Instant> expectedUpdatedAt,
             TaskBoardAuditEntry auditEntry
     ) {
+        throw new TaskBoardStorageUnavailableException("Task Board PostgreSQL storage is unavailable.");
+    }
+
+    @Override
+    public TaskBoardTaskUpsertResult upsertTask(String externalKey, TaskBoardTask task, Optional<UUID> existingTaskId,
+            TaskBoardAuditEntry auditEntry) {
         throw new TaskBoardStorageUnavailableException("Task Board PostgreSQL storage is unavailable.");
     }
 

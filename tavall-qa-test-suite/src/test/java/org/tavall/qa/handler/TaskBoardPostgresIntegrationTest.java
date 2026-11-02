@@ -205,18 +205,22 @@ final class TaskBoardPostgresIntegrationTest {
                 result.next();
                 workflowsExist = result.getBoolean(1);
             }
-            if (workflowsExist) {
-                return;
-            }
-            for (String migration : List.of("027_task_board.sql", "028_task_board_qa_workflows.sql")) {
-                try (var input = TaskBoardPostgresIntegrationTest.class.getClassLoader()
-                        .getResourceAsStream("schema/postgres/" + migration)) {
-                    if (input == null) {
-                        throw new IOException("Missing Task Board migration resource: " + migration);
-                    }
-                    statement.execute(new String(input.readAllBytes(), StandardCharsets.UTF_8));
+            if (!workflowsExist) {
+                for (String migration : List.of("027_task_board.sql", "028_task_board_qa_workflows.sql")) {
+                    executeMigration(statement, migration);
                 }
             }
+            executeMigration(statement, "037_task_board_external_key_upsert.sql");
+        }
+    }
+
+    private static void executeMigration(java.sql.Statement statement, String migration) throws Exception {
+        try (var input = TaskBoardPostgresIntegrationTest.class.getClassLoader()
+                .getResourceAsStream("schema/postgres/" + migration)) {
+            if (input == null) {
+                throw new IOException("Missing Task Board migration resource: " + migration);
+            }
+            statement.execute(new String(input.readAllBytes(), StandardCharsets.UTF_8));
         }
     }
 

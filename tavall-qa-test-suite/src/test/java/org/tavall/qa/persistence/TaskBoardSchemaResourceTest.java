@@ -54,6 +54,15 @@ final class TaskBoardSchemaResourceTest {
     }
 
     @Test
+    void externalKeyMigrationDefinesAtomicTaskIdentity() throws IOException {
+        String migration = resource("schema/postgres/037_task_board_external_key_upsert.sql");
+
+        assertTrue(migration.contains("external_key VARCHAR(255)"));
+        assertTrue(migration.contains("ADD CONSTRAINT uq_task_board_task_external_key UNIQUE (external_key)"));
+        assertTrue(migration.contains("TASK_UPSERTED"));
+    }
+
+    @Test
     void notionSyncMigrationOwnsDurableSyncState() throws IOException {
         String migration = resource("schema/postgres/035_task_board_notion_sync.sql");
 

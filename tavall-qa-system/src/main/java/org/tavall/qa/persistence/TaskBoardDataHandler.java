@@ -14,6 +14,7 @@ import org.tavall.qa.domain.TaskBoardAuditEventType;
 import org.tavall.qa.domain.TaskBoardProject;
 import org.tavall.qa.domain.TaskBoardQaStatus;
 import org.tavall.qa.domain.TaskBoardTask;
+import org.tavall.qa.domain.TaskBoardTaskUpsertResult;
 import org.tavall.qa.domain.TaskBoardTaskFingerprint;
 import org.tavall.qa.domain.TaskBoardTaskStatus;
 import org.tavall.qa.domain.TaskBoardStorageUnavailableException;
@@ -133,10 +134,124 @@ public final class TaskBoardDataHandler implements ITaskBoardDataHandler {
                     throw new TaskBoardConcurrentModificationException("Task changed concurrently; reload before retrying");
                 }
             }
-            TaskBoardTaskEntity saved = context.save(TaskBoardTaskEntity.fromDomain(task));
+            String externalKey = persisted.map(TaskBoardTaskEntity::externalKey).orElse(null);
+            TaskBoardTaskEntity saved = context.save(TaskBoardTaskEntity.fromDomain(task, externalKey));
             context.save(TaskBoardAuditEntryEntity.fromDomain(auditEntry));
             return saved.toDomain();
         });
+    }
+
+    @Override
+    public TaskBoardTaskUpsertResult upsertTask(String externalKey, TaskBoardTask task, Optional<UUID> existingTaskId,
+            TaskBoardAuditEntry auditEntry) {
+        requireAvailable();
+        String key = requireText(externalKey, "externalKey");
+        Objects.requireNonNull(task, "task");
+        Objects.requireNonNull(existingTaskId, "existingTaskId");
+        if (existingTaskId.isPresent() && !existingTaskId.orElseThrow().equals(task.taskId())) {
+            throw new IllegalArgumentException("Existing task identity must match the upsert task identity");
+        }
+        requireAudit(auditEntry, Optional.of(task.taskId()), task.projectKey());
+        return database.entities().executeAtomic(context -> {
+            context.acquireAdvisoryTransactionLock("tavall-qa:task-external:" + key);
+            Optional<TaskBoardTaskEntity> existing = context.findOneNamed(
+                    TaskBoardTaskEntity.class,
+                    TaskBoardTaskEntity.FIND_BY_EXTERNAL_KEY,
+                    Map.of("externalKey", key)
+            );
+            if (existing.isEmpty()) {
+                context.acquireAdvisoryTransactionLock(TaskBoardTaskEntity.lockKey(task.taskId()));
+                Optional<TaskBoardTaskEntity> taskById = context.find(TaskBoardTaskEntity.class, task.taskId().toString(),
+                        LockModeType.PESSIMISTIC_WRITE);
+                if (taskById.isPresent() && existingTaskId.isEmpty()) {
+                    throw new IllegalStateException("Stable task identity is already in use by another task");
+                }
+                if (taskById.isPresent() && taskById.orElseThrow().externalKey() != null
+                        && !key.equals(taskById.orElseThrow().externalKey())) {
+                    throw new IllegalStateException("Existing task identity is already linked to another external key");
+                }
+                if (taskById.isPresent()) {
+                    TaskBoardTask current = taskById.orElseThrow().toDomain();
+                    boolean sameFields = sameImportedFields(current, task);
+                    if (sameFields) {
+                        TaskBoardTaskEntity linked = context.save(TaskBoardTaskEntity.fromDomain(current, key));
+                        context.save(TaskBoardAuditEntryEntity.fromDomain(auditEntry));
+                        return new TaskBoardTaskUpsertResult(linked.toDomain(), false, true);
+                    }
+                    TaskBoardTask updated = updatedFromCandidate(current, task);
+                    TaskBoardTaskEntity linked = context.save(TaskBoardTaskEntity.fromDomain(updated, key));
+                    context.save(TaskBoardAuditEntryEntity.fromDomain(auditEntry));
+                    return new TaskBoardTaskUpsertResult(linked.toDomain(), false, true);
+                }
+                TaskBoardTaskEntity saved = context.save(TaskBoardTaskEntity.fromDomain(task, key));
+                context.save(TaskBoardAuditEntryEntity.fromDomain(auditEntry));
+                return new TaskBoardTaskUpsertResult(saved.toDomain(), true, false);
+            }
+            String currentId = existing.orElseThrow().toDomain().taskId().toString();
+            context.acquireAdvisoryTransactionLock(TaskBoardTaskEntity.lockKey(UUID.fromString(currentId)));
+            TaskBoardTask current = context.find(TaskBoardTaskEntity.class, currentId, LockModeType.PESSIMISTIC_WRITE)
+                    .orElseThrow(() -> new TaskBoardConcurrentModificationException("Task disappeared during external-key upsert"))
+                    .toDomain();
+            if (!current.taskId().equals(task.taskId())) {
+                throw new IllegalStateException("External key is already bound to a different stable task identity");
+            }
+            if (existingTaskId.isPresent() && !existingTaskId.orElseThrow().equals(current.taskId())) {
+                throw new IllegalStateException("External key is already bound to a different requested task identity");
+            }
+            if (sameImportedFields(current, task)) {
+                return new TaskBoardTaskUpsertResult(current, false, false);
+            }
+            TaskBoardTask updated = updatedFromCandidate(current, task);
+            TaskBoardTaskEntity saved = context.save(TaskBoardTaskEntity.fromDomain(updated, key));
+            context.save(TaskBoardAuditEntryEntity.fromDomain(auditEntry));
+            return new TaskBoardTaskUpsertResult(saved.toDomain(), false, true);
+        });
+    }
+
+    private static TaskBoardTask updatedFromCandidate(TaskBoardTask current, TaskBoardTask candidate) {
+        boolean materialChange = !current.sectionKey().equals(candidate.sectionKey())
+                || !current.title().equals(candidate.title())
+                || !current.publicTitle().equals(candidate.publicTitle())
+                || !current.description().equals(candidate.description())
+                || !current.publicSummary().equals(candidate.publicSummary())
+                || current.priority() != candidate.priority()
+                || current.audience() != candidate.audience()
+                || current.weight() != candidate.weight()
+                || current.hostValidationRequired() != candidate.hostValidationRequired()
+                || !current.sourceType().equals(candidate.sourceType())
+                || !current.sourceReference().equals(candidate.sourceReference())
+                || current.qaQcEligible() != candidate.qaQcEligible()
+                || current.status() == TaskBoardTaskStatus.DONE && candidate.status() != TaskBoardTaskStatus.DONE;
+        boolean invalidateVerification = current.humanVerified()
+                && (materialChange || candidate.status() != TaskBoardTaskStatus.DONE);
+        return new TaskBoardTask(
+                current.taskId(), candidate.projectKey(), candidate.sectionKey(), candidate.title(), candidate.publicTitle(),
+                candidate.description(), candidate.publicSummary(), candidate.status(), candidate.priority(),
+                invalidateVerification ? TaskBoardQaStatus.REVIEW_REQUIRED : current.qaStatus(), candidate.audience(), candidate.weight(),
+                candidate.hostValidationRequired(), candidate.sourceType(), candidate.sourceReference(), candidate.qaQcEligible(),
+                current.qaRevision() + (materialChange ? 1 : 0), current.createdByAccountId(), current.createdByMinecraftUUID(),
+                invalidateVerification ? null : current.verifiedByAccountId(),
+                invalidateVerification ? null : current.verifiedByMinecraftUUID(),
+                invalidateVerification ? null : current.verifiedEvidenceId(),
+                invalidateVerification ? null : current.humanVerifiedAt(), candidate.sortOrder(), current.createdAt(), Instant.now());
+    }
+
+    private static boolean sameImportedFields(TaskBoardTask current, TaskBoardTask candidate) {
+        return current.projectKey().equals(candidate.projectKey())
+                && current.sectionKey().equals(candidate.sectionKey())
+                && current.title().equals(candidate.title())
+                && current.publicTitle().equals(candidate.publicTitle())
+                && current.description().equals(candidate.description())
+                && current.publicSummary().equals(candidate.publicSummary())
+                && current.status() == candidate.status()
+                && current.priority() == candidate.priority()
+                && current.audience() == candidate.audience()
+                && current.weight() == candidate.weight()
+                && current.hostValidationRequired() == candidate.hostValidationRequired()
+                && current.sourceType().equals(candidate.sourceType())
+                && current.sourceReference().equals(candidate.sourceReference())
+                && current.qaQcEligible() == candidate.qaQcEligible()
+                && current.sortOrder() == candidate.sortOrder();
     }
 
     @Override
@@ -417,7 +532,7 @@ public final class TaskBoardDataHandler implements ITaskBoardDataHandler {
                 return current;
             }
 
-            TaskBoardTaskEntity saved = context.save(TaskBoardTaskEntity.fromDomain(task));
+            TaskBoardTaskEntity saved = context.save(TaskBoardTaskEntity.fromDomain(task, persisted.externalKey()));
             context.save(TaskBoardAuditEntryEntity.fromDomain(auditEntry));
             if (contribution.isPresent()) {
                 TaskBoardVqcContribution vqc = contribution.get();

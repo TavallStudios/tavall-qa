@@ -70,6 +70,14 @@ Evidence submission, evidence review, task acceptance, and Human Verify are sepa
 
 The legacy `progress_task` path and `publicProgressTaskId` synchronization remain retired. Public weighted totals filter both project and task audience before counts or aggregation, and exclude cancelled tasks. Public projections omit Account/Minecraft identities, private evidence, QA notes, privileged source references, and staff destinations.
 
+## Authenticated external-key task upserts
+
+Agent-ledger imports and other typed task synchronizers use `POST /api/execution/tasks/upsert` through the Tavall AI QA transport. The Web adapter resolves the current Account and organization context per request; QA requires `MANAGE_TASKS` and retains project and task policy. The request includes a stable external key, a desired typed task snapshot, and an existing task status. `existingTaskId` may link a previously created QA task before it has an external key, avoiding a duplicate during migration.
+
+Migration `037_task_board_external_key_upsert.sql` adds a nullable unique constraint to `task_board_task.external_key`, preserving existing tasks. The QA data handler acquires an external-key advisory transaction lock, checks the unique mapping, then takes the canonical task-row lock before atomically inserting or updating the task and its audit entry. Exact replays do not append an audit event. Changed snapshots retain the same task ID and creation identity, increment `qaRevision`, and invalidate prior human verification when the content change affects it. The external key remains private and does not appear in Task Board views.
+
+`TaskBoardExternalKeyUpsertPostgresIntegrationTest` shares the required native PostgreSQL fixture with execution-checkpoint acceptance. It covers concurrent insertion, exact replay, changed snapshots, preservation of the external key through normal task updates, and linking a pre-existing QA task ID without creating another row. `TavallAIQaExecutionHttpClient.upsertTask` is the typed authenticated transport; credentials stay in the existing authorization boundary.
+
 ## Durable execution leases and provider-neutral checkpoints
 
 The implementation candidate in [QA #3](https://github.com/TavallStudios/tavall-qa/pull/3) keeps execution continuation under the existing task authority. [`TaskBoardExecutionCheckpointHandler`](../../tavall-qa-system/src/main/java/org/tavall/qa/handler/TaskBoardExecutionCheckpointHandler.java) implements its typed API with `@DelegatesTo`, generated `DependencyAccess` and the owning dependency generation. Each private read and mutation checks current Account/service context, DEV qualification/assignment or Account-global QA authority, and task/project visibility. A browser or provider must receive its subject context from the existing server-side Account resolver.

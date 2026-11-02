@@ -7,6 +7,7 @@ import org.tavall.qa.domain.TaskBoardComment;
 import org.tavall.qa.domain.TaskBoardEvidence;
 import org.tavall.qa.domain.TaskBoardProject;
 import org.tavall.qa.domain.TaskBoardTask;
+import org.tavall.qa.domain.TaskBoardTaskUpsertResult;
 import org.tavall.qa.domain.TaskBoardVqcContribution;
 
 import java.util.List;
@@ -30,6 +31,13 @@ public interface ITaskBoardDataHandler {
     TaskBoardTask saveTask(
             TaskBoardTask task,
             Optional<Instant> expectedUpdatedAt,
+            TaskBoardAuditEntry auditEntry
+    );
+
+    TaskBoardTaskUpsertResult upsertTask(
+            String externalKey,
+            TaskBoardTask task,
+            Optional<UUID> existingTaskId,
             TaskBoardAuditEntry auditEntry
     );
 

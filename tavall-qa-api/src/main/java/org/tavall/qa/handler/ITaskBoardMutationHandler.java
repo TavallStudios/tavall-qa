@@ -6,6 +6,7 @@ import org.tavall.qa.domain.TaskBoardComment;
 import org.tavall.qa.domain.TaskBoardEvidence;
 import org.tavall.qa.domain.TaskBoardProject;
 import org.tavall.qa.domain.TaskBoardTask;
+import org.tavall.qa.domain.TaskBoardTaskUpsertResult;
 import org.tavall.qa.domain.auth.QaSubjectContext;
 import org.tavall.qa.request.TaskBoardAssignmentCreateRequest;
 import org.tavall.qa.request.TaskBoardAssignmentRevokeRequest;
@@ -18,6 +19,7 @@ import org.tavall.qa.request.TaskBoardProjectCreateRequest;
 import org.tavall.qa.request.TaskBoardTaskCreateRequest;
 import org.tavall.qa.request.TaskBoardTaskAcceptanceRequest;
 import org.tavall.qa.request.TaskBoardTaskUpdateRequest;
+import org.tavall.qa.request.TaskBoardTaskUpsertRequest;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -26,6 +28,8 @@ public interface ITaskBoardMutationHandler {
     TaskBoardProject createProject(QaSubjectContext subject, TaskBoardProjectCreateRequest request);
 
     TaskBoardTask createTask(QaSubjectContext subject, TaskBoardTaskCreateRequest request);
+
+    TaskBoardTaskUpsertResult upsertTask(QaSubjectContext subject, TaskBoardTaskUpsertRequest request);
 
     TaskBoardTask updateTask(QaSubjectContext subject, TaskBoardTaskUpdateRequest request);
 
