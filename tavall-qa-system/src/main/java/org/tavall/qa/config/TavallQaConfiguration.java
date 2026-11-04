@@ -9,6 +9,9 @@ import org.tavall.dependency.annotations.CompositionBoundary;
 import org.tavall.qa.persistence.ITaskBoardDataHandler;
 import org.tavall.qa.persistence.TaskBoardDataHandler;
 import org.tavall.qa.persistence.UnavailableTaskBoardDataHandler;
+import org.tavall.qa.persistence.ITaskBoardExternalReferenceDataHandler;
+import org.tavall.qa.persistence.TaskBoardExternalReferenceDataHandler;
+import org.tavall.qa.persistence.UnavailableTaskBoardExternalReferenceDataHandler;
 import org.tavall.qa.persistence.ITaskBoardExecutionCheckpointDataHandler;
 import org.tavall.qa.persistence.TaskBoardExecutionCheckpointDataHandler;
 import org.tavall.qa.handler.ITaskBoardExecutionCheckpointHandler;
@@ -33,6 +36,33 @@ public class TavallQaConfiguration {
             return new UnavailableTaskBoardDataHandler();
         }
         return new TaskBoardDataHandler(database);
+    }
+
+    @Bean
+    public ITaskBoardExternalReferenceDataHandler taskBoardExternalReferenceDataHandler() {
+        IPostgresDatabase database = dependencyMap.findInstance(IPostgresDatabase.class);
+        if (database == null || !database.isAvailable() || !database.entities().isOpen()) {
+            return new UnavailableTaskBoardExternalReferenceDataHandler();
+        }
+        Clock clock = dependencyMap.findInstance(Clock.class);
+        if (clock == null) {
+            clock = Clock.systemUTC();
+            dependencyMap.registerInstance(Clock.class, clock);
+        }
+        return new TaskBoardExternalReferenceDataHandler(database, clock);
+    }
+
+    @Bean
+    public org.tavall.qa.handler.ITaskBoardExternalReferenceHandler taskBoardExternalReferenceHandler(
+            @Lazy ITaskBoardExternalReferenceDataHandler externalReferences,
+            @Lazy ITaskBoardDataHandler tasks
+    ) {
+        Clock clock = dependencyMap.findInstance(Clock.class);
+        if (clock == null) {
+            clock = Clock.systemUTC();
+            dependencyMap.registerInstance(Clock.class, clock);
+        }
+        return new org.tavall.qa.handler.TaskBoardExternalReferenceHandler(externalReferences, tasks, clock);
     }
 
     @Bean

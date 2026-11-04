@@ -63,6 +63,18 @@ final class TaskBoardSchemaResourceTest {
     }
 
     @Test
+    void externalReferenceMigrationDefinesOwnerMappingAndConflictQueue() throws IOException {
+        String migration = resource("schema/postgres/038_task_board_external_references.sql");
+
+        assertTrue(migration.contains("uq_task_board_external_reference_source UNIQUE (provider, source_namespace_id, source_id)"));
+        assertTrue(migration.contains("uq_task_board_external_reference_task_provider UNIQUE (task_id, provider)"));
+        assertTrue(migration.contains("CREATE TABLE IF NOT EXISTS task_board_external_reference_conflict"));
+        assertTrue(migration.contains("incoming_source_fingerprint VARCHAR(128) NOT NULL"));
+        assertTrue(migration.contains("EXTERNAL_REFERENCE_CONFLICTED"));
+        assertTrue(migration.contains("EXTERNAL_REFERENCE_RESOLVED"));
+    }
+
+    @Test
     void notionSyncMigrationOwnsDurableSyncState() throws IOException {
         String migration = resource("schema/postgres/035_task_board_notion_sync.sql");
 
