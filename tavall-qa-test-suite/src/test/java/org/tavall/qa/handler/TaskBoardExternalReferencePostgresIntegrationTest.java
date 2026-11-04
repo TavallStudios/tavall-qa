@@ -167,6 +167,30 @@ class TaskBoardExternalReferencePostgresIntegrationTest {
                 .filter(entry -> entry.eventType() == TaskBoardAuditEventType.EXTERNAL_REFERENCE_CONFLICTED).count());
     }
 
+    @Test
+    void aSecondProviderIdentityForOneTaskIsQueuedInsteadOfViolatingTheOneToOneConstraint() {
+        var subjects = TaskBoardTestSubjects.manager(UUID.randomUUID(), UUID.randomUUID());
+        TaskBoardDataHandler tasks = new TaskBoardDataHandler(postgres.database());
+        TaskBoardMutationHandler mutations = new TaskBoardMutationHandler(tasks, new TaskBoardActionTargetResolver());
+        ITaskBoardExternalReferenceHandler references = new TaskBoardExternalReferenceHandler(
+                new TaskBoardExternalReferenceDataHandler(postgres.database()), tasks, Clock.systemUTC());
+        TaskBoardTask task = createTask(mutations, subjects, "Provider slot conflict");
+        var first = observation(task.taskId(), TaskBoardExternalReferenceProvider.GITHUB_ISSUE,
+                "24004", "88004", "acme/board#44", "https://github.com/acme/board/issues/44",
+                TaskBoardExternalReferenceSourceStatus.OPEN, "gh-node-1", "cursor-1", "issue-44", 0);
+        references.registerOrReconcile(subjects, first);
+
+        var duplicateSlot = observation(task.taskId(), TaskBoardExternalReferenceProvider.GITHUB_ISSUE,
+                "24004", "88005", "acme/board#45", "https://github.com/acme/board/issues/45",
+                TaskBoardExternalReferenceSourceStatus.OPEN, "gh-node-1", "cursor-2", "issue-45", 0);
+        var result = references.registerOrReconcile(subjects, duplicateSlot);
+
+        assertEquals(TaskBoardExternalReferenceMutationOutcome.CONFLICT, result.outcome());
+        assertTrue(result.reference().isEmpty());
+        assertEquals(1, references.findReferencesForTask(subjects, task.taskId()).size());
+        assertEquals(1, references.findOpenConflicts(subjects, java.util.Optional.of(task.taskId())).size());
+    }
+
     private static TaskBoardExternalReferenceMutationResult submit(
             ITaskBoardExternalReferenceHandler references,
             org.tavall.qa.domain.auth.QaSubjectContext subject,

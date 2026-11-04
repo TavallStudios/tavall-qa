@@ -141,6 +141,16 @@ public final class TaskBoardExternalReferenceDataHandler implements ITaskBoardEx
                         "Expected sync revision does not match the current reference revision");
             }
 
+            if (current.isEmpty()) {
+                Optional<TaskBoardExternalReferenceEntity> occupiedProviderSlot =
+                        findTaskProvider(context, request.taskId(), request.key().provider());
+                if (occupiedProviderSlot.isPresent()
+                        && !occupiedProviderSlot.orElseThrow().toDomain().key().equals(request.key())) {
+                    return conflict(context, request, auditEntry, Optional.empty(), Optional.of(request.taskId()),
+                            "QA task already has a different external reference for this provider");
+                }
+            }
+
             if (current.isPresent()) {
                 TaskBoardExternalReference accepted = current.orElseThrow().toDomain();
                 if (accepted.lastAppliedRevision().equals(request.sourceRevision())
