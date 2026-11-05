@@ -1,0 +1,24 @@
+{
+  "repository": "TavallStudios/tavall-qa",
+  "scope": "Non-UI test conversion local validation summary",
+  "testedSources": [
+    {
+      "repository": "TavallStudios/tavall-qa",
+      "sha": "0000144cabd798d5fbe9698c5e77b5f2c39738c1"
+    }
+  ],
+  "result": "Local API tests, test-suite compilation and schema migration tests passed; PostgreSQL integration acceptance is pending hosted REQUIRED_ALL.",
+  "boundaries": "No production sources changed. PostgreSQL-backed integration tests were not executed locally.",
+  "assets": [
+    {
+      "kind": "screenshot",
+      "path": "evidence/review/wtqa-test-suite-house-tests/01-local-validation-summary-desktop.png",
+      "caption": "Local validation summary (desktop)",
+      "surface": "Local validation summary",
+      "viewport": "desktop",
+      "url": null,
+      "sourceSha": "0000144cabd798d5fbe9698c5e77b5f2c39738c1",
+      "sha256": "acac5d6115e140fe8b6e3e7d0c7334f005bf37b69997bc4d59618b37f1af1e68"
+    }
+  ]
+}
