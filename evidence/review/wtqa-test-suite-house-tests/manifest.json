@@ -1,0 +1,27 @@
+{
+  "repository": "TavallStudios/tavall-qa",
+  "artifactCommit": "bcd9477b1bcd2e359c7bccb33a3510aec76ed146",
+  "scope": "Issue #10 test-suite conversion and API test ownership: local validation evidence",
+  "testedSources": [
+    {
+      "repository": "TavallStudios/tavall-qa",
+      "sha": "0000144cabd798d5fbe9698c5e77b5f2c39738c1"
+    }
+  ],
+  "result": "Local API tests (22), test-suite compilation, and migration tests (6) passed; hosted REQUIRED_ALL is pending",
+  "boundaries": "PostgreSQL integration tests were not run locally and remain pending hosted CI. These assets show only local validation; no production sources changed",
+  "assets": [
+    {
+      "kind": "screenshot",
+      "path": "evidence/review/wtqa-test-suite-house-tests/01-local-validation-summary-desktop.png",
+      "caption": "Sanitized local validation summary",
+      "sha256": "acac5d6115e140fe8b6e3e7d0c7334f005bf37b69997bc4d59618b37f1af1e68"
+    },
+    {
+      "kind": "report",
+      "path": "evidence/review/wtqa-test-suite-house-tests/module-check-summary.txt",
+      "caption": "Local validation summary and unrun integration boundary",
+      "sha256": "11cb07363a05dafbe6d44ded1e6fc6df972b4ae978967fb8f73f3900792cea64"
+    }
+  ]
+}

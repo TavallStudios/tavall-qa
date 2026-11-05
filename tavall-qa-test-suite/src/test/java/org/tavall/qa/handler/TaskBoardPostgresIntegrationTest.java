@@ -1,10 +1,12 @@
 package org.tavall.qa.handler;
 
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.tavall.database.postgres.IPostgresDatabase;
-import org.tavall.database.postgres.PostgresDatabaseBuilder;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.tavall.qa.auth.TaskBoardTestSubjects;
 import org.tavall.qa.domain.TaskBoardAuditEntry;
 import org.tavall.qa.domain.TaskBoardAuditEventType;
@@ -21,7 +23,7 @@ import org.tavall.qa.domain.auth.QaClass;
 import org.tavall.qa.domain.auth.QaEnvironmentGrant;
 import org.tavall.qa.domain.auth.QaSubjectContext;
 import org.tavall.qa.domain.auth.QaTier;
-import org.tavall.qa.persistence.TaskBoardDataHandler;
+import org.tavall.qa.persistence.ITaskBoardDataHandler;
 import org.tavall.qa.request.TaskBoardAssignmentCreateRequest;
 import org.tavall.qa.request.TaskBoardEvidenceReviewRequest;
 import org.tavall.qa.request.TaskBoardEvidenceSubmissionRequest;
@@ -31,9 +33,8 @@ import org.tavall.qa.request.TaskBoardTaskAcceptanceRequest;
 import org.tavall.qa.request.TaskBoardTaskCreateRequest;
 import org.tavall.qa.request.TaskBoardTaskUpdateRequest;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.sql.DriverManager;
+import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -46,33 +47,37 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /** Production Task Board handlers and Tavall Database mappings against an isolated PostgreSQL database. */
+@Execution(ExecutionMode.SAME_THREAD)
 final class TaskBoardPostgresIntegrationTest {
-    private static final String URL = System.getenv("TAVALL_QA_TEST_POSTGRES_URL");
-    private static final String USER = System.getenv().getOrDefault("TAVALL_QA_TEST_POSTGRES_USER", "postgres");
-    private static final String PASSWORD = System.getenv().getOrDefault("TAVALL_QA_TEST_POSTGRES_PASSWORD", "");
-    private static IPostgresDatabase database;
+    @TempDir static Path directory;
+    private static TaskBoardPostgresFixture postgres;
+    private TaskBoardPostgresComposition composition;
 
     @BeforeAll
-    static void connectToIsolatedPostgres() throws Exception {
-        assumeTrue(URL != null && !URL.isBlank(), "Set TAVALL_QA_TEST_POSTGRES_URL to an isolated disposable PostgreSQL database");
-        applyTaskBoardMigrationsWhenAbsent();
-        openDatabase();
+    static void startIsolatedPostgres() throws Exception {
+        postgres = new TaskBoardPostgresFixture(directory);
     }
 
     @AfterAll
-    static void closeDatabase() {
-        if (database != null) {
-            database.close();
+    static void stopIsolatedPostgres() throws Exception {
+        if (postgres != null) postgres.close();
+    }
+
+    @AfterEach
+    void closeComposition() {
+        if (composition != null) {
+            composition.close();
+            composition = null;
         }
     }
 
     @Test
     void acceptanceHumanVerificationRollbackConcurrencyAndRestartUseMappedJpaAuthority() throws Exception {
-        TaskBoardDataHandler data = new TaskBoardDataHandler(database);
-        TaskBoardMutationHandler mutations = new TaskBoardMutationHandler(data, new TaskBoardActionTargetResolver());
+        composition = new TaskBoardPostgresComposition(postgres.database(), Clock.systemUTC());
+        ITaskBoardDataHandler data = composition.bean(ITaskBoardDataHandler.class);
+        ITaskBoardMutationHandler mutations = composition.bean(ITaskBoardMutationHandler.class);
         UUID managerId = UUID.randomUUID();
         UUID managerMinecraft = UUID.randomUUID();
         QaSubjectContext manager = TaskBoardTestSubjects.manager(managerId, managerMinecraft);
@@ -185,10 +190,11 @@ final class TaskBoardPostgresIntegrationTest {
                 accepted, Optional.of(beforeAcceptance.updatedAt()), invalidAudit
         ));
 
-        database.close();
-        database = null;
-        openDatabase();
-        TaskBoardDataHandler reopened = new TaskBoardDataHandler(database);
+        composition.close();
+        composition = null;
+        postgres.restart();
+        composition = new TaskBoardPostgresComposition(postgres.database(), Clock.systemUTC());
+        ITaskBoardDataHandler reopened = composition.bean(ITaskBoardDataHandler.class);
         TaskBoardTask recovered = reopened.findTask(task.taskId()).orElseThrow();
         assertTrue(recovered.humanVerified(), "Human Verify must survive database restart");
         assertEquals(verifierId, recovered.verifiedByAccountId());
@@ -197,48 +203,8 @@ final class TaskBoardPostgresIntegrationTest {
                 .anyMatch(event -> event.eventType() == TaskBoardAuditEventType.TASK_ACCEPTED));
     }
 
-    private static void applyTaskBoardMigrationsWhenAbsent() throws Exception {
-        try (var connection = DriverManager.getConnection(URL, USER, PASSWORD);
-             var statement = connection.createStatement()) {
-            boolean workflowsExist;
-            try (var result = statement.executeQuery("SELECT to_regclass('public.task_board_evidence') IS NOT NULL")) {
-                result.next();
-                workflowsExist = result.getBoolean(1);
-            }
-            if (!workflowsExist) {
-                for (String migration : List.of("027_task_board.sql", "028_task_board_qa_workflows.sql")) {
-                    executeMigration(statement, migration);
-                }
-            }
-            executeMigration(statement, "037_task_board_external_key_upsert.sql");
-        }
-    }
-
-    private static void executeMigration(java.sql.Statement statement, String migration) throws Exception {
-        try (var input = TaskBoardPostgresIntegrationTest.class.getClassLoader()
-                .getResourceAsStream("schema/postgres/" + migration)) {
-            if (input == null) {
-                throw new IOException("Missing Task Board migration resource: " + migration);
-            }
-            statement.execute(new String(input.readAllBytes(), StandardCharsets.UTF_8));
-        }
-    }
-
-    private static void openDatabase() {
-        database = PostgresDatabaseBuilder.create()
-                .jdbcUrl(URL)
-                .username(USER)
-                .password(PASSWORD)
-                .persistenceUnitName("tavall-qa-postgres-integration")
-                .entityPackage("org.tavall.qa.persistence.entity")
-                .generateSchema(false)
-                .showSql(false)
-                .build()
-                .orElseThrow(() -> new IllegalStateException("Task Board PostgreSQL fixture could not start"));
-    }
-
     private static TaskBoardTask acceptTaskWithOneRetry(
-            TaskBoardMutationHandler mutations,
+            ITaskBoardMutationHandler mutations,
             QaSubjectContext manager,
             TaskBoardTaskAcceptanceRequest request,
             CountDownLatch start

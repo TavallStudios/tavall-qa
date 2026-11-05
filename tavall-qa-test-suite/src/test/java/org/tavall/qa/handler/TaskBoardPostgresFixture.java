@@ -17,13 +17,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /** Test-only isolated PostgreSQL process; no host database or environment credentials are used. */
-final class TaskBoardExecutionPostgresFixture implements AutoCloseable {
+final class TaskBoardPostgresFixture implements AutoCloseable {
     private final Path root;
     private final Path binaries;
     private final String url;
     private IPostgresDatabase database;
 
-    TaskBoardExecutionPostgresFixture(Path root) throws Exception {
+    TaskBoardPostgresFixture(Path root) throws Exception {
         this.root = root;
         binaries = Path.of(System.getProperty("tavall.qa.postgres.bin", "/usr/lib/postgresql/14/bin"));
         boolean installed = Files.isExecutable(binaries.resolve("initdb")) && Files.isExecutable(binaries.resolve("pg_ctl"));

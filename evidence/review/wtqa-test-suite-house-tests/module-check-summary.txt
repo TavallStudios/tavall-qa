@@ -1,0 +1,10 @@
+Tavall QA test-style conversion: local validation
+Source: 0000144cabd798d5fbe9698c5e77b5f2c39738c1
+
+PASS API test task: 22 tests passed; none failed or skipped.
+PASS test-suite test compilation.
+PASS schema migration tests: 6 tests passed; none failed or skipped.
+
+PostgreSQL integration: not run locally.
+Hosted exact-head REQUIRED_ALL: pending.
+Production sources: unchanged.
