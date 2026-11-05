@@ -1,12 +1,12 @@
 package org.tavall.qa.handler;
 
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.tavall.database.postgres.IPostgresDatabase;
 import org.tavall.dependency.maps.DependencyMap;
 import org.tavall.qa.auth.TaskBoardTestSubjects;
 import org.tavall.qa.domain.TaskBoardAuditEventType;
@@ -29,9 +29,6 @@ import org.tavall.qa.domain.execution.TaskBoardExecutionStatus;
 import org.tavall.qa.domain.execution.TaskBoardExecutionCheckpointPayloadData;
 import org.tavall.qa.domain.execution.TaskBoardExecutionDiffData;
 import org.tavall.qa.persistence.ITaskBoardDataHandler;
-import org.tavall.qa.persistence.ITaskBoardExecutionCheckpointDataHandler;
-import org.tavall.qa.persistence.TaskBoardDataHandler;
-import org.tavall.qa.persistence.TaskBoardExecutionCheckpointDataHandler;
 import org.tavall.qa.request.TaskBoardProjectCreateRequest;
 import org.tavall.qa.request.TaskBoardTaskCreateRequest;
 import org.tavall.qa.request.TaskBoardTaskUpdateRequest;
@@ -48,6 +45,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -61,14 +59,21 @@ import static org.junit.jupiter.api.Assertions.*;
 @Execution(ExecutionMode.SAME_THREAD)
 class TaskBoardExecutionPostgresIntegrationTest {
     @TempDir static Path directory;
-    private static TaskBoardExecutionPostgresFixture postgres;
+    private static TaskBoardPostgresFixture postgres;
+    private final List<TaskBoardPostgresComposition> compositions = new ArrayList<>();
     private static final Instant NOW = Instant.parse("2026-10-26T06:00:00.123456789Z");
 
     @BeforeAll
-    static void start() throws Exception { postgres = new TaskBoardExecutionPostgresFixture(directory); }
+    static void start() throws Exception { postgres = new TaskBoardPostgresFixture(directory); }
 
     @AfterAll
     static void stop() throws Exception { if (postgres != null) postgres.close(); }
+
+    @AfterEach
+    void closeCompositions() {
+        compositions.forEach(TaskBoardPostgresComposition::close);
+        compositions.clear();
+    }
 
     @Test
     void checkpointIsIdempotentAppendOnlyAndSurvivesDatabaseProcessRestart() throws Exception {
@@ -261,9 +266,11 @@ class TaskBoardExecutionPostgresIntegrationTest {
                 Set.of(QaEnvironmentGrant.DEV), Set.of(), List.of(), false, true);
     }
 
-    private static Context context(TaskBoardTask existing, QaSubjectContext actor) {
-        TaskBoardDataHandler tasks = new TaskBoardDataHandler(postgres.database());
-        TaskBoardMutationHandler mutations = new TaskBoardMutationHandler(tasks, new TaskBoardActionTargetResolver());
+    private Context context(TaskBoardTask existing, QaSubjectContext actor) {
+        TaskBoardPostgresComposition composition = new TaskBoardPostgresComposition(postgres.database(), Clock.fixed(NOW, ZoneOffset.UTC));
+        compositions.add(composition);
+        ITaskBoardDataHandler tasks = composition.bean(ITaskBoardDataHandler.class);
+        ITaskBoardMutationHandler mutations = composition.bean(ITaskBoardMutationHandler.class);
         TaskBoardTask task = existing;
         if (task == null) {
             String project = "exec-" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
@@ -273,16 +280,10 @@ class TaskBoardExecutionPostgresIntegrationTest {
                     "Acceptance instructions", "Public summary", TaskBoardTaskPriority.NORMAL, TaskBoardAudience.PUBLIC,
                     1, false, false, "test", "https://example.invalid/source", 0));
         }
-        DependencyMap dependencies = new DependencyMap();
-        dependencies.registerInstance(IPostgresDatabase.class, postgres.database());
-        dependencies.registerInstance(ITaskBoardDataHandler.class, tasks);
-        dependencies.registerInstance(Clock.class, Clock.fixed(NOW, ZoneOffset.UTC));
-        dependencies.registerInstance(ITaskBoardExecutionCheckpointDataHandler.class, new TaskBoardExecutionCheckpointDataHandler());
-        ITaskBoardExecutionCheckpointHandler handler = dependencies.registerInstance(ITaskBoardExecutionCheckpointHandler.class,
-                new TaskBoardExecutionCheckpointHandler());
-        return new Context(dependencies, handler, tasks, mutations, task, actor);
+        ITaskBoardExecutionCheckpointHandler handler = composition.bean(ITaskBoardExecutionCheckpointHandler.class);
+        return new Context(composition.dependencies(), handler, tasks, mutations, task, actor);
     }
 
     private record Context(DependencyMap dependencies, ITaskBoardExecutionCheckpointHandler handler,
-            TaskBoardDataHandler tasks, TaskBoardMutationHandler mutations, TaskBoardTask task, QaSubjectContext actor) { }
+            ITaskBoardDataHandler tasks, ITaskBoardMutationHandler mutations, TaskBoardTask task, QaSubjectContext actor) { }
 }

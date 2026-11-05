@@ -1,6 +1,7 @@
 package org.tavall.qa.handler;
 
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -12,7 +13,7 @@ import org.tavall.qa.domain.TaskBoardAudience;
 import org.tavall.qa.domain.TaskBoardProjectStatus;
 import org.tavall.qa.domain.TaskBoardTaskPriority;
 import org.tavall.qa.domain.TaskBoardTaskStatus;
-import org.tavall.qa.persistence.TaskBoardDataHandler;
+import org.tavall.qa.persistence.ITaskBoardDataHandler;
 import org.tavall.qa.request.TaskBoardProjectCreateRequest;
 import org.tavall.qa.request.TaskBoardTaskCreateRequest;
 import org.tavall.qa.request.TaskBoardTaskUpsertRequest;
@@ -32,11 +33,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Execution(ExecutionMode.SAME_THREAD)
 class TaskBoardExternalKeyUpsertPostgresIntegrationTest {
     @TempDir static Path directory;
-    private static TaskBoardExecutionPostgresFixture postgres;
+    private static TaskBoardPostgresFixture postgres;
+    private TaskBoardPostgresComposition composition;
 
     @BeforeAll
     static void start() throws Exception {
-        postgres = new TaskBoardExecutionPostgresFixture(directory);
+        postgres = new TaskBoardPostgresFixture(directory);
     }
 
     @AfterAll
@@ -44,10 +46,19 @@ class TaskBoardExternalKeyUpsertPostgresIntegrationTest {
         if (postgres != null) postgres.close();
     }
 
+    @AfterEach
+    void closeComposition() {
+        if (composition != null) {
+            composition.close();
+            composition = null;
+        }
+    }
+
     @Test
     void concurrentAndRepeatedUpsertsKeepOneRowAndOneAuditPerChange() throws Exception {
-        TaskBoardDataHandler data = new TaskBoardDataHandler(postgres.database());
-        TaskBoardMutationHandler mutations = new TaskBoardMutationHandler(data, new TaskBoardActionTargetResolver());
+        composition = new TaskBoardPostgresComposition(postgres.database(), java.time.Clock.systemUTC());
+        ITaskBoardDataHandler data = composition.bean(ITaskBoardDataHandler.class);
+        ITaskBoardMutationHandler mutations = composition.bean(ITaskBoardMutationHandler.class);
         var manager = TaskBoardTestSubjects.manager(UUID.randomUUID(), UUID.randomUUID());
         String projectKey = "upsert-" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
         mutations.createProject(manager, new TaskBoardProjectCreateRequest(projectKey, "External key upsert",
@@ -136,7 +147,7 @@ class TaskBoardExternalKeyUpsertPostgresIntegrationTest {
         assertEquals(2, data.findTasks(projectKey).size(), "Keyed updates must preserve linked identity without an ID hint");
     }
 
-    private static org.tavall.qa.domain.TaskBoardTaskUpsertResult upsert(TaskBoardMutationHandler mutations,
+    private static org.tavall.qa.domain.TaskBoardTaskUpsertResult upsert(ITaskBoardMutationHandler mutations,
             org.tavall.qa.domain.auth.QaSubjectContext manager, TaskBoardTaskUpsertRequest request,
             CountDownLatch ready, CountDownLatch start) throws InterruptedException {
         ready.countDown();

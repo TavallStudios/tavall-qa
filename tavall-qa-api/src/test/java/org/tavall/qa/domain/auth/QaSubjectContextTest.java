@@ -1,4 +1,4 @@
-package org.tavall.qa.auth;
+package org.tavall.qa.domain.auth;
 
 import org.junit.jupiter.api.Test;
 import org.tavall.qa.domain.TaskBoardAudience;
@@ -7,13 +7,6 @@ import org.tavall.qa.domain.TaskBoardQaStatus;
 import org.tavall.qa.domain.TaskBoardTask;
 import org.tavall.qa.domain.TaskBoardTaskPriority;
 import org.tavall.qa.domain.TaskBoardTaskStatus;
-import org.tavall.qa.domain.auth.QaCapability;
-import org.tavall.qa.domain.auth.QaClass;
-import org.tavall.qa.domain.auth.QaEnvironmentGrant;
-import org.tavall.qa.domain.auth.QaSubjectContext;
-import org.tavall.qa.domain.auth.QaSubjectStatus;
-import org.tavall.qa.domain.auth.QaTaskAssignmentGrant;
-import org.tavall.qa.domain.auth.QaTier;
 
 import java.time.Instant;
 import java.util.List;
@@ -24,7 +17,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-final class TaskBoardAuthTest {
+final class QaSubjectContextTest {
     private final UUID accountId = UUID.randomUUID();
     private final UUID minecraftUuid = UUID.randomUUID();
     private final UUID taskId = UUID.randomUUID();
@@ -60,7 +53,7 @@ final class TaskBoardAuthTest {
 
     @Test
     void qaTierDoesNotGrantAudienceOrCapabilitiesByItself() {
-        QaSubjectContext senior = TaskBoardTestSubjects.active(
+        QaSubjectContext senior = active(
                 accountId,
                 null,
                 Set.of(QaClass.REGULAR),
@@ -82,12 +75,12 @@ final class TaskBoardAuthTest {
 
     @Test
     void foundingPublicTesterNeedsExplicitPublicParticipationCapabilityAndAssignment() {
-        QaTaskAssignmentGrant assignment = TaskBoardTestSubjects.assignment(
+        QaTaskAssignmentGrant assignment = assignment(
                 taskId,
                 QaCapability.SUBMIT_EVIDENCE,
                 QaEnvironmentGrant.DEV
         );
-        QaSubjectContext foundingTester = TaskBoardTestSubjects.active(
+        QaSubjectContext foundingTester = active(
                 accountId,
                 null,
                 Set.of(QaClass.FOUNDING_PUBLIC),
@@ -109,11 +102,11 @@ final class TaskBoardAuthTest {
 
     @Test
     void humanVerifyRequiresLinkedIdentityCapabilityEnvironmentAndTaskAssignment() {
-        QaSubjectContext unlinked = verifier(null, List.of(TaskBoardTestSubjects.assignment(
+        QaSubjectContext unlinked = verifier(null, List.of(assignment(
                 taskId, QaCapability.HUMAN_VERIFY, QaEnvironmentGrant.DEV
         )));
         QaSubjectContext unassigned = verifier(minecraftUuid, List.of());
-        QaSubjectContext assigned = verifier(minecraftUuid, List.of(TaskBoardTestSubjects.assignment(
+        QaSubjectContext assigned = verifier(minecraftUuid, List.of(assignment(
                 taskId, QaCapability.HUMAN_VERIFY, QaEnvironmentGrant.DEV
         )));
 
@@ -125,12 +118,12 @@ final class TaskBoardAuthTest {
 
     @Test
     void technicalQaRequiresRegularTierThreeAndActiveAgreement() {
-        QaTaskAssignmentGrant assignment = TaskBoardTestSubjects.assignment(
+        QaTaskAssignmentGrant assignment = assignment(
                 taskId,
                 QaCapability.TECHNICAL_DEV_EXECUTION,
                 QaEnvironmentGrant.DEV
         );
-        QaSubjectContext withoutAgreement = TaskBoardTestSubjects.active(
+        QaSubjectContext withoutAgreement = active(
                 accountId,
                 minecraftUuid,
                 Set.of(QaClass.REGULAR, QaClass.TECHNICAL),
@@ -141,7 +134,7 @@ final class TaskBoardAuthTest {
                 false,
                 false
         );
-        QaSubjectContext withAgreement = TaskBoardTestSubjects.active(
+        QaSubjectContext withAgreement = active(
                 accountId,
                 minecraftUuid,
                 Set.of(QaClass.REGULAR, QaClass.TECHNICAL),
@@ -197,7 +190,7 @@ final class TaskBoardAuthTest {
 
     @Test
     void globalSuperuserStillNeedsLinkedMinecraftForHumanVerify() {
-        QaSubjectContext noMinecraft = TaskBoardTestSubjects.active(
+        QaSubjectContext noMinecraft = active(
                 accountId,
                 null,
                 Set.of(),
@@ -208,7 +201,7 @@ final class TaskBoardAuthTest {
                 false,
                 true
         );
-        QaSubjectContext linked = TaskBoardTestSubjects.active(
+        QaSubjectContext linked = active(
                 accountId,
                 minecraftUuid,
                 Set.of(),
@@ -226,7 +219,7 @@ final class TaskBoardAuthTest {
     }
 
     private QaSubjectContext verifier(UUID minecraft, List<QaTaskAssignmentGrant> assignments) {
-        return TaskBoardTestSubjects.active(
+        return active(
                 accountId,
                 minecraft,
                 Set.of(QaClass.REGULAR),
@@ -236,6 +229,49 @@ final class TaskBoardAuthTest {
                 assignments,
                 false,
                 false
+        );
+    }
+
+    private static QaSubjectContext active(
+            UUID accountId,
+            UUID minecraftUuid,
+            Set<QaClass> classes,
+            Optional<QaTier> tier,
+            Set<QaEnvironmentGrant> environments,
+            Set<QaCapability> capabilities,
+            List<QaTaskAssignmentGrant> assignments,
+            boolean technicalAgreement,
+            boolean globalSuperuser
+    ) {
+        return new QaSubjectContext(
+                Optional.of(accountId),
+                QaSubjectStatus.ACTIVE,
+                Optional.ofNullable(minecraftUuid),
+                Optional.of(UUID.fromString("00000000-0000-0000-0000-000000000701")),
+                true,
+                globalSuperuser,
+                classes,
+                tier,
+                environments,
+                capabilities,
+                assignments,
+                technicalAgreement
+        );
+    }
+
+    private static QaTaskAssignmentGrant assignment(
+            UUID taskId,
+            QaCapability capability,
+            QaEnvironmentGrant environment
+    ) {
+        return new QaTaskAssignmentGrant(
+                UUID.fromString("00000000-0000-0000-0000-000000000701"),
+                taskId,
+                capability,
+                environment,
+                Optional.empty(),
+                Optional.empty(),
+                Instant.parse("2026-10-23T00:00:00Z")
         );
     }
 

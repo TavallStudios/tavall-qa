@@ -1,6 +1,7 @@
 package org.tavall.qa.handler;
 
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -19,8 +20,7 @@ import org.tavall.qa.domain.external.TaskBoardExternalReferenceMutationResult;
 import org.tavall.qa.domain.external.TaskBoardExternalReferenceProvider;
 import org.tavall.qa.domain.external.TaskBoardExternalReferenceSourceStatus;
 import org.tavall.qa.handler.ITaskBoardExternalReferenceHandler;
-import org.tavall.qa.persistence.TaskBoardDataHandler;
-import org.tavall.qa.persistence.TaskBoardExternalReferenceDataHandler;
+import org.tavall.qa.persistence.ITaskBoardDataHandler;
 import org.tavall.qa.request.TaskBoardProjectCreateRequest;
 import org.tavall.qa.request.TaskBoardTaskCreateRequest;
 import org.tavall.qa.request.external.TaskBoardExternalReferenceConflictResolutionRequest;
@@ -31,6 +31,8 @@ import java.security.MessageDigest;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.HexFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -43,11 +45,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Execution(ExecutionMode.SAME_THREAD)
 class TaskBoardExternalReferencePostgresIntegrationTest {
     @TempDir static Path directory;
-    private static TaskBoardExecutionPostgresFixture postgres;
+    private static TaskBoardPostgresFixture postgres;
+    private final List<TaskBoardPostgresComposition> compositions = new ArrayList<>();
 
     @BeforeAll
     static void start() throws Exception {
-        postgres = new TaskBoardExecutionPostgresFixture(directory);
+        postgres = new TaskBoardPostgresFixture(directory);
     }
 
     @AfterAll
@@ -55,13 +58,19 @@ class TaskBoardExternalReferencePostgresIntegrationTest {
         if (postgres != null) postgres.close();
     }
 
+    @AfterEach
+    void closeCompositions() {
+        compositions.forEach(TaskBoardPostgresComposition::close);
+        compositions.clear();
+    }
+
     @Test
     void concurrentSameIdentityAndExactReplayCreateOneReferenceAndAudit() throws Exception {
         var subjects = TaskBoardTestSubjects.manager(UUID.randomUUID(), UUID.randomUUID());
-        TaskBoardDataHandler tasks = new TaskBoardDataHandler(postgres.database());
-        TaskBoardMutationHandler mutations = new TaskBoardMutationHandler(tasks, new TaskBoardActionTargetResolver());
-        ITaskBoardExternalReferenceHandler references = new TaskBoardExternalReferenceHandler(
-                new TaskBoardExternalReferenceDataHandler(postgres.database()), tasks, Clock.systemUTC());
+        TaskBoardPostgresComposition composition = composition();
+        ITaskBoardDataHandler tasks = composition.bean(ITaskBoardDataHandler.class);
+        ITaskBoardMutationHandler mutations = composition.bean(ITaskBoardMutationHandler.class);
+        ITaskBoardExternalReferenceHandler references = composition.bean(ITaskBoardExternalReferenceHandler.class);
         TaskBoardTask task = createTask(mutations, subjects, "Concurrent external reference");
         var request = observation(task.taskId(), TaskBoardExternalReferenceProvider.GITHUB_ISSUE,
                 "24001", "88001", "acme/board#41", "https://github.com/acme/board/issues/41",
@@ -92,10 +101,10 @@ class TaskBoardExternalReferencePostgresIntegrationTest {
     @Test
     void tj224MirrorClosureQueuesConflictAndKeepsLinearAndQaExecutionState() {
         var subjects = TaskBoardTestSubjects.manager(UUID.randomUUID(), UUID.randomUUID());
-        TaskBoardDataHandler tasks = new TaskBoardDataHandler(postgres.database());
-        TaskBoardMutationHandler mutations = new TaskBoardMutationHandler(tasks, new TaskBoardActionTargetResolver());
-        ITaskBoardExternalReferenceHandler references = new TaskBoardExternalReferenceHandler(
-                new TaskBoardExternalReferenceDataHandler(postgres.database()), tasks, Clock.systemUTC());
+        TaskBoardPostgresComposition composition = composition();
+        ITaskBoardDataHandler tasks = composition.bean(ITaskBoardDataHandler.class);
+        ITaskBoardMutationHandler mutations = composition.bean(ITaskBoardMutationHandler.class);
+        ITaskBoardExternalReferenceHandler references = composition.bean(ITaskBoardExternalReferenceHandler.class);
         TaskBoardTask task = createTask(mutations, subjects, "TJ-224 implementation task");
 
         var linear = observation(task.taskId(), TaskBoardExternalReferenceProvider.LINEAR_ISSUE,
@@ -141,10 +150,10 @@ class TaskBoardExternalReferencePostgresIntegrationTest {
     @Test
     void staleReferenceRevisionCreatesOneDurableConflictWithoutReplacingAcceptedFields() {
         var subjects = TaskBoardTestSubjects.manager(UUID.randomUUID(), UUID.randomUUID());
-        TaskBoardDataHandler tasks = new TaskBoardDataHandler(postgres.database());
-        TaskBoardMutationHandler mutations = new TaskBoardMutationHandler(tasks, new TaskBoardActionTargetResolver());
-        ITaskBoardExternalReferenceHandler references = new TaskBoardExternalReferenceHandler(
-                new TaskBoardExternalReferenceDataHandler(postgres.database()), tasks, Clock.systemUTC());
+        TaskBoardPostgresComposition composition = composition();
+        ITaskBoardDataHandler tasks = composition.bean(ITaskBoardDataHandler.class);
+        ITaskBoardMutationHandler mutations = composition.bean(ITaskBoardMutationHandler.class);
+        ITaskBoardExternalReferenceHandler references = composition.bean(ITaskBoardExternalReferenceHandler.class);
         TaskBoardTask task = createTask(mutations, subjects, "Stale reference revision");
         var initial = observation(task.taskId(), TaskBoardExternalReferenceProvider.GITHUB_ISSUE,
                 "24003", "88003", "acme/board#43", "https://github.com/acme/board/issues/43",
@@ -170,10 +179,10 @@ class TaskBoardExternalReferencePostgresIntegrationTest {
     @Test
     void aSecondProviderIdentityForOneTaskIsQueuedInsteadOfViolatingTheOneToOneConstraint() {
         var subjects = TaskBoardTestSubjects.manager(UUID.randomUUID(), UUID.randomUUID());
-        TaskBoardDataHandler tasks = new TaskBoardDataHandler(postgres.database());
-        TaskBoardMutationHandler mutations = new TaskBoardMutationHandler(tasks, new TaskBoardActionTargetResolver());
-        ITaskBoardExternalReferenceHandler references = new TaskBoardExternalReferenceHandler(
-                new TaskBoardExternalReferenceDataHandler(postgres.database()), tasks, Clock.systemUTC());
+        TaskBoardPostgresComposition composition = composition();
+        ITaskBoardDataHandler tasks = composition.bean(ITaskBoardDataHandler.class);
+        ITaskBoardMutationHandler mutations = composition.bean(ITaskBoardMutationHandler.class);
+        ITaskBoardExternalReferenceHandler references = composition.bean(ITaskBoardExternalReferenceHandler.class);
         TaskBoardTask task = createTask(mutations, subjects, "Provider slot conflict");
         var first = observation(task.taskId(), TaskBoardExternalReferenceProvider.GITHUB_ISSUE,
                 "24004", "88004", "acme/board#44", "https://github.com/acme/board/issues/44",
@@ -203,7 +212,13 @@ class TaskBoardExternalReferencePostgresIntegrationTest {
         return references.registerOrReconcile(subject, request);
     }
 
-    private static TaskBoardTask createTask(TaskBoardMutationHandler mutations,
+    private TaskBoardPostgresComposition composition() {
+        TaskBoardPostgresComposition composition = new TaskBoardPostgresComposition(postgres.database(), Clock.systemUTC());
+        compositions.add(composition);
+        return composition;
+    }
+
+    private static TaskBoardTask createTask(ITaskBoardMutationHandler mutations,
             org.tavall.qa.domain.auth.QaSubjectContext subject, String title) {
         String projectKey = "extref-" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
         mutations.createProject(subject, new TaskBoardProjectCreateRequest(projectKey, "External reference tests",

@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-final class TaskBoardSchemaResourceTest {
+final class TaskBoardSchemaMigrationsTest {
     @Test
     void canonicalMigrationOwnsTaskGraphAndWeightedProgressAuthority() throws IOException {
         String migration = resource("schema/postgres/027_task_board.sql");
@@ -91,7 +91,7 @@ final class TaskBoardSchemaResourceTest {
     }
 
     private String resource(String path) throws IOException {
-        ClassLoader classLoader = TaskBoardSchemaResourceTest.class.getClassLoader();
+        ClassLoader classLoader = TaskBoardSchemaMigrationsTest.class.getClassLoader();
         try (InputStream inputStream = classLoader.getResourceAsStream(path)) {
             assertNotNull(inputStream, "Missing resource: " + path);
             return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
