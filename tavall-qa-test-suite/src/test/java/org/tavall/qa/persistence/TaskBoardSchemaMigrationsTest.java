@@ -75,6 +75,15 @@ final class TaskBoardSchemaMigrationsTest {
     }
 
     @Test
+    void engineeringProjectMigrationSeedsAdminOnlyProjectIdempotently() throws IOException {
+        String migration = resource("schema/postgres/039_task_board_engineering_project.sql");
+
+        assertTrue(migration.contains("'tavall-engineering'"));
+        assertTrue(migration.contains("'ACTIVE', 'ADMIN_ONLY'"));
+        assertTrue(migration.contains("ON CONFLICT (project_key) DO NOTHING"));
+    }
+
+    @Test
     void notionSyncMigrationOwnsDurableSyncState() throws IOException {
         String migration = resource("schema/postgres/035_task_board_notion_sync.sql");
 

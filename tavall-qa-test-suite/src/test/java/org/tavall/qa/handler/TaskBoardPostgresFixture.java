@@ -47,7 +47,8 @@ final class TaskBoardPostgresFixture implements AutoCloseable {
                  var statement = connection.createStatement()) {
                 for (String migration : List.of("027_task_board.sql", "028_task_board_qa_workflows.sql",
                         "034_task_board_execution_checkpoints.sql", "036_task_board_dev_execution_assignment.sql",
-                        "037_task_board_external_key_upsert.sql", "038_task_board_external_references.sql")) {
+                        "037_task_board_external_key_upsert.sql", "038_task_board_external_references.sql",
+                        "039_task_board_engineering_project.sql")) {
                     try (var input = getClass().getClassLoader().getResourceAsStream("schema/postgres/" + migration)) {
                         if (input == null) throw new IllegalStateException("Missing migration " + migration);
                         statement.execute(new String(input.readAllBytes(), StandardCharsets.UTF_8));

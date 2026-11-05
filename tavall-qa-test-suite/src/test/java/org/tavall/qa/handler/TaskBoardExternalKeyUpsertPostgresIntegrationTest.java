@@ -155,6 +155,26 @@ class TaskBoardExternalKeyUpsertPostgresIntegrationTest {
         return mutations.upsertTask(manager, request);
     }
 
+    @Test
+    void seededEngineeringProjectAcceptsAdminOnlyUpserts() {
+        composition = new TaskBoardPostgresComposition(postgres.database(), java.time.Clock.systemUTC());
+        ITaskBoardDataHandler data = composition.bean(ITaskBoardDataHandler.class);
+        ITaskBoardMutationHandler mutations = composition.bean(ITaskBoardMutationHandler.class);
+        var manager = TaskBoardTestSubjects.manager(UUID.randomUUID(), UUID.randomUUID());
+
+        var project = data.findProject("tavall-engineering").orElseThrow();
+        assertEquals(TaskBoardAudience.ADMIN_ONLY, project.audience());
+        assertEquals(TaskBoardProjectStatus.ACTIVE, project.status());
+
+        var created = mutations.upsertTask(manager, new TaskBoardTaskUpsertRequest("github/TavallStudios/tavall-qa/issues/seed-test",
+                new TaskBoardTaskCreateRequest("tavall-engineering", "orchestration", "Engineering upsert", null,
+                        "Seeded engineering project acceptance", null, TaskBoardTaskPriority.NORMAL,
+                        TaskBoardAudience.ADMIN_ONLY, 1, false, false, "github-issue",
+                        "https://github.com/TavallStudios/tavall-qa/issues/seed-test", 0), TaskBoardTaskStatus.ACTIVE));
+        assertTrue(created.created());
+        assertEquals("tavall-engineering", created.task().projectKey());
+    }
+
     private static TaskBoardTaskUpsertRequest request(String projectKey, String title) {
         return new TaskBoardTaskUpsertRequest("ledger/test/external-key", new TaskBoardTaskCreateRequest(projectKey,
                 "reconciliation", title, title, "checkpoint", "checkpoint", TaskBoardTaskPriority.HIGH,
