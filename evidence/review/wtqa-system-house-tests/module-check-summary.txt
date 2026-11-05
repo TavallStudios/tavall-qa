@@ -1,0 +1,9 @@
+TavallStudios/tavall-qa — system module test conversion
+Tested source commit: 9991fc681d0331f5c1e0f529d29224194f93f6c9
+Module check: ./gradlew :tavall-qa-system:check --no-daemon --rerun-tasks
+Result: BUILD SUCCESSFUL
+JUnit: 60 tests, 0 failures, 0 errors, 0 skipped
+Suite regression compile: ./gradlew :tavall-qa-test-suite:compileTestJava --no-daemon --rerun-tasks
+Result: BUILD SUCCESSFUL
+Scope: test-only conversions; production sources unchanged
+Boundaries: in-memory task storage, empty typed PostgreSQL boundary, temporary filesystem mirror; no live PostgreSQL or Notion provider acceptance
