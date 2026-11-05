@@ -1,14 +1,31 @@
-package org.tavall.qa.action;
+package org.tavall.qa.handler;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.tavall.qa.domain.TaskBoardActionType;
-import org.tavall.qa.handler.TaskBoardActionTargetResolver;
 
+import java.nio.file.Path;
+import java.time.Clock;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 final class TaskBoardActionTargetResolverTest {
-    private final TaskBoardActionTargetResolver resolver = new TaskBoardActionTargetResolver();
+    @TempDir Path tempDir;
+    private TaskBoardTestComposition composition;
+    private TaskBoardActionTargetResolver resolver;
+
+    @BeforeEach
+    void setUp() {
+        composition = TaskBoardTestComposition.open(tempDir, Clock.systemUTC());
+        resolver = composition.bean(TaskBoardActionTargetResolver.class);
+    }
+
+    @AfterEach
+    void tearDown() {
+        composition.close();
+    }
 
     @Test
     void resolvesAdminRouteWithoutLeavingAdminAuthority() {

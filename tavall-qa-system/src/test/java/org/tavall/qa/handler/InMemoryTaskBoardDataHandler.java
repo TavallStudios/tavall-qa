@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-final class TaskBoardTestDataHandler implements ITaskBoardDataHandler {
+final class InMemoryTaskBoardDataHandler implements ITaskBoardDataHandler {
     private final Map<String, TaskBoardProject> projects = new LinkedHashMap<>();
     private final Map<UUID, TaskBoardTask> tasks = new LinkedHashMap<>();
     private final Map<String, UUID> externalTasks = new LinkedHashMap<>();
