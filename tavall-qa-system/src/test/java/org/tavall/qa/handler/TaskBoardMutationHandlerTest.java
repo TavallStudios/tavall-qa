@@ -1,7 +1,9 @@
 package org.tavall.qa.handler;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.tavall.qa.auth.TaskBoardTestSubjects;
 import org.tavall.qa.domain.TaskBoardAudience;
 import org.tavall.qa.domain.TaskBoardCommentType;
@@ -26,7 +28,9 @@ import org.tavall.qa.request.TaskBoardTaskCreateRequest;
 import org.tavall.qa.request.TaskBoardTaskAcceptanceRequest;
 import org.tavall.qa.request.TaskBoardTaskUpdateRequest;
 
+import java.nio.file.Path;
 import java.time.Instant;
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -40,14 +44,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class TaskBoardMutationHandlerTest {
     private final UUID managerId = UUID.randomUUID();
     private final UUID managerMinecraftUuid = UUID.randomUUID();
-    private TaskBoardTestDataHandler dataHandler;
+    private InMemoryTaskBoardDataHandler dataHandler;
     private TaskBoardMutationHandler mutationHandler;
+    private TaskBoardTestComposition composition;
+    @TempDir Path tempDir;
     private QaSubjectContext manager;
 
     @BeforeEach
     void setUp() {
-        dataHandler = new TaskBoardTestDataHandler();
-        mutationHandler = new TaskBoardMutationHandler(dataHandler, new TaskBoardActionTargetResolver());
+        composition = TaskBoardTestComposition.open(tempDir, java.time.Clock.systemUTC());
+        dataHandler = composition.dataHandler();
+        mutationHandler = composition.bean(TaskBoardMutationHandler.class);
         manager = TaskBoardTestSubjects.manager(managerId, managerMinecraftUuid);
         mutationHandler.createProject(manager, new TaskBoardProjectCreateRequest(
                 "project-novus",
@@ -57,6 +64,11 @@ final class TaskBoardMutationHandlerTest {
                 TaskBoardAudience.PUBLIC,
                 10
         ));
+    }
+
+    @AfterEach
+    void tearDown() {
+        composition.close();
     }
 
     @Test

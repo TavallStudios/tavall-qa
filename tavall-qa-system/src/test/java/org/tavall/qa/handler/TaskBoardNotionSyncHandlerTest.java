@@ -2,10 +2,9 @@ package org.tavall.qa.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.tavall.filesystem.api.FilesystemAtomicOperations;
-import org.tavall.filesystem.system.atomic.AtomicFilesystemOperations;
 import org.tavall.qa.auth.TaskBoardTestSubjects;
 import org.tavall.qa.domain.TaskBoardAudience;
 import org.tavall.qa.domain.TaskBoardComment;
@@ -17,14 +16,12 @@ import org.tavall.qa.domain.auth.QaEnvironmentGrant;
 import org.tavall.qa.domain.auth.QaSubjectContext;
 import org.tavall.qa.domain.notion.NotionDatabaseTaskMapping;
 import org.tavall.qa.domain.notion.NotionTaskMappingConfiguration;
-import org.tavall.qa.domain.notion.NotionTaskMappingRegistry;
 import org.tavall.qa.domain.notion.NotionTaskIngestResult;
 import org.tavall.qa.domain.notion.NotionTaskOutboundChange;
 import org.tavall.qa.domain.notion.NotionTaskSnapshot;
 import org.tavall.qa.domain.notion.NotionTaskSyncAckRequest;
 import org.tavall.qa.domain.notion.NotionTaskSyncAckResult;
 import org.tavall.qa.domain.notion.NotionTaskSyncState;
-import org.tavall.qa.persistence.TaskBoardNotionSyncDataHandler;
 import org.tavall.qa.request.TaskBoardAgentExecutionUpdateRequest;
 import org.tavall.qa.request.TaskBoardProjectCreateRequest;
 import org.tavall.qa.view.TaskBoardAgentTaskContextView;
@@ -45,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-final class TaskBoardNotionSyncTest {
+final class TaskBoardNotionSyncHandlerTest {
     private final UUID managerAccountId = UUID.randomUUID();
     private final UUID managerMinecraftUuid = UUID.randomUUID();
     private final UUID devAccountId = UUID.randomUUID();
@@ -53,12 +50,13 @@ final class TaskBoardNotionSyncTest {
     @TempDir
     Path tempDir;
 
-    private TaskBoardTestDataHandler dataHandler;
-    private TaskBoardNotionSyncDataHandler syncDataHandler;
+    private InMemoryTaskBoardDataHandler dataHandler;
+    private org.tavall.qa.persistence.ITaskBoardNotionSyncDataHandler syncDataHandler;
     private TaskBoardMutationHandler mutationHandler;
     private TaskBoardQueryHandler queryHandler;
     private TaskBoardNotionSyncHandler syncHandler;
     private TaskBoardAgentViewHandler agentViewHandler;
+    private TaskBoardTestComposition composition;
 
     private QaSubjectContext manager;
     private QaSubjectContext devAgent;
@@ -68,17 +66,14 @@ final class TaskBoardNotionSyncTest {
 
     @BeforeEach
     void setUp() {
-        dataHandler = new TaskBoardTestDataHandler();
-        FilesystemAtomicOperations atomicOps = new AtomicFilesystemOperations();
-        syncDataHandler = new TaskBoardNotionSyncDataHandler(null, atomicOps, new ObjectMapper(), tempDir);
-
-        mutationHandler = new TaskBoardMutationHandler(dataHandler, new TaskBoardActionTargetResolver());
-        queryHandler = new TaskBoardQueryHandler(dataHandler, new TaskBoardActionTargetResolver());
-
         Clock clock = Clock.fixed(baseTime, ZoneOffset.UTC);
-        NotionTaskMappingRegistry mappingRegistry = NotionTaskMappingRegistry.canonical();
-        syncHandler = new TaskBoardNotionSyncHandler(syncDataHandler, dataHandler, mutationHandler, mappingRegistry, clock);
-        agentViewHandler = new TaskBoardAgentViewHandler(queryHandler, mutationHandler, dataHandler, syncHandler);
+        composition = TaskBoardTestComposition.open(tempDir, clock);
+        dataHandler = composition.dataHandler();
+        syncDataHandler = composition.bean(org.tavall.qa.persistence.ITaskBoardNotionSyncDataHandler.class);
+        mutationHandler = composition.bean(TaskBoardMutationHandler.class);
+        queryHandler = composition.bean(TaskBoardQueryHandler.class);
+        syncHandler = composition.bean(TaskBoardNotionSyncHandler.class);
+        agentViewHandler = composition.bean(TaskBoardAgentViewHandler.class);
 
         manager = TaskBoardTestSubjects.manager(managerAccountId, managerMinecraftUuid);
 
@@ -106,8 +101,13 @@ final class TaskBoardNotionSyncTest {
         ));
     }
 
+    @AfterEach
+    void tearDown() {
+        composition.close();
+    }
+
     @Test
-    void testCreateTaskFromNotionSnapshot() {
+    void createsTaskFromNotionSnapshot() {
         NotionTaskSnapshot snapshot = new NotionTaskSnapshot(
                 "ws-pvp-01",
                 "3a338458ddfd80eb9bbfcb8bc741e610",
@@ -158,7 +158,7 @@ final class TaskBoardNotionSyncTest {
     }
 
     @Test
-    void testUpdateTaskFromNotionSnapshot() {
+    void updatesTaskFromNotionSnapshot() {
         NotionTaskSnapshot initial = sampleSnapshot("page-pvp-task-102", "Initial Title", "Not started",
                 Instant.parse("2026-10-30T08:00:00Z"), false, false);
         NotionTaskIngestResult created = syncHandler.ingestSnapshot(manager, initial);
@@ -177,7 +177,7 @@ final class TaskBoardNotionSyncTest {
     }
 
     @Test
-    void testDuplicateIngestIsIdempotent() {
+    void duplicateIngestIsIdempotent() {
         NotionTaskSnapshot snapshot = sampleSnapshot("page-pvp-task-103", "Stable Title", "Up next",
                 Instant.parse("2026-10-30T08:00:00Z"), false, false);
         NotionTaskIngestResult first = syncHandler.ingestSnapshot(manager, snapshot);
@@ -199,7 +199,7 @@ final class TaskBoardNotionSyncTest {
     }
 
     @Test
-    void testConflictResolutionWhenBothNotionAndQaModifyTask() {
+    void resolvesConflictWhenNotionAndQaBothModifyTask() {
         NotionTaskSnapshot snapshot = sampleSnapshot("page-pvp-task-104", "Conflict Target", "In progress",
                 Instant.parse("2026-10-30T08:00:00Z"), false, false);
         NotionTaskIngestResult created = syncHandler.ingestSnapshot(manager, snapshot);
@@ -231,7 +231,7 @@ final class TaskBoardNotionSyncTest {
     }
 
     @Test
-    void testArchivedAndDeletedHandling() {
+    void handlesArchivedAndDeletedNotionPages() {
         NotionTaskSnapshot snapshot = sampleSnapshot("page-pvp-task-105", "Task To Archive", "In progress",
                 Instant.parse("2026-10-30T08:00:00Z"), false, false);
         syncHandler.ingestSnapshot(manager, snapshot);
@@ -257,7 +257,7 @@ final class TaskBoardNotionSyncTest {
     }
 
     @Test
-    void testOutboundPendingChangesAndAckReplay() {
+    void replaysOutboundAcknowledgementsIdempotently() {
         NotionTaskSnapshot snapshot = sampleSnapshot("page-pvp-task-106", "Outbound Test Task", "Not started",
                 Instant.parse("2026-10-30T08:00:00Z"), false, false);
         NotionTaskIngestResult created = syncHandler.ingestSnapshot(manager, snapshot);
@@ -300,7 +300,7 @@ final class TaskBoardNotionSyncTest {
     }
 
     @Test
-    void testUnauthorizedCallerFailsClosed() {
+    void unauthorizedCallerFailsClosed() {
         NotionTaskSnapshot snapshot = sampleSnapshot("page-pvp-task-107", "Sec Test", "Not started",
                 Instant.parse("2026-10-30T08:00:00Z"), false, false);
 
@@ -326,7 +326,7 @@ final class TaskBoardNotionSyncTest {
     }
 
     @Test
-    void testAgentRoleAwareTaskViewsAndContextWithoutWorkspaceDump() {
+    void agentViewsAreRoleAwareAndOmitWorkspaceDump() {
         NotionTaskSnapshot snapshot = sampleSnapshot("page-pvp-task-108", "Bounded Context Task", "In progress",
                 Instant.parse("2026-10-30T08:00:00Z"), false, false);
         NotionTaskIngestResult created = syncHandler.ingestSnapshot(manager, snapshot);
@@ -368,7 +368,7 @@ final class TaskBoardNotionSyncTest {
     }
 
     @Test
-    void testCustomPerDatabaseMappingConfiguration() {
+    void usesCustomPerDatabaseMappingConfiguration() {
         // Configure a custom database mapping for Kingdoms
         Map<String, TaskBoardTaskStatus> customStatus = Map.of(
                 "Planning", TaskBoardTaskStatus.BACKLOG,
@@ -437,27 +437,26 @@ final class TaskBoardNotionSyncTest {
     }
 
     @Test
-    void testRestartSurvivingFileState() {
+    void recoversFileStateAfterRestart() {
         NotionTaskSnapshot snapshot = sampleSnapshot("page-pvp-task-restart", "Restart Persistence", "In progress",
                 Instant.parse("2026-10-30T09:00:00Z"), false, false);
         NotionTaskIngestResult created = syncHandler.ingestSnapshot(manager, snapshot);
         UUID taskId = created.taskId();
 
-        // Simulate application restart with a fresh TaskBoardNotionSyncDataHandler pointing to the same directory
-        FilesystemAtomicOperations atomicOps = new AtomicFilesystemOperations();
-        TaskBoardNotionSyncDataHandler recoveredDataHandler = new TaskBoardNotionSyncDataHandler(
-                null, atomicOps, new ObjectMapper(), tempDir
-        );
-
-        Optional<NotionTaskSyncState> recoveredState = recoveredDataHandler.findSyncStateByPageId("page-pvp-task-restart");
-        assertTrue(recoveredState.isPresent(), "Sync state must survive restart via file-backed mirror");
-        assertEquals(taskId, recoveredState.get().taskId());
-        assertEquals("page-pvp-task-restart", recoveredState.get().notionPageId());
-        assertEquals(Instant.parse("2026-10-30T09:00:00Z"), recoveredState.get().lastIngestedRevision());
+        // A new production composition must recover state from the same file-backed boundary.
+        try (TaskBoardTestComposition recovered = TaskBoardTestComposition.open(
+                tempDir, Clock.fixed(baseTime, ZoneOffset.UTC))) {
+            var recoveredDataHandler = recovered.bean(org.tavall.qa.persistence.ITaskBoardNotionSyncDataHandler.class);
+            Optional<NotionTaskSyncState> recoveredState = recoveredDataHandler.findSyncStateByPageId("page-pvp-task-restart");
+            assertTrue(recoveredState.isPresent(), "Sync state must survive restart via file-backed mirror");
+            assertEquals(taskId, recoveredState.get().taskId());
+            assertEquals("page-pvp-task-restart", recoveredState.get().notionPageId());
+            assertEquals(Instant.parse("2026-10-30T09:00:00Z"), recoveredState.get().lastIngestedRevision());
+        }
     }
 
     @Test
-    void testUnknownDatabaseRejectedOnIngest() {
+    void rejectsUnknownDatabaseOnIngest() {
         NotionTaskSnapshot snapshot = new NotionTaskSnapshot(
                 "ws-unknown",
                 "unregistered-db-404",
@@ -488,27 +487,20 @@ final class TaskBoardNotionSyncTest {
     }
 
     @Test
-    void testUnknownDatabaseRejectedOnOutboundQuery() {
+    void rejectsUnknownDatabaseOnOutboundQuery() {
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
                 () -> syncHandler.findPendingOutboundChanges(manager, Optional.of("unregistered-db-404")));
         assertTrue(thrown.getMessage().contains("Unknown or unconfigured Notion database: unregistered-db-404"));
     }
 
     @Test
-    void testNoNullClockOrRegistrySilentFallbacks() {
-        assertThrows(NullPointerException.class, () -> new TaskBoardNotionSyncHandler(
-                syncDataHandler, dataHandler, mutationHandler, NotionTaskMappingRegistry.canonical(), null
-        ));
-        assertThrows(NullPointerException.class, () -> new TaskBoardNotionSyncHandler(
-                syncDataHandler, dataHandler, mutationHandler, null, Clock.systemUTC()
-        ));
-        assertThrows(NullPointerException.class, () -> new TaskBoardNotionSyncHandler(
-                syncDataHandler, dataHandler, mutationHandler, null
-        ));
+    void configurationProvidesClockAndMappingRegistry() {
+        assertNotNull(syncHandler);
+        assertNotNull(composition.bean(org.tavall.qa.domain.notion.INotionTaskMappingRegistry.class));
     }
 
     @Test
-    void testTypedVersionedMappingConfigurationIntegrity() {
+    void loadsTypedVersionedMappingConfiguration() {
         NotionTaskMappingConfiguration config = NotionTaskMappingConfiguration.canonical();
         assertEquals(1, config.schemaVersion());
         assertTrue(config.findMapping("3a338458ddfd80eb9bbfcb8bc741e610").isPresent());

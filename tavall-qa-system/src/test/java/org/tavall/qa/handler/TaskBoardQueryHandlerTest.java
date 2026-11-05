@@ -1,7 +1,9 @@
 package org.tavall.qa.handler;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.tavall.qa.auth.TaskBoardTestSubjects;
 import org.tavall.qa.domain.TaskBoardAudience;
 import org.tavall.qa.domain.TaskBoardProjectStatus;
@@ -19,6 +21,7 @@ import org.tavall.qa.request.TaskBoardTaskCreateRequest;
 import org.tavall.qa.request.TaskBoardTaskUpdateRequest;
 
 import java.util.List;
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -28,17 +31,19 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class TaskBoardQueryHandlerTest {
-    private TaskBoardTestDataHandler dataHandler;
+    private InMemoryTaskBoardDataHandler dataHandler;
     private TaskBoardMutationHandler mutationHandler;
     private TaskBoardQueryHandler queryHandler;
+    private TaskBoardTestComposition composition;
+    @TempDir Path tempDir;
     private QaSubjectContext manager;
 
     @BeforeEach
     void setUp() {
-        dataHandler = new TaskBoardTestDataHandler();
-        TaskBoardActionTargetResolver resolver = new TaskBoardActionTargetResolver();
-        mutationHandler = new TaskBoardMutationHandler(dataHandler, resolver);
-        queryHandler = new TaskBoardQueryHandler(dataHandler, resolver);
+        composition = TaskBoardTestComposition.open(tempDir, java.time.Clock.systemUTC());
+        dataHandler = composition.dataHandler();
+        mutationHandler = composition.bean(TaskBoardMutationHandler.class);
+        queryHandler = composition.bean(TaskBoardQueryHandler.class);
         manager = TaskBoardTestSubjects.manager(UUID.randomUUID(), UUID.randomUUID());
         mutationHandler.createProject(manager, new TaskBoardProjectCreateRequest(
                 "project-novus",
@@ -48,6 +53,11 @@ final class TaskBoardQueryHandlerTest {
                 TaskBoardAudience.PUBLIC,
                 10
         ));
+    }
+
+    @AfterEach
+    void tearDown() {
+        composition.close();
     }
 
     @Test
