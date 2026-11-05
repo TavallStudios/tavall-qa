@@ -1,0 +1,24 @@
+{
+  "repository": "TavallStudios/tavall-qa",
+  "scope": "tavall-qa-api house-style test conversion",
+  "testedSources": [
+    {
+      "repository": "TavallStudios/tavall-qa",
+      "sha": "c65dd3266ad6c26db2ed241970c5d630c68e1d74"
+    }
+  ],
+  "result": "13 tests pass with 0 failures; :tavall-qa-api:check is BUILD SUCCESSFUL",
+  "boundaries": "Local Java 25 / Gradle 9.6.1 module check; real API/domain subjects and Jackson; no external provider or database acceptance",
+  "assets": [
+    {
+      "kind": "screenshot",
+      "path": "evidence/review/wtqa-api-house-tests/01-api-module-gradle-check-desktop.png",
+      "caption": "API module Gradle check (desktop)",
+      "surface": "API module Gradle check",
+      "viewport": "desktop",
+      "url": null,
+      "sourceSha": "c65dd3266ad6c26db2ed241970c5d630c68e1d74",
+      "sha256": "6826014ef1a501d3394bea3a477adb5a002d7bb7f332db1de973a5b9e68227d9"
+    }
+  ]
+}
