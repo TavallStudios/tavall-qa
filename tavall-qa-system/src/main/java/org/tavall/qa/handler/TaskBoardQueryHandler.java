@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.Set;
 import java.util.UUID;
 
@@ -81,17 +82,45 @@ public final class TaskBoardQueryHandler implements ITaskBoardQueryHandler {
 
     @Override
     public TaskBoardPublicDashboardView publicDashboard() {
+        return boardDashboard(TaskBoardProject::publicVisible, TaskBoardTask::publicVisible);
+    }
+
+    @Override
+    public TaskBoardPublicDashboardView visibleDashboard(QaSubjectContext subject) {
+        Objects.requireNonNull(subject, "subject");
+        return boardDashboard(project -> visibleTo(subject, project), task -> visibleTo(subject, task));
+    }
+
+    @Override
+    public Optional<TaskBoardPublicProjectView> findVisibleProjectView(String projectKey, QaSubjectContext subject) {
+        Objects.requireNonNull(subject, "subject");
+        return projectBoard(projectKey, project -> visibleTo(subject, project), task -> visibleTo(subject, task));
+    }
+
+    /** Public items plus the items this subject's audience grants allow (for example admin-only projects). */
+    private static boolean visibleTo(QaSubjectContext subject, TaskBoardProject project) {
+        return project.publicVisible() || subject.canViewProjectAudience(project.audience());
+    }
+
+    private static boolean visibleTo(QaSubjectContext subject, TaskBoardTask task) {
+        return task.publicVisible() || subject.canViewAudience(task.audience(), task.taskId());
+    }
+
+    private TaskBoardPublicDashboardView boardDashboard(
+            Predicate<TaskBoardProject> projectVisible,
+            Predicate<TaskBoardTask> taskVisible
+    ) {
         if (!dataHandler.isAvailable()) {
             return new TaskBoardPublicDashboardView(
                     false, List.of(), List.of(), 0, 0, 0, 0, 0, List.of(), List.of()
             );
         }
         List<TaskBoardProject> publicProjects = dataHandler.findProjects().stream()
-                .filter(TaskBoardProject::publicVisible)
+                .filter(projectVisible)
                 .toList();
         List<TaskBoardPublicProjectView> projectBoards = publicProjects.stream()
                 .map(project -> {
-                    List<TaskBoardTask> tasks = publicTasks(project.projectKey());
+                    List<TaskBoardTask> tasks = boardTasks(project.projectKey(), taskVisible);
                     return new TaskBoardPublicProjectView(
                             publicSummary(project, tasks),
                             publicSections(tasks),
@@ -104,7 +133,7 @@ public final class TaskBoardQueryHandler implements ITaskBoardQueryHandler {
                 .toList();
         List<PublicTaskEntry> entries = new ArrayList<>();
         for (TaskBoardProject project : publicProjects) {
-            for (TaskBoardTask task : publicTasks(project.projectKey())) {
+            for (TaskBoardTask task : boardTasks(project.projectKey(), taskVisible)) {
                 entries.add(new PublicTaskEntry(project, task));
             }
         }
@@ -193,16 +222,24 @@ public final class TaskBoardQueryHandler implements ITaskBoardQueryHandler {
 
     @Override
     public Optional<TaskBoardPublicProjectView> findPublicProjectView(String projectKey) {
+        return projectBoard(projectKey, TaskBoardProject::publicVisible, TaskBoardTask::publicVisible);
+    }
+
+    private Optional<TaskBoardPublicProjectView> projectBoard(
+            String projectKey,
+            Predicate<TaskBoardProject> projectVisible,
+            Predicate<TaskBoardTask> taskVisible
+    ) {
         if (!dataHandler.isAvailable()) {
             return Optional.empty();
         }
         Optional<TaskBoardProject> projectOptional = dataHandler.findProject(projectKey)
-                .filter(TaskBoardProject::publicVisible);
+                .filter(projectVisible);
         if (projectOptional.isEmpty()) {
             return Optional.empty();
         }
         TaskBoardProject project = projectOptional.get();
-        List<TaskBoardTask> publicTasks = publicTasks(project.projectKey());
+        List<TaskBoardTask> publicTasks = boardTasks(project.projectKey(), taskVisible);
         return Optional.of(new TaskBoardPublicProjectView(
                 publicSummary(project, publicTasks),
                 publicSections(publicTasks),
@@ -421,8 +458,12 @@ public final class TaskBoardQueryHandler implements ITaskBoardQueryHandler {
     }
 
     private List<TaskBoardTask> publicTasks(String projectKey) {
+        return boardTasks(projectKey, TaskBoardTask::publicVisible);
+    }
+
+    private List<TaskBoardTask> boardTasks(String projectKey, Predicate<TaskBoardTask> taskVisible) {
         return dataHandler.findTasks(projectKey).stream()
-                .filter(TaskBoardTask::publicVisible)
+                .filter(taskVisible)
                 .sorted(Comparator.comparingInt(TaskBoardTask::sortOrder)
                         .thenComparing(TaskBoardTask::title))
                 .toList();
