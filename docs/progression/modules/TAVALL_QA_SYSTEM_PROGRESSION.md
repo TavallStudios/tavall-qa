@@ -79,3 +79,12 @@ Candidate `b23112179d613fae8a85cdd83fc45877a107c2f1` repairs Spring recompositio
 | 2026-10-26 10:59 AM PDT | GitHub | `UPDATED` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same logical document from PR #2 | PR #3, source `fd44ada` and exact CI receipts | Documented real DI/Database checkpoint implementation; kept runtime, payload and provider-continuation gates separate. |
 | 2026-10-26 12:28 PM PDT | GitHub | `UPDATED` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same document | QA #3, source `63a3bbc` | Reconciled typed body persistence and current source-guarded resume candidate; PostgreSQL acceptance remains tied to `1fe4770`. |
 </details>
+
+
+## Progression Timeline
+
+| Date / Time | State | Progression | Evidence | Result / Remaining Work |
+| --- | --- | --- | --- | --- |
+| `2026-11-04 21:01 UTC` | `MERGED_PRODUCTION` | Add QA external reference reconciliation. | [TavallStudios/tavall-qa#8](https://github.com/TavallStudios/tavall-qa/pull/8) merged as `e6c89ea`. | Exact-source CI request id and DEVELOPMENT deploy generation are not retrievable from merged history; validation and deployment state `unverified`. |
+| `2026-11-05 04:40 UTC` | `MERGED_PRODUCTION` | Tests: convert tavall-qa-system to Tavall house style. | [TavallStudios/tavall-qa#12](https://github.com/TavallStudios/tavall-qa/pull/12) merged as `0c88cc2`. | Exact-source CI request id and DEVELOPMENT deploy generation are not retrievable from merged history; validation and deployment state `unverified`. |
+| `2026-11-05 17:10 UTC` | `MERGED_PRODUCTION` | Add: seed admin-only tavall-engineering Task Board project. | [TavallStudios/tavall-qa#14](https://github.com/TavallStudios/tavall-qa/pull/14) merged as `68f03ee`. | Exact-source CI request id and DEVELOPMENT deploy generation are not retrievable from merged history; validation and deployment state `unverified`. |
