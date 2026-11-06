@@ -158,6 +158,44 @@ final class TaskBoardQueryHandlerTest {
         assertTrue(progression.nextTierVqcGuideline().isEmpty());
     }
 
+    @Test
+    void globalSuperuserSeesAdminOnlyProjectsOnTheBoardWhileOthersSeeOnlyPublicWork() {
+        mutationHandler.createProject(manager, new TaskBoardProjectCreateRequest(
+                "tavall-engineering",
+                "Tavall Engineering",
+                "Admin-only engineering board",
+                TaskBoardProjectStatus.ACTIVE,
+                TaskBoardAudience.ADMIN_ONLY,
+                100
+        ));
+        mutationHandler.createTask(manager, new TaskBoardTaskCreateRequest(
+                "tavall-engineering", "orchestrator", "Review navbar sign-in", "Review navbar sign-in",
+                "Owner review", "Owner review", TaskBoardTaskPriority.HIGH, TaskBoardAudience.ADMIN_ONLY,
+                1, false, false, "orchestrator", "orchestrator/20261105/wUI-nav-signin", 0));
+        createTask("website-foundation", TaskBoardAudience.PUBLIC, 1);
+        QaSubjectContext superuser = new QaSubjectContext(
+                Optional.of(UUID.randomUUID()), QaSubjectStatus.ACTIVE, Optional.empty(),
+                Optional.of(UUID.randomUUID()), true, true,
+                Set.of(), Optional.empty(), Set.of(), Set.of(), List.of(), false);
+        QaSubjectContext ordinary = new QaSubjectContext(
+                Optional.of(UUID.randomUUID()), QaSubjectStatus.ACTIVE, Optional.empty(),
+                Optional.of(UUID.randomUUID()), true, false,
+                Set.of(), Optional.empty(), Set.of(), Set.of(), List.of(), false);
+
+        var superuserBoard = queryHandler.visibleDashboard(superuser);
+        assertTrue(superuserBoard.projects().stream().anyMatch(p -> p.projectKey().equals("tavall-engineering")));
+        assertTrue(superuserBoard.projects().stream().anyMatch(p -> p.projectKey().equals("project-novus")));
+        var engineering = queryHandler.findVisibleProjectView("tavall-engineering", superuser).orElseThrow();
+        assertEquals(1, engineering.summary().taskCount());
+
+        assertTrue(queryHandler.visibleDashboard(ordinary).projects().stream()
+                .noneMatch(p -> p.projectKey().equals("tavall-engineering")));
+        assertTrue(queryHandler.findVisibleProjectView("tavall-engineering", ordinary).isEmpty());
+        assertTrue(queryHandler.findVisibleProjectView("tavall-engineering", QaSubjectContext.anonymous()).isEmpty());
+        assertTrue(queryHandler.findPublicProjectView("tavall-engineering").isEmpty());
+        assertEquals(1, queryHandler.findVisibleProjectView("project-novus", ordinary).orElseThrow().summary().taskCount());
+    }
+
     private TaskBoardTask createTask(String sectionKey, TaskBoardAudience audience, int weight) {
         return mutationHandler.createTask(manager, new TaskBoardTaskCreateRequest(
                 "project-novus",

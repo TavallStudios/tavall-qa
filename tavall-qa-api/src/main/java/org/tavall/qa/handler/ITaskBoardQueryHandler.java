@@ -20,9 +20,15 @@ public interface ITaskBoardQueryHandler {
 
     TaskBoardPublicDashboardView publicDashboard();
 
+    /** The board as this subject may see it: public projects/tasks plus those its audience grants allow. */
+    TaskBoardPublicDashboardView visibleDashboard(QaSubjectContext subject);
+
     Optional<TaskBoardProjectView> findProjectView(String projectKey, QaSubjectContext subject);
 
     Optional<TaskBoardPublicProjectView> findPublicProjectView(String projectKey);
+
+    /** One project board as this subject may see it, including audience-restricted projects and tasks. */
+    Optional<TaskBoardPublicProjectView> findVisibleProjectView(String projectKey, QaSubjectContext subject);
 
     Optional<TaskBoardPublicTaskView> findPublicTaskView(UUID taskId);
 
