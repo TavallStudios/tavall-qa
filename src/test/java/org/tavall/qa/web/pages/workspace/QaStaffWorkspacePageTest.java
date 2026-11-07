@@ -79,9 +79,9 @@ final class QaStaffWorkspacePageTest {
         String html = renderer.render(page).body();
 
         assertTrue(html.contains("Direction C · Focus Workspace"));
-        assertTrue(html.contains("Thread"));
-        assertTrue(html.contains("EDIT"));
         assertTrue(html.contains("Evidence submissions"));
         assertTrue(html.contains("Recent task history"));
+        assertTrue(html.contains("Human Verify"));
+        assertTrue(html.contains("← Task detail"));
     }
 }
