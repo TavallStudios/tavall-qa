@@ -24,6 +24,7 @@ val executionCheckpointIntegrationTest by tasks.registering(Test::class) {
     filter {
         includeTestsMatching("*TaskBoardExecutionPostgresIntegrationTest")
         includeTestsMatching("*TaskBoardExternalKeyUpsertPostgresIntegrationTest")
+        includeTestsMatching("*TaskBoardMigrationsPostgresIntegrationTest")
     }
     systemProperty("tavall.qa.checkpoint.postgres.required", "true")
     outputs.upToDateWhen { false }
