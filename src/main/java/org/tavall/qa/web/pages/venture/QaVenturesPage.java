@@ -58,7 +58,6 @@ public final class QaVenturesPage extends AbstractPage<QaVenturesPage> {
     static HTMLElement link(ForgeLink link) {
         return HTML.a().classes(TavallForgeCSS.FORGE_TEXT_LINK)
                 .attribute(HTMLAttribute.HREF, link.href())
-                .attribute(HTMLAttribute.REL, "noopener")
                 .text(link.label());
     }
 }
