@@ -17,6 +17,8 @@ public final class QaRoutes {
     public static final String WORKSPACE = "/workspace/{projectKey}";
     public static final String WORKSPACE_TASK = "/workspace/{projectKey}/tasks/{taskId}";
     public static final String MESSAGES = "/messages/{key}";
+    public static final String VENTURES = "/ventures";
+    public static final String VENTURE = "/ventures/{ventureKey}";
 
     // Server-side mutations
     public static final String PROJECTS_MUTATION = "/projects";
@@ -59,6 +61,11 @@ public final class QaRoutes {
         Objects.requireNonNull(projectKey, "projectKey");
         Objects.requireNonNull(taskId, "taskId");
         return "/projects/" + projectKey.trim() + "/tasks/" + taskId;
+    }
+
+    public static String venture(String ventureKey) {
+        Objects.requireNonNull(ventureKey, "ventureKey");
+        return "/ventures/" + ventureKey.trim();
     }
 
     public static String workspace(String projectKey) {
