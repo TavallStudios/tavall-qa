@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.tavall.qa.domain.TaskBoardProjectStatus;
 import org.tavall.qa.view.TaskBoardPublicDashboardView;
 import org.tavall.qa.view.TaskBoardPublicProjectSummaryView;
+import org.tavall.qa.web.pages.main.QaMainBoardPageContext;
 import org.tavall.web.frontend.render.HTMLRenderer;
 
 import java.util.List;
@@ -48,7 +49,7 @@ final class QaMainBoardPageTest {
                 List.of()
         );
 
-        QaMainBoardPage page = QaMainBoardPage.build(dashboard, true, true, "LINKED");
+        QaMainBoardPage page = QaMainBoardPage.build(dashboard, true, QaMainBoardPageContext.anonymous());
         assertNotNull(page);
 
         String html = renderer.render(page).body();

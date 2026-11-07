@@ -50,7 +50,11 @@ final class QaTaskDetailPageTest {
                 true,
                 "github",
                 "https://github.com/TavallStudios/tavall-mc/issues/263",
+                true,
                 UUID.randomUUID(),
+                UUID.randomUUID(),
+                null,
+                null,
                 null,
                 null,
                 0,
@@ -58,7 +62,7 @@ final class QaTaskDetailPageTest {
                 now
         );
 
-        TaskBoardTaskView viewNhv = new TaskBoardTaskView(project, taskNhv, List.of(), List.of());
+        TaskBoardTaskView viewNhv = new TaskBoardTaskView(project, taskNhv, List.of(), List.of(), List.of(), List.of(), List.of());
         QaTaskDetailPage pageNhv = QaTaskDetailPage.build(viewNhv, false, false);
         String htmlNhv = renderer.render(pageNhv).body();
 
@@ -83,15 +87,19 @@ final class QaTaskDetailPageTest {
                 true,
                 "github",
                 "https://github.com/TavallStudios/tavall-mc/issues/263",
+                true,
+                UUID.randomUUID(),
                 UUID.randomUUID(),
                 verifierUuid,
+                UUID.randomUUID(),
+                UUID.randomUUID(),
                 now,
                 0,
                 now,
                 now
         );
 
-        TaskBoardTaskView viewVerified = new TaskBoardTaskView(project, taskVerified, List.of(), List.of());
+        TaskBoardTaskView viewVerified = new TaskBoardTaskView(project, taskVerified, List.of(), List.of(), List.of(), List.of(), List.of());
         QaTaskDetailPage pageVerified = QaTaskDetailPage.build(viewVerified, true, true);
         String htmlVerified = renderer.render(pageVerified).body();
 
