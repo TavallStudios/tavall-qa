@@ -6,11 +6,11 @@ Type: REPOSITORY_INTEGRATION
 State: ACTIVE
 Branch: staging/platform-v2
 Parent: main
-Promotion: MANUAL
+Promotion: EXACT_HEAD_REQUIRED_ALL
 ChildMergeTarget: staging/platform-v2
 ```
 
-This branch is the persistent repository-level integration root for Tavall QA (Generation 2). Normal QA pull requests target `staging/platform-v2`. Pull requests remain the work and review records; this manifest tracks active composition and historical reconciliation.
+This branch is the persistent repository-level integration root for Tavall QA (Generation 3). Normal QA pull requests target `staging/platform-v2`. Pull requests remain the work and review records; this manifest tracks active composition and historical reconciliation.
 
 ## Historical Reconciliation (`NEEDS_RECONCILIATION`)
 
@@ -28,4 +28,6 @@ All historical commits up to `9f3655c` are included in `staging/platform-v2`.
 
 ## Intended Child PRs (Active Membership)
 
-No active child pull requests currently pending.
+Design-review implementation for [issue #23](https://github.com/TavallStudios/tavall-qa/issues/23) is being prepared against this root.
+
+Generation 3 refreshes the strict ancestor staging branch through main `fcbe2563b6fb018f3379a260a6ec3747d378d631`, including merged PRs #18, #19 and #20. The previous root PR #18 is merged. No source was removed or rewritten. Composed validation and deployment are pending.
