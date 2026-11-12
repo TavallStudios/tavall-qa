@@ -4,6 +4,8 @@ import jakarta.persistence.LockModeType;
 import org.tavall.database.postgres.IPostgresDatabase;
 import org.tavall.database.postgres.entity.IPostgresEntityOperationContext;
 import org.tavall.qa.domain.TaskBoardAction;
+import org.tavall.qa.domain.TaskBoardDesignReview;
+import org.tavall.qa.persistence.entity.TaskBoardDesignReviewEntity;
 import org.tavall.qa.domain.TaskBoardAssignment;
 import org.tavall.qa.domain.TaskBoardAuditEntry;
 import org.tavall.qa.domain.TaskBoardComment;
@@ -44,6 +46,42 @@ public final class TaskBoardDataHandler implements ITaskBoardDataHandler {
 
     public TaskBoardDataHandler(IPostgresDatabase database) {
         this.database = Objects.requireNonNull(database, "database");
+    }
+
+    @Override
+    public Optional<TaskBoardDesignReview> findDesignReview(UUID taskId) {
+        requireAvailable();
+        return database.entities().find(TaskBoardDesignReviewEntity.class,
+                Objects.requireNonNull(taskId, "taskId").toString()).map(TaskBoardDesignReviewEntity::toDomain);
+    }
+
+    @Override
+    public TaskBoardDesignReview saveDesignReview(TaskBoardDesignReview review, int expectedRevision,
+            TaskBoardTask task, Instant expectedTaskUpdatedAt, TaskBoardAuditEntry auditEntry) {
+        requireAvailable();
+        Objects.requireNonNull(review, "review");
+        if (!review.taskId().equals(task.taskId()) || review.revision() != expectedRevision + 1) {
+            throw new IllegalArgumentException("Design review identity or revision mismatch");
+        }
+        requireAudit(auditEntry, Optional.of(task.taskId()), task.projectKey());
+        return database.entities().executeAtomic(context -> {
+            context.acquireAdvisoryTransactionLock(TaskBoardTaskEntity.lockKey(task.taskId()));
+            TaskBoardTaskEntity currentTask = context.find(TaskBoardTaskEntity.class, task.taskId().toString(),
+                    LockModeType.PESSIMISTIC_WRITE).orElseThrow(() ->
+                    new TaskBoardConcurrentModificationException("Task disappeared during design review"));
+            if (!currentTask.toDomain().updatedAt().equals(expectedTaskUpdatedAt)) {
+                throw new TaskBoardConcurrentModificationException("Task changed; reload before retrying");
+            }
+            int currentRevision = context.find(TaskBoardDesignReviewEntity.class, task.taskId().toString())
+                    .map(entity -> entity.toDomain().revision()).orElse(0);
+            if (currentRevision != expectedRevision) {
+                throw new TaskBoardConcurrentModificationException("Design review changed; reload before retrying");
+            }
+            TaskBoardDesignReviewEntity saved = context.save(TaskBoardDesignReviewEntity.fromDomain(review));
+            context.save(TaskBoardTaskEntity.fromDomain(task, currentTask.externalKey()));
+            context.save(TaskBoardAuditEntryEntity.fromDomain(auditEntry));
+            return saved.toDomain();
+        });
     }
 
     @Override

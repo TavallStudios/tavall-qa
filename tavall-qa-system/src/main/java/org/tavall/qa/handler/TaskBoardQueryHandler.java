@@ -66,6 +66,20 @@ public final class TaskBoardQueryHandler implements ITaskBoardQueryHandler {
     }
 
     @Override
+    public Optional<org.tavall.qa.domain.TaskBoardDesignReview> findDesignReview(UUID taskId, QaSubjectContext subject) {
+        Objects.requireNonNull(subject, "subject");
+        if (!dataHandler.isAvailable()) return Optional.empty();
+        Optional<TaskBoardTask> task = dataHandler.findTask(taskId);
+        if (task.isEmpty()) return Optional.empty();
+        Optional<TaskBoardProject> project = dataHandler.findProject(task.get().projectKey());
+        if (project.isEmpty() || !(subject.canManageTask(taskId)
+                || subject.canViewTask(project.get(), task.get()) && subject.canViewStaffTask(task.get()))) {
+            return Optional.empty();
+        }
+        return dataHandler.findDesignReview(taskId);
+    }
+
+    @Override
     public TaskBoardDashboardView dashboard(QaSubjectContext subject) {
         Objects.requireNonNull(subject, "subject");
         if (!dataHandler.isAvailable()) {
@@ -287,7 +301,8 @@ public final class TaskBoardQueryHandler implements ITaskBoardQueryHandler {
                 dataHandler.findComments(taskId),
                 dataHandler.findEvidenceForTask(taskId).stream().map(TaskBoardEvidenceView::new).toList(),
                 dataHandler.findAssignments(taskId).stream().map(TaskBoardAssignmentView::new).toList(),
-                dataHandler.findAuditEntries(taskId).stream().map(TaskBoardAuditView::new).toList()
+                dataHandler.findAuditEntries(taskId).stream().map(TaskBoardAuditView::new).toList(),
+                dataHandler.findDesignReview(taskId).orElse(null)
         ));
     }
 

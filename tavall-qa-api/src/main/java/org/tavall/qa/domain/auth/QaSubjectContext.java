@@ -277,6 +277,13 @@ public record QaSubjectContext(
                 || canManageTask(taskId);
     }
 
+    /** Product design selection uses Account reviewer authority without Minecraft qualifications. */
+    public boolean canSelectDesignReview(UUID taskId) {
+        Objects.requireNonNull(taskId, "taskId");
+        return isGlobalQaAdministrator() || hasCapability(QaCapability.REVIEW_EVIDENCE)
+                && (hasTaskAssignment(taskId, QaCapability.REVIEW_EVIDENCE) || canManageTask(taskId));
+    }
+
     public boolean canAcceptReject(UUID taskId, QaEnvironmentGrant environment) {
         return isGlobalQaAdministrator()
                 || hasCapability(QaCapability.ACCEPT_REJECT_TASK)

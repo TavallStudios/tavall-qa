@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ITaskBoardQueryHandler {
+    Optional<org.tavall.qa.domain.TaskBoardDesignReview> findDesignReview(UUID taskId, QaSubjectContext subject);
+
     TaskBoardDashboardView dashboard(QaSubjectContext subject);
 
     TaskBoardPublicDashboardView publicDashboard();
