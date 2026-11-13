@@ -26,8 +26,13 @@ The following pull requests were merged directly into `main` without passing thr
 
 All historical commits up to `9f3655c` are included in `staging/platform-v2`.
 
-## Intended Child PRs (Active Membership)
+## Integrated Design Review Work for Issue #23
 
-Design-review implementation for [issue #23](https://github.com/TavallStudios/tavall-qa/issues/23) is being prepared against this root.
+The generic design-review API changes for [issue #23](https://github.com/TavallStudios/tavall-qa/issues/23) are integrated into this staging root:
 
-Generation 3 refreshes the strict ancestor staging branch through main `fcbe2563b6fb018f3379a260a6ec3747d378d631`, including merged PRs #18, #19 and #20. The previous root PR #18 is merged. No source was removed or rewritten. Composed validation and deployment are pending.
+| PR | Source SHA | Exact-head CI request | Merge SHA | Status |
+|---|---|---|---|---|
+| [#26](https://github.com/TavallStudios/tavall-qa/pull/26) | `1094b3737ca45b7ee476454c59825d111dd20fcc` | `ea5f8ec4-6810-4389-8104-cafd4132920c` (REQUIRED_ALL PASS) | `9acf61946a55c98151e00a964a2789a3680c8e34` | Merged |
+| [#27](https://github.com/TavallStudios/tavall-qa/pull/27) | `87dabd58ed4e39f5b7c283a6a9ed0eb8b01b8a63` | `12206f0d-cf49-4822-bd24-b1685b8280ff` (REQUIRED_ALL PASS) | `c363402785e6c821d9c477a10f68175301703c0d` | Merged |
+
+Generation 3 retains ancestry from main `fcbe2563b6fb018f3379a260a6ec3747d378d631`, including PRs #18, #19 and #20. No source was removed or rewritten. Composed staging validation for the updated root is pending; development deployment has not occurred.
