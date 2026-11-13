@@ -999,3 +999,16 @@
     .qa-app[data-tavall-qa-workspace-variant] .public-staff-form input:not([type="checkbox"]),
     .qa-app[data-tavall-qa-workspace-variant] .public-staff-form textarea { transition-duration: 0.01ms !important; }
 }
+
+/* QA-owned comparison controls; candidate styling stays inside the live preview frame. */
+.qa-design-review { padding-top: 32px; padding-bottom: 64px; }
+.qa-design-controls { display: flex; flex-wrap: wrap; gap: 12px; margin: 24px 0; padding: 16px; border: 1px solid var(--board-line); background: var(--board-surface); }
+.qa-design-controls label { display: grid; gap: 6px; color: var(--board-muted); }
+.qa-design-controls select { min-height: 36px; background: var(--board-bg); color: var(--board-text); border: 1px solid var(--board-line); }
+.qa-design-frames { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 390px), 1fr)); gap: 20px; }
+.qa-design-card { min-width: 0; padding: 16px; border: 1px solid var(--board-line); background: var(--board-surface); }
+.qa-design-card[hidden] { display: none; }
+.qa-design-card form { display: grid; gap: 12px; margin-top: 16px; }
+.qa-design-card textarea { display: block; width: 100%; min-height: 72px; background: var(--board-bg); color: var(--board-text); border: 1px solid var(--board-line); }
+.qa-design-viewport { position: relative; overflow: hidden; margin-top: 16px; background: var(--board-bg); }
+.qa-design-viewport iframe { display: block; border: 0; transform-origin: top left; max-width: none; }
