@@ -109,6 +109,7 @@ public final class QaTaskDetailPageHTML {
                         .toList(),
                 canManage,
                 canHumanVerify,
+                taskView.designReview(),
                 pageContext,
                 execution
         );
@@ -165,6 +166,7 @@ public final class QaTaskDetailPageHTML {
                 taskPage.publicEvidence(),
                 canManage,
                 canHumanVerify,
+                null,
                 pageContext,
                 execution
         );
@@ -205,6 +207,7 @@ public final class QaTaskDetailPageHTML {
             List<TaskBoardPublicEvidenceView> evidence,
             boolean canManage,
             boolean canHumanVerify,
+            org.tavall.qa.domain.TaskBoardDesignReview designReview,
             QaTaskPageContext pageContext,
             QaTaskExecutionView execution
     ) {
@@ -266,6 +269,14 @@ public final class QaTaskDetailPageHTML {
                     .text("Open Focus Workspace →"));
             staffStrip.child(staffInner);
             shell.child(staffStrip);
+        }
+
+        if (designReview != null) {
+            HTMLElement reviewLink = HTML.section().classes(QaCSS.PUBLIC_BOARD_SHELL);
+            reviewLink.child(HTML.a().classes(QaCSS.GHOST_BUTTON)
+                    .attribute(HTMLAttribute.HREF, organizationHref(QaRoutes.designReview(projectKey, UUID.fromString(taskIdStr)), pageContext))
+                    .text(designReview.decided() ? "Design selected: " + designReview.winnerKey() + " · View review" : "Compare designs and select winner"));
+            shell.child(reviewLink);
         }
 
         // 3. Evidence Grid (Direction A: Main evidence + Action rail)

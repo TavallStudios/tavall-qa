@@ -17,7 +17,7 @@ dependencies:
     identity: TavallStudios/tavall-web
     role: SHARED_DEP
     selector: required-source
-    digest: 933e807ab7fb60cfff3d1195ebc736fdc94becf9
+    digest: aa2f95a0bca7e82f144ac890078c6af1d9b26dd9
     pluginId: org.tavall.web.frontend
     pluginVersion: "0.1.1-SNAPSHOT"
     versionProperty: tavallWebVersion
@@ -27,7 +27,7 @@ dependencies:
     identity: TavallStudios/tavall-qa
     role: SHARED_DEP
     selector: required-source
-    digest: 516a77c21d06c6ac9c98511edcadd5a9fa1c213d
+    digest: 1094b3737ca45b7ee476454c59825d111dd20fcc
     substitutions: "org.tavall:tavall-qa-api=:tavall-qa-api"
 
 requiredChecks:

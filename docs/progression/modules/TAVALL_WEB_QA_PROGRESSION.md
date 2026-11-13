@@ -35,3 +35,8 @@ Sanitized public and Message Editor screenshots and the exact result report are 
 - Run current exact-head Tavall CI, deliver an immutable candidate through the managed deployment path, and verify the QA host on STAGING. The current live DEVELOPMENT baseline serves the host, but the new editor follow-up is not deployed.
 - An authenticated QA Account with the explicit task capabilities must verify revocation and submit real public work through the QA API. The live public index currently has no publicly visible tasks; the private task count was not queried.
 - Connect Cache/Event, CMS, roadmap, Discord, and public-proof subscribers only after their current owners expose typed contracts and the privacy/idempotency checks pass.
+
+
+## Generic live design review — November 13, 2026
+
+The QA presentation reads the review surface and candidate option maps from the typed Task Board projection. It renders live sandboxed frames, exposes only candidate-declared option values, and provides a cross-task list of open reviews visible to the current staff subject. Winner forms remain server-authorized and CSRF-protected. The implementation has no dashboard product dependency; dashboard A/B/C is the first registered use. Local page tests, exact hosted checks, browser screenshots and runtime acceptance remain pending for the current source.

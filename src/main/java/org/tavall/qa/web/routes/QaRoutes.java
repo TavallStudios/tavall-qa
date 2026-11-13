@@ -16,6 +16,8 @@ public final class QaRoutes {
     public static final String TASK = "/projects/{projectKey}/tasks/{taskId}";
     public static final String WORKSPACE = "/workspace/{projectKey}";
     public static final String WORKSPACE_TASK = "/workspace/{projectKey}/tasks/{taskId}";
+    public static final String DESIGN_REVIEW = WORKSPACE_TASK + "/design-review";
+    public static final String DESIGN_REVIEW_DECISION = TASK + "/design-review/decision";
     public static final String MESSAGES = "/messages/{key}";
     public static final String VENTURES = "/ventures";
     public static final String VENTURE = "/ventures/{ventureKey}";
@@ -77,6 +79,14 @@ public final class QaRoutes {
         Objects.requireNonNull(projectKey, "projectKey");
         Objects.requireNonNull(taskId, "taskId");
         return "/workspace/" + projectKey.trim() + "/tasks/" + taskId;
+    }
+
+    public static String designReview(String projectKey, UUID taskId) {
+        return workspaceTask(projectKey, taskId) + "/design-review";
+    }
+
+    public static String designReviewDecision(String projectKey, UUID taskId) {
+        return task(projectKey, taskId) + "/design-review/decision";
     }
 
     public static String legacyProject(String projectKey) {

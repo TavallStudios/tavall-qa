@@ -67,6 +67,14 @@ public final class QaStaffWorkspacePageHTML {
 
         shell.child(toolbar(task, context));
         shell.child(taskHero(task, taskPath, context));
+        if (taskView.designReview() != null) {
+            String reviewUrl = QaRoutes.designReview(task.projectKey(), task.taskId());
+            if (context.organizationId().isPresent()) reviewUrl += "?organizationId=" + context.organizationId().get();
+            shell.child(HTML.section().classes(QaCSS.PUBLIC_BOARD_SHELL).child(HTML.a()
+                    .attribute(HTMLAttribute.HREF, reviewUrl).text(taskView.designReview().decided()
+                            ? "View selected design " + taskView.designReview().winnerKey() : "Compare designs and select winner")));
+        }
+
 
         HTMLElement panels = HTML.main().classes(QaCSS.PUBLIC_BOARD_SHELL);
         panels.child(overviewPanel(taskView, context));

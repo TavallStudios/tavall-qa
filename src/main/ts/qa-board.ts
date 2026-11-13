@@ -323,9 +323,78 @@ function initializeStaffWorkspace(): void {
     applyFocus(focusFromHash(), false);
 }
 
+function initializeDesignReview(root: HTMLElement): void {
+    const buttons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-qa-design-candidate]'));
+    const cards = Array.from(root.querySelectorAll<HTMLElement>('[data-qa-design-card]'));
+    const frames = Array.from(root.querySelectorAll<HTMLIFrameElement>('[data-qa-design-frame]'))
+        .map(frame => ({ frame, source: new URL(frame.src) }));
+    const controls = Array.from(root.querySelectorAll<HTMLSelectElement>('[data-qa-design-control]'));
+    const choices: Record<string, readonly string[]> = {};
+    controls.forEach(control => {
+        choices[control.dataset.qaDesignControl || ''] = Array.from(control.options).map(option => option.value);
+    });
+    choices.view = ['single', 'compare'];
+    choices.width = ['1440', '768', '390'];
+    const hash = new URLSearchParams(location.hash.slice(1));
+    let selected = hash.get('candidate') || '';
+    if (!buttons.some(button => button.dataset.qaDesignCandidate === selected)) {
+        selected = buttons[0]?.dataset.qaDesignCandidate || 'A';
+    }
+    controls.forEach(control => {
+        const key = control.dataset.qaDesignControl || '';
+        const requested = hash.get(key);
+        if (requested && choices[key]?.includes(requested)) control.value = requested;
+    });
+    const values = (): Record<string, string> => {
+        const result: Record<string, string> = {};
+        controls.forEach(control => {
+            const key = control.dataset.qaDesignControl || '';
+            const allowed = choices[key];
+            if (allowed) result[key] = allowed.includes(control.value) ? control.value : allowed[0];
+        });
+        return result;
+    };
+    const resize = (): void => {
+        const width = Number(values().width || '1440');
+        frames.forEach(({ frame }) => {
+            const viewport = frame.parentElement;
+            if (!viewport || viewport.clientWidth === 0) return;
+            const scale = Math.min(1, viewport.clientWidth / width);
+            frame.style.width = `${width}px`;
+            frame.style.height = '900px';
+            frame.style.transform = `scale(${scale})`;
+            viewport.style.height = `${900 * scale}px`;
+        });
+    };
+    const apply = (): void => {
+        const options = values();
+        cards.forEach(card => { card.hidden = options.view !== 'compare' && card.dataset.qaDesignCard !== selected; });
+        buttons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.qaDesignCandidate === selected)));
+        frames.forEach(({ frame, source }) => {
+            const url = new URL(source.href);
+            Object.entries(options).forEach(([key, value]) => {
+                if (key !== 'view' && key !== 'width') url.searchParams.set(key, value);
+            });
+            if (frame.src !== url.href) frame.src = url.href;
+        });
+        const state = new URLSearchParams({ candidate: selected, ...options });
+        history.replaceState(null, '', `${location.pathname}${location.search}#${state.toString()}`);
+        resize();
+    };
+    buttons.forEach(button => button.addEventListener('click', () => {
+        selected = button.dataset.qaDesignCandidate || selected;
+        apply();
+    }));
+    controls.forEach(control => control.addEventListener('change', apply));
+    frames.forEach(({ frame }) => frame.addEventListener('load', resize));
+    new ResizeObserver(resize).observe(root);
+    apply();
+}
+
 /** Initializes the existing QA Board progressive enhancement on a Forge page load. */
 export function initializeQaBoard(): void {
     document.querySelectorAll('[data-tavall-qa-task-group]').forEach(initializeTaskGroup);
     initializeStaffControls();
     initializeStaffWorkspace();
+    document.querySelectorAll<HTMLElement>('[data-qa-design-review]').forEach(initializeDesignReview);
 }
