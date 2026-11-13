@@ -2,6 +2,9 @@ package org.tavall.qa.handler;
 
 import org.springframework.stereotype.Component;
 import org.tavall.qa.domain.TaskBoardAction;
+import org.tavall.qa.domain.TaskBoardDesignReview;
+import org.tavall.qa.request.TaskBoardDesignReviewRegisterRequest;
+import org.tavall.qa.request.TaskBoardDesignReviewDecisionRequest;
 import org.tavall.qa.domain.TaskBoardAudience;
 import org.tavall.qa.domain.TaskBoardAssignment;
 import org.tavall.qa.domain.TaskBoardAuditEntry;
@@ -72,6 +75,63 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
     ) {
         this.dataHandler = Objects.requireNonNull(dataHandler, "dataHandler");
         this.actionTargetResolver = Objects.requireNonNull(actionTargetResolver, "actionTargetResolver");
+    }
+
+    @Override
+    public TaskBoardDesignReview registerDesignReview(QaSubjectContext subject, TaskBoardDesignReviewRegisterRequest request) {
+        Objects.requireNonNull(request, "request");
+        requireAccount(subject);
+        require(subject.canManageTask(request.taskId()), "Task management capability required");
+        requireAvailable();
+        TaskBoardTask task = requireTask(request.taskId());
+        require(task.status() != TaskBoardTaskStatus.DONE && task.status() != TaskBoardTaskStatus.CANCELLED,
+                "A completed or cancelled task cannot start a design review");
+        Optional<TaskBoardDesignReview> current = dataHandler.findDesignReview(task.taskId());
+        if (current.isPresent() && current.get().surface().equals(request.surface())
+                && current.get().candidates().equals(request.candidates())) return current.get();
+        require(current.isEmpty() || !current.get().decided(), "A decided review cannot replace its candidates");
+        int revision = current.map(TaskBoardDesignReview::revision).orElse(0);
+        if (revision != request.expectedRevision()) {
+            throw new org.tavall.qa.domain.TaskBoardConcurrentModificationException("Design review changed; reload before retrying");
+        }
+        Instant now = Instant.now();
+        TaskBoardDesignReview review = TaskBoardDesignReview.register(task.taskId(), request.surface(), request.candidates(),
+                revision + 1, subject.accountId().orElseThrow(), now);
+        TaskBoardTask reviewing = copyWithStatus(task, TaskBoardTaskStatus.REVIEW, now);
+        return dataHandler.saveDesignReview(review, revision, reviewing, task.updatedAt(), audit(subject,
+                Optional.of(task.taskId()), task.projectKey(), TaskBoardAuditEventType.TASK_UPDATED,
+                "Registered design candidates " + review.candidates().stream().map(candidate -> candidate.key()).toList(), now));
+    }
+
+    @Override
+    public TaskBoardDesignReview selectDesignReviewWinner(QaSubjectContext subject, TaskBoardDesignReviewDecisionRequest request) {
+        Objects.requireNonNull(request, "request");
+        requireAccount(subject);
+        require(subject.canSelectDesignReview(request.taskId()), "Design selection requires owner or assigned reviewer authority");
+        requireAvailable();
+        TaskBoardTask task = requireTask(request.taskId());
+        TaskBoardProject project = dataHandler.findProject(task.projectKey()).orElseThrow();
+        require(subject.canManageTask(task.taskId()) || subject.canViewTask(project, task), "Task is not visible to this reviewer");
+        TaskBoardDesignReview current = dataHandler.findDesignReview(task.taskId())
+                .orElseThrow(() -> new IllegalArgumentException("Task has no design review"));
+        String key = Objects.requireNonNull(request.candidateKey(), "candidateKey").trim().toUpperCase(Locale.ROOT);
+        String note = request.note() == null ? "" : request.note().trim();
+        if (current.decided()) {
+            if (!current.winnerKey().equals(key) || !current.note().equals(note)) {
+                throw new IllegalStateException("The review already has a recorded winner");
+            }
+            return current;
+        }
+        require(task.status() != TaskBoardTaskStatus.DONE && task.status() != TaskBoardTaskStatus.CANCELLED,
+                "A completed or cancelled task cannot select a design");
+        if (current.revision() != request.expectedRevision()) {
+            throw new org.tavall.qa.domain.TaskBoardConcurrentModificationException("Design review changed; reload before retrying");
+        }
+        Instant now = Instant.now();
+        TaskBoardDesignReview decided = current.select(key, subject.accountId().orElseThrow(), note, now);
+        return dataHandler.saveDesignReview(decided, current.revision(), copyWithStatus(task, TaskBoardTaskStatus.READY, now),
+                task.updatedAt(), audit(subject, Optional.of(task.taskId()), task.projectKey(),
+                        TaskBoardAuditEventType.TASK_UPDATED, "Selected design candidate " + key + "; task ready to continue", now));
     }
 
     @Override

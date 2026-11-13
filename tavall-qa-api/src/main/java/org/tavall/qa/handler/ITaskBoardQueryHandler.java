@@ -16,6 +16,11 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ITaskBoardQueryHandler {
+    Optional<org.tavall.qa.domain.TaskBoardDesignReview> findDesignReview(UUID taskId, QaSubjectContext subject);
+
+    /** Open reviews visible in the staff dashboard, ordered by task update time. */
+    List<TaskBoardTaskView> findOpenDesignReviews(QaSubjectContext subject);
+
     TaskBoardDashboardView dashboard(QaSubjectContext subject);
 
     TaskBoardPublicDashboardView publicDashboard();

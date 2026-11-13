@@ -18,6 +18,13 @@ import java.util.UUID;
 public interface ITaskBoardDataHandler {
     boolean isAvailable();
 
+    Optional<org.tavall.qa.domain.TaskBoardDesignReview> findDesignReview(UUID taskId);
+
+    org.tavall.qa.domain.TaskBoardDesignReview saveDesignReview(
+            org.tavall.qa.domain.TaskBoardDesignReview review, int expectedRevision,
+            TaskBoardTask task, Instant expectedTaskUpdatedAt, TaskBoardAuditEntry auditEntry);
+
+
     List<TaskBoardProject> findProjects();
 
     Optional<TaskBoardProject> findProject(String projectKey);

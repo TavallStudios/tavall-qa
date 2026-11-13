@@ -31,6 +31,7 @@ final class TaskBoardMigrationsPostgresIntegrationTest {
     static void start() throws Exception {
         List<String> migrations = new ArrayList<>(TaskBoardPostgresFixture.CORE_MIGRATIONS);
         migrations.add("040_task_board_venture_projects.sql");
+        migrations.sort(String::compareTo);
         postgres = new TaskBoardPostgresFixture(directory, migrations);
     }
 

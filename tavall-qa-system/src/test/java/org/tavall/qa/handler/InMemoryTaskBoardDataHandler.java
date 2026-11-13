@@ -31,6 +31,27 @@ final class InMemoryTaskBoardDataHandler implements ITaskBoardDataHandler {
     private final Map<UUID, TaskBoardVqcContribution> contributions = new LinkedHashMap<>();
     private final List<TaskBoardAuditEntry> audit = new ArrayList<>();
 
+    private final Map<UUID, org.tavall.qa.domain.TaskBoardDesignReview> designReviews = new LinkedHashMap<>();
+
+    @Override
+    public Optional<org.tavall.qa.domain.TaskBoardDesignReview> findDesignReview(UUID taskId) {
+        return Optional.ofNullable(designReviews.get(taskId));
+    }
+
+    @Override
+    public synchronized org.tavall.qa.domain.TaskBoardDesignReview saveDesignReview(
+            org.tavall.qa.domain.TaskBoardDesignReview review, int expectedRevision,
+            TaskBoardTask task, Instant expectedTaskUpdatedAt, TaskBoardAuditEntry auditEntry) {
+        int current = findDesignReview(task.taskId()).map(org.tavall.qa.domain.TaskBoardDesignReview::revision).orElse(0);
+        if (current != expectedRevision || !tasks.get(task.taskId()).updatedAt().equals(expectedTaskUpdatedAt)) {
+            throw new org.tavall.qa.domain.TaskBoardConcurrentModificationException("Design review changed");
+        }
+        designReviews.put(task.taskId(), review);
+        tasks.put(task.taskId(), task);
+        audit.add(auditEntry);
+        return review;
+    }
+
     @Override public boolean isAvailable() { return true; }
     @Override public List<TaskBoardProject> findProjects() { return List.copyOf(projects.values()); }
     @Override public Optional<TaskBoardProject> findProject(String projectKey) { return Optional.ofNullable(projects.get(projectKey)); }

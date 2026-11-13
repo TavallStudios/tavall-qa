@@ -72,6 +72,50 @@ final class TaskBoardMutationHandlerTest {
     }
 
     @Test
+    void designReviewRecordsAttributedWinnerAndMovesTaskReady() {
+        TaskBoardTask task = createTask(manager, false);
+        var candidates = java.util.List.of(
+                new org.tavall.qa.domain.TaskBoardDesignCandidate("A", "Ledger", "https://dashboard.tavall.org/__preview/design-review?direction=a", "Editorial layout"),
+                new org.tavall.qa.domain.TaskBoardDesignCandidate("B", "Console", "https://dashboard.tavall.org/__preview/design-review?direction=b", "Operational layout"));
+        var registered = mutationHandler.registerDesignReview(manager,
+                new org.tavall.qa.request.TaskBoardDesignReviewRegisterRequest(task.taskId(), candidates, 0));
+        assertEquals(TaskBoardTaskStatus.REVIEW, dataHandler.findTask(task.taskId()).orElseThrow().status());
+        assertEquals(1, composition.bean(TaskBoardQueryHandler.class).findOpenDesignReviews(manager).size());
+        assertEquals(registered, mutationHandler.registerDesignReview(manager,
+                new org.tavall.qa.request.TaskBoardDesignReviewRegisterRequest(task.taskId(), candidates, 0)));
+        var request = new org.tavall.qa.request.TaskBoardDesignReviewDecisionRequest(task.taskId(), "B", "Clearer hierarchy", registered.revision());
+        var decided = mutationHandler.selectDesignReviewWinner(manager, request);
+        assertEquals("B", decided.winnerKey());
+        assertEquals(managerId, decided.decidedByAccountId());
+        assertNotNull(decided.decidedAt());
+        assertEquals("Clearer hierarchy", decided.note());
+        assertTrue(composition.bean(TaskBoardQueryHandler.class).findOpenDesignReviews(manager).isEmpty());
+        assertEquals(TaskBoardTaskStatus.READY, dataHandler.findTask(task.taskId()).orElseThrow().status());
+        assertEquals(decided, mutationHandler.selectDesignReviewWinner(manager, request));
+        assertThrows(IllegalStateException.class, () -> mutationHandler.selectDesignReviewWinner(manager,
+                new org.tavall.qa.request.TaskBoardDesignReviewDecisionRequest(task.taskId(), "A", "Changed", decided.revision())));
+    }
+
+    @Test
+    void taskManagementAloneCannotChooseDesignAndStaleDecisionsDoNotMutate() {
+        TaskBoardTask task = createTask(manager, false);
+        var candidates = java.util.List.of(
+                new org.tavall.qa.domain.TaskBoardDesignCandidate("A", "Ledger", "https://dashboard.tavall.org/?direction=a", "Editorial layout"),
+                new org.tavall.qa.domain.TaskBoardDesignCandidate("B", "Console", "https://dashboard.tavall.org/?direction=b", "Operational layout"));
+        var registered = mutationHandler.registerDesignReview(manager,
+                new org.tavall.qa.request.TaskBoardDesignReviewRegisterRequest(task.taskId(), candidates, 0));
+        QaSubjectContext worker = TaskBoardTestSubjects.active(UUID.randomUUID(), null, java.util.Set.of(), Optional.empty(),
+                java.util.Set.of(QaEnvironmentGrant.DEV), java.util.Set.of(QaCapability.MANAGE_TASKS), java.util.List.of(), false, false);
+        assertTrue(composition.bean(TaskBoardQueryHandler.class).findDesignReview(task.taskId(), worker).isPresent());
+        assertThrows(SecurityException.class, () -> mutationHandler.selectDesignReviewWinner(worker,
+                new org.tavall.qa.request.TaskBoardDesignReviewDecisionRequest(task.taskId(), "A", "", registered.revision())));
+        assertThrows(org.tavall.qa.domain.TaskBoardConcurrentModificationException.class, () -> mutationHandler.selectDesignReviewWinner(manager,
+                new org.tavall.qa.request.TaskBoardDesignReviewDecisionRequest(task.taskId(), "A", "", 0)));
+        assertFalse(dataHandler.findDesignReview(task.taskId()).orElseThrow().decided());
+        assertEquals(TaskBoardTaskStatus.REVIEW, dataHandler.findTask(task.taskId()).orElseThrow().status());
+    }
+
+    @Test
     void newTasksAlwaysEnterBacklogAndNhvAndRecordAccountCreator() {
         TaskBoardTask task = createTask(manager, false);
 

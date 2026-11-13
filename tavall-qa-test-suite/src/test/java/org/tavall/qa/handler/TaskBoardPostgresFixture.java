@@ -27,7 +27,7 @@ final class TaskBoardPostgresFixture implements AutoCloseable {
     static final List<String> CORE_MIGRATIONS = List.of("027_task_board.sql", "028_task_board_qa_workflows.sql",
             "034_task_board_execution_checkpoints.sql", "036_task_board_dev_execution_assignment.sql",
             "037_task_board_external_key_upsert.sql", "038_task_board_external_references.sql",
-            "039_task_board_engineering_project.sql");
+            "039_task_board_engineering_project.sql", "041_task_board_design_review.sql");
 
     TaskBoardPostgresFixture(Path root) throws Exception {
         this(root, CORE_MIGRATIONS);
