@@ -30,3 +30,8 @@ Page behavior stays with this presentation module: `src/main/ts/qa-board.ts` own
 ## Build and module boundary
 
 The repository remains one API/LIBRARY presentation module because it provides reusable pages to the existing Tavall Web runtime and has no runtime lifecycle. Tests remain with this module; a second test module is not justified. The module consumes exact-source Tavall Web frontend/API contracts and the `tavall-qa-api` request/projection contracts.
+
+
+## Generic live design review — November 13, 2026
+
+The QA presentation reads the review surface and candidate option maps from the typed Task Board projection. It renders live sandboxed frames, exposes only candidate-declared option values, and provides a cross-task list of open reviews visible to the current staff subject. Winner forms remain server-authorized and CSRF-protected. The implementation has no dashboard product dependency; dashboard A/B/C is the first registered use. Local page tests, exact hosted checks, browser screenshots and runtime acceptance remain pending for the current source.
