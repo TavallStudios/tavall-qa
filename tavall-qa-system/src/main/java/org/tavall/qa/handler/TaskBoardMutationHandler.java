@@ -87,14 +87,15 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
         require(task.status() != TaskBoardTaskStatus.DONE && task.status() != TaskBoardTaskStatus.CANCELLED,
                 "A completed or cancelled task cannot start a design review");
         Optional<TaskBoardDesignReview> current = dataHandler.findDesignReview(task.taskId());
-        if (current.isPresent() && current.get().candidates().equals(request.candidates())) return current.get();
+        if (current.isPresent() && current.get().surface().equals(request.surface())
+                && current.get().candidates().equals(request.candidates())) return current.get();
         require(current.isEmpty() || !current.get().decided(), "A decided review cannot replace its candidates");
         int revision = current.map(TaskBoardDesignReview::revision).orElse(0);
         if (revision != request.expectedRevision()) {
             throw new org.tavall.qa.domain.TaskBoardConcurrentModificationException("Design review changed; reload before retrying");
         }
         Instant now = Instant.now();
-        TaskBoardDesignReview review = TaskBoardDesignReview.register(task.taskId(), request.candidates(),
+        TaskBoardDesignReview review = TaskBoardDesignReview.register(task.taskId(), request.surface(), request.candidates(),
                 revision + 1, subject.accountId().orElseThrow(), now);
         TaskBoardTask reviewing = copyWithStatus(task, TaskBoardTaskStatus.REVIEW, now);
         return dataHandler.saveDesignReview(review, revision, reviewing, task.updatedAt(), audit(subject,

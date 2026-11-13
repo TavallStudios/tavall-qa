@@ -1,6 +1,7 @@
 -- A task owns one review aggregate; its attributed decision commits with the task transition.
 CREATE TABLE IF NOT EXISTS task_board_design_review (
     task_id VARCHAR(36) PRIMARY KEY REFERENCES task_board_task(task_id) ON DELETE CASCADE,
+    surface VARCHAR(200) NOT NULL,
     candidates_json TEXT NOT NULL,
     revision INTEGER NOT NULL CHECK (revision > 0),
     registered_by_account_id VARCHAR(36) NOT NULL,

@@ -6,11 +6,19 @@ import java.util.Objects;
 import java.util.UUID;
 
 /** Task-owned design candidates and an immutable, attributed reviewer decision. */
-public record TaskBoardDesignReview(UUID taskId, List<TaskBoardDesignCandidate> candidates, int revision,
+public record TaskBoardDesignReview(UUID taskId, String surface, List<TaskBoardDesignCandidate> candidates, int revision,
                                     UUID registeredByAccountId, Instant registeredAt, String winnerKey,
                                     UUID decidedByAccountId, Instant decidedAt, String note) {
+    public TaskBoardDesignReview(UUID taskId, List<TaskBoardDesignCandidate> candidates, int revision,
+                                 UUID registeredByAccountId, Instant registeredAt, String winnerKey,
+                                 UUID decidedByAccountId, Instant decidedAt, String note) {
+        this(taskId, "Unspecified web surface", candidates, revision, registeredByAccountId, registeredAt,
+                winnerKey, decidedByAccountId, decidedAt, note);
+    }
     public TaskBoardDesignReview {
         Objects.requireNonNull(taskId, "taskId");
+        surface = Objects.requireNonNull(surface, "surface").trim();
+        if (surface.isEmpty() || surface.length() > 200) throw new IllegalArgumentException("Surface is blank or too long");
         candidates = List.copyOf(Objects.requireNonNull(candidates, "candidates"));
         if (candidates.size() < 2 || candidates.size() > 4
                 || candidates.stream().map(TaskBoardDesignCandidate::key).distinct().count() != candidates.size()) {
@@ -37,13 +45,13 @@ public record TaskBoardDesignReview(UUID taskId, List<TaskBoardDesignCandidate> 
 
     public boolean decided() { return winnerKey != null; }
 
-    public static TaskBoardDesignReview register(UUID taskId, List<TaskBoardDesignCandidate> candidates,
+    public static TaskBoardDesignReview register(UUID taskId, String surface, List<TaskBoardDesignCandidate> candidates,
                                                 int revision, UUID actor, Instant now) {
-        return new TaskBoardDesignReview(taskId, candidates, revision, actor, now, null, null, null, "");
+        return new TaskBoardDesignReview(taskId, surface, candidates, revision, actor, now, null, null, null, "");
     }
 
     public TaskBoardDesignReview select(String key, UUID actor, String decisionNote, Instant now) {
-        return new TaskBoardDesignReview(taskId, candidates, revision + 1, registeredByAccountId, registeredAt,
+        return new TaskBoardDesignReview(taskId, surface, candidates, revision + 1, registeredByAccountId, registeredAt,
                 key, actor, now, decisionNote);
     }
 }

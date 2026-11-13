@@ -24,6 +24,8 @@ public class TaskBoardDesignReviewEntity {
 
     @Id @Column(name = "task_id", nullable = false, length = 36)
     private String taskId;
+    @Column(name = "surface", nullable = false, length = 200)
+    private String surface;
     @Column(name = "candidates_json", nullable = false, columnDefinition = "text")
     private String candidatesJson;
     @Column(name = "revision", nullable = false)
@@ -46,6 +48,7 @@ public class TaskBoardDesignReviewEntity {
     public static TaskBoardDesignReviewEntity fromDomain(TaskBoardDesignReview review) {
         TaskBoardDesignReviewEntity entity = new TaskBoardDesignReviewEntity();
         entity.taskId = review.taskId().toString();
+        entity.surface = review.surface();
         try {
             entity.candidatesJson = JSON.writeValueAsString(review.candidates());
         } catch (JsonProcessingException exception) {
@@ -63,7 +66,7 @@ public class TaskBoardDesignReviewEntity {
 
     public TaskBoardDesignReview toDomain() {
         try {
-            return new TaskBoardDesignReview(UUID.fromString(taskId), JSON.readValue(candidatesJson, CANDIDATES), revision,
+            return new TaskBoardDesignReview(UUID.fromString(taskId), surface, JSON.readValue(candidatesJson, CANDIDATES), revision,
                     UUID.fromString(registeredByAccountId), registeredAt, winnerKey,
                     decidedByAccountId == null ? null : UUID.fromString(decidedByAccountId), decidedAt, note);
         } catch (JsonProcessingException exception) {

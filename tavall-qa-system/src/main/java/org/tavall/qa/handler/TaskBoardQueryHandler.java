@@ -80,6 +80,21 @@ public final class TaskBoardQueryHandler implements ITaskBoardQueryHandler {
     }
 
     @Override
+    public List<TaskBoardTaskView> findOpenDesignReviews(QaSubjectContext subject) {
+        Objects.requireNonNull(subject, "subject");
+        if (!dataHandler.isAvailable()) return List.of();
+        return dataHandler.findProjects().stream()
+                .filter(project -> subject.canViewProjectAudience(project.audience()))
+                .flatMap(project -> dataHandler.findTasks(project.projectKey()).stream()
+                        .filter(task -> subject.canViewAudience(task.audience(), task.taskId()))
+                        .map(task -> findTaskView(task.taskId(), subject).orElse(null)))
+                .filter(Objects::nonNull)
+                .filter(view -> view.designReview() != null && !view.designReview().decided())
+                .sorted(Comparator.comparing((TaskBoardTaskView view) -> view.task().updatedAt()).reversed())
+                .toList();
+    }
+
+    @Override
     public TaskBoardDashboardView dashboard(QaSubjectContext subject) {
         Objects.requireNonNull(subject, "subject");
         if (!dataHandler.isAvailable()) {

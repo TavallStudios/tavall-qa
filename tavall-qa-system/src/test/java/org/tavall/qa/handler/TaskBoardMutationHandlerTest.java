@@ -80,6 +80,7 @@ final class TaskBoardMutationHandlerTest {
         var registered = mutationHandler.registerDesignReview(manager,
                 new org.tavall.qa.request.TaskBoardDesignReviewRegisterRequest(task.taskId(), candidates, 0));
         assertEquals(TaskBoardTaskStatus.REVIEW, dataHandler.findTask(task.taskId()).orElseThrow().status());
+        assertEquals(1, composition.bean(TaskBoardQueryHandler.class).findOpenDesignReviews(manager).size());
         assertEquals(registered, mutationHandler.registerDesignReview(manager,
                 new org.tavall.qa.request.TaskBoardDesignReviewRegisterRequest(task.taskId(), candidates, 0)));
         var request = new org.tavall.qa.request.TaskBoardDesignReviewDecisionRequest(task.taskId(), "B", "Clearer hierarchy", registered.revision());
@@ -88,6 +89,7 @@ final class TaskBoardMutationHandlerTest {
         assertEquals(managerId, decided.decidedByAccountId());
         assertNotNull(decided.decidedAt());
         assertEquals("Clearer hierarchy", decided.note());
+        assertTrue(composition.bean(TaskBoardQueryHandler.class).findOpenDesignReviews(manager).isEmpty());
         assertEquals(TaskBoardTaskStatus.READY, dataHandler.findTask(task.taskId()).orElseThrow().status());
         assertEquals(decided, mutationHandler.selectDesignReviewWinner(manager, request));
         assertThrows(IllegalStateException.class, () -> mutationHandler.selectDesignReviewWinner(manager,
