@@ -41,7 +41,7 @@ Generation 3 retains ancestry from main `fcbe2563b6fb018f3379a260a6ec3747d378d63
 
 The prior `staging/platform-v2` source `36af58d2e7200c80b2a06ca8cd47a1f317bb61ef` is a strict ancestor of current main `cd74c548476232f37584fbc12d2091d8ef0a934c`. This successor root fast-forwards the persistent staging line to that main baseline and refreshes only documentation. No active focused QA children were present when PR #24 merged. Legacy root #4 is explicitly SUPERSEDED by #18 and is not the active integration authority.
 
-The successor Draft root remains the path for future migration/deployment follow-up; its documentation-only source has no new runtime acceptance claim or standalone feature gate.
+Successor Draft root [PR #29](https://github.com/TavallStudios/tavall-qa/pull/29), initially opened at `e61a31aecd63d1ba6ba607598bf3d90c0c6fd799`, remains the path for future migration/deployment follow-up; its documentation-only source has no new runtime acceptance claim or standalone feature gate.
 
 <details>
 <summary>Documentation Update State</summary>

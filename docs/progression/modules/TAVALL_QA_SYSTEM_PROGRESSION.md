@@ -102,14 +102,15 @@ As of this source update, focused local API/handler, persistence simulation, QA 
 | Surface | Sync State | Location | Last Updated | Evidence |
 | --- | --- | --- | --- | --- |
 | GitHub | `PRIMARY` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | 2026-11-13 7:33 AM PST | QA #24 source-promotion checkpoint. |
-| Notion | `TEMPORARY_DRIFT` | [Existing twin](https://app.notion.com/p/40438458ddfd812fb5f1d73a310307d1) | 2026-11-13 7:33 AM PST | Scoped source-promotion checkpoint synchronization pending; unrelated historical drift remains unaudited. |
+| Notion | `TEMPORARY_DRIFT` | [Existing twin](https://app.notion.com/p/40438458ddfd812fb5f1d73a310307d1) | 2026-11-13 7:33 AM PST | Scoped source-promotion checkpoint and metadata-history row synced through successful Notion API updates; unrelated historical drift remains unaudited. |
 | GitHub | `PR_DRAFT` | `TavallStudios/tavall-qa/docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | 2026-10-26 12:28 PM PDT | Original docs PR #2; checkpoint implementation PR #3 |
 | Notion | `1:1_DRAFT_PR` | [Notion twin](https://app.notion.com/p/40438458ddfd812fb5f1d73a310307d1) | 2026-10-26 12:28 PM PDT | Existing typed page retained; checkpoint content update pending |
 
 ### Update History
 | Timestamp | Surface | Event | Location | Previous Location | Evidence | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 2026-11-13 7:33 AM PST | GitHub | `UPDATED` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same path | QA #24 merge cd74c54 and request 9174c660 | Added source-promotion/runtime-blocker status and chronological event; scoped Notion synchronization pending. |
+| 2026-11-13 7:37 AM PST | GitHub + Notion | `SYNCED` | Existing SYSTEM progression pair | Same locations | QA docs commit e61a31a; successful Notion update responses | Scoped source-promotion status and history row synchronized; no full historical parity claim. |
+| 2026-11-13 7:33 AM PST | GitHub | `UPDATED` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same path | QA #24 merge cd74c54 and request 9174c660 | Added source-promotion/runtime-blocker status and chronological event; scoped Notion checkpoint and metadata-history row synced; unrelated drift remains unaudited. |
 | 2026-10-25 2:17 AM PDT | GitHub | `UPDATED` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same file | Branch `docs/qa-board-examples-20261025` | Added verified source references, current design scope and footer. |
 
 | 2026-10-26 10:59 AM PDT | GitHub | `UPDATED` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same logical document from PR #2 | PR #3, source `fd44ada` and exact CI receipts | Documented real DI/Database checkpoint implementation; kept runtime, payload and provider-continuation gates separate. |
