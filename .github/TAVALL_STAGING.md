@@ -18,7 +18,7 @@ Established 2026-11-07 by wUI at `main` 8bb1aa6. The repo had no staging root.
 
 | PR | Branch | Head | State |
 |---|---|---|---|
-| (none yet) | | | |
+| [#9](https://github.com/TavallStudios/tavall-web-qa/pull/9) | `working/ldr-design-review-webqa` | `3b17b4acf5e59192e50b231e5d61266f7c198de6` | MERGED; gate `ldr-webqa-3b17b4a` / request `01e18ae6-1947-40f5-9a2b-fbbb608acd7c` REQUIRED_ALL PASS; merge `9339a68fc7633b5bcbaf79b6b479f145b00389c6` |
 
 ## Historical Reconciliation (`NEEDS_RECONCILIATION`)
 
