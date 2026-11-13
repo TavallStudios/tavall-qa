@@ -25,7 +25,7 @@ public record TaskBoardDesignCandidate(String key, String name, String previewUr
         if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null || uri.getUserInfo() != null) {
             throw new IllegalArgumentException("Preview URL must be an HTTPS document without credentials");
         }
-        Objects.requireNonNull(optionParameters, "optionParameters");
+        optionParameters = optionParameters == null ? Map.of() : optionParameters;
         if (optionParameters.size() > 20) throw new IllegalArgumentException("At most 20 preview options are allowed");
         Map<String, List<String>> normalized = new LinkedHashMap<>();
         optionParameters.forEach((rawKey, rawValues) -> {

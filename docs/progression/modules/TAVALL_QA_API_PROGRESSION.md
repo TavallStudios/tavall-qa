@@ -49,7 +49,7 @@ The current candidate is QA PR #1; the workflow guard change rejects tasks only 
 
 ## Generic web design reviews — November 13, 2026
 
-A task may own one `TaskBoardDesignReview` for any web surface, named by its persisted `surface` field. It stores 2–4 typed candidates; each candidate has a name, HTTPS preview URL, rationale, and optional `optionParameters` mapping option names to the values the candidate supports. The API does not identify a dashboard or constrain option names to a particular product. Product preview hosts enforce their own option allow-lists.
+A task may own one `TaskBoardDesignReview` for any web surface, named by its persisted `surface` field. It stores 2–4 typed candidates; each candidate has a name, HTTPS preview URL, rationale, and optional `optionParameters` mapping option names to the values the candidate supports. The API does not identify a dashboard or constrain option names to a particular product. Product preview hosts enforce their own option allow-lists. If `optionParameters` is omitted from a request, the API normalizes it to an empty map.
 
 The task-keyed aggregate is persisted by `tavall-qa-system` in `task_board_design_review`, with candidate payloads, surface, revision, registration attribution, and immutable winner attribution. Migration `041_task_board_design_review.sql` owns the table. Candidate registration and winner selection atomically update the review, task status, and audit entry using the existing Task Board transaction/row-lock path. Review reads enforce task management or staff visibility; winner selection additionally requires global QA administration or the assigned REVIEW_EVIDENCE authority and remains independent of task management alone.
 
