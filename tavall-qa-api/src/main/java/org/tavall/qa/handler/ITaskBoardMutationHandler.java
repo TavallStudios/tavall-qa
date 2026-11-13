@@ -25,6 +25,12 @@ import java.time.Instant;
 import java.util.UUID;
 
 public interface ITaskBoardMutationHandler {
+    org.tavall.qa.domain.TaskBoardDesignReview registerDesignReview(QaSubjectContext subject,
+            org.tavall.qa.request.TaskBoardDesignReviewRegisterRequest request);
+
+    org.tavall.qa.domain.TaskBoardDesignReview selectDesignReviewWinner(QaSubjectContext subject,
+            org.tavall.qa.request.TaskBoardDesignReviewDecisionRequest request);
+
     TaskBoardProject createProject(QaSubjectContext subject, TaskBoardProjectCreateRequest request);
 
     TaskBoardTask createTask(QaSubjectContext subject, TaskBoardTaskCreateRequest request);

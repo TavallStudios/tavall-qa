@@ -20,6 +20,18 @@ import java.util.UUID;
 
 public final class UnavailableTaskBoardDataHandler implements ITaskBoardDataHandler {
     @Override
+    public Optional<org.tavall.qa.domain.TaskBoardDesignReview> findDesignReview(UUID taskId) {
+        throw new org.tavall.qa.domain.TaskBoardStorageUnavailableException("QA storage is unavailable");
+    }
+
+    @Override
+    public org.tavall.qa.domain.TaskBoardDesignReview saveDesignReview(
+            org.tavall.qa.domain.TaskBoardDesignReview review, int expectedRevision,
+            TaskBoardTask task, java.time.Instant expectedTaskUpdatedAt, TaskBoardAuditEntry auditEntry) {
+        throw new org.tavall.qa.domain.TaskBoardStorageUnavailableException("QA storage is unavailable");
+    }
+
+    @Override
     public boolean isAvailable() {
         return false;
     }

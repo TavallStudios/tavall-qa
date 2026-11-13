@@ -13,8 +13,16 @@ public record TaskBoardTaskView(
         List<TaskBoardComment> comments,
         List<TaskBoardEvidenceView> evidence,
         List<TaskBoardAssignmentView> assignments,
-        List<TaskBoardAuditView> history
+        List<TaskBoardAuditView> history,
+        org.tavall.qa.domain.TaskBoardDesignReview designReview
 ) {
+    public TaskBoardTaskView(TaskBoardProject project, TaskBoardTask task,
+            List<TaskBoardResolvedActionView> actions, List<TaskBoardComment> comments,
+            List<TaskBoardEvidenceView> evidence, List<TaskBoardAssignmentView> assignments,
+            List<TaskBoardAuditView> history) {
+        this(project, task, actions, comments, evidence, assignments, history, null);
+    }
+
     public TaskBoardTaskView {
         actions = List.copyOf(actions);
         comments = List.copyOf(comments);
