@@ -45,6 +45,7 @@ subprojects {
         publications {
             create<MavenPublication>("mavenJava") {
                 from(components["java"])
+                artifactId = if (project.name == "tavall-qa-web-frontend") "tavall-web-qa" else project.name
             }
         }
         repositories {

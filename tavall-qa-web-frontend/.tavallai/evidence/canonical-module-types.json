@@ -1,0 +1,22 @@
+{
+  "content": "## Canonical Module Types\n\n| Type | Responsibility |\n| --- | --- |\n| `RUNTIME` | Independently executable runtime or long-lived process that owns its own lifecycle and may be independently deployed. |\n| `SYSTEM` | Consumer-facing fan-in and lifecycle boundary that composes related independently controllable FEATURE modules and/or existing capabilities through the owning runtime's DI/registry. A SYSTEM does not imply a new process. |\n| `FEATURE` | Bounded behavior with its own declared enable/disable/load/reload lifecycle under a parent SYSTEM, where independence is justified by meaningful operational or dependency boundaries. A FEATURE does not imply a separate runtime. |\n| `APPLICATION` | Application composition/entry module that assembles capabilities into an executable application or bounded application surface; it may or may not be independently deployed. |\n| `API` | Caller-facing contracts, request/result/data types, and stable capability boundaries without owning the main runtime implementation. |\n| `TOOLING` | Build, development, administration, migration, generation, or operator tooling that is not the product/runtime itself. |\n| `TEST_SUITE` | Test-only or validation-focused module that verifies one or more production modules and does not ship as a production runtime. |\n\n",
+  "docsRoot": "/srv/dev-storage/workspaces/tavall-docs/repo_root",
+  "evidence": {
+    "agent": "tavall-agent-module-boundaries",
+    "description": "Apply Canonical Module Types from docs/quality/MODULE_TYPES.md when implementing or reviewing canonical module types. Refresh the exact section projection when canonical authority changes.",
+    "document": "docs/quality/MODULE_TYPES.md",
+    "documentSha256": "738bef417894f8ea0eab6b39f0c07a43b5c04d74d7286d8da20abf2cfff3ec28",
+    "endLine": 20,
+    "section": "Canonical Module Types",
+    "sectionPath": [
+      "Tavall Module Types",
+      "Canonical Module Types"
+    ],
+    "sectionSha256": "ab0036a29cd91287148f064d67314e5f7c1e58eef2dd491f44b2a6bf2f16d128",
+    "skill": "agents/tavall-agent-module-boundaries/skills/canonical-module-types/SKILL.md",
+    "skillSha256": "68d3da93258100462fc38adb63aab4c9484f23ba11875f5ca591fd07f1f5d94b",
+    "sourceRevision": "aea8af518cee8ffc7e0a2f8c98d88ee3825ae97e",
+    "startLine": 9
+  },
+  "status": "READ_VERIFIED"
+}

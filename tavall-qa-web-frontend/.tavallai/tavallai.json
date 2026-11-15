@@ -1,0 +1,61 @@
+{
+  "$schema": "https://tavall.org/schemas/tavallai/v1.json",
+  "authorities": {
+    "docs": {
+      "authority": "github.com/TavallStudios/tavall-docs",
+      "observedAt": "2026-10-22T04:15:00Z",
+      "ref": "refs/heads/main",
+      "revision": "aea8af518cee8ffc7e0a2f8c98d88ee3825ae97e"
+    },
+    "git": {
+      "authority": "github.com/TavallStudios/tavall-web-qa",
+      "observedAt": "2026-10-22T04:15:00Z",
+      "ref": "refs/heads/main",
+      "revision": "675d110"
+    },
+    "ledger": {
+      "authority": "tavall-agent-ledger",
+      "observedAt": "2026-10-22T04:15:00Z",
+      "ref": "active-worker-claims"
+    },
+    "memory": {
+      "authority": "tavall-ai-memory",
+      "observedAt": "2026-10-22T04:15:00Z",
+      "ref": "memory-plane"
+    }
+  },
+  "directoryType": "PROVENANCE",
+  "entrypoints": {
+    "refs": {
+      "cloud": "refs/cloud.json",
+      "git": "refs/git.json",
+      "memory": "memory/refs.json"
+    },
+    "runs": {
+      "active": "runs/active.json",
+      "history": "runs/history.json"
+    },
+    "threads": "threads/index.json",
+    "work": {
+      "current": "work/current.json",
+      "history": "work/history.json"
+    }
+  },
+  "modules": [
+    {
+      "name": "tavall-web-qa",
+      "path": ".",
+      "primaryType": "API",
+      "secondaryRole": "PRESENTATION",
+      "runtimeOwner": "tavall-web-app",
+      "dependencies": [
+        "org.tavall:tavall-web-api",
+        "org.tavall:tavall-web-frontend",
+        "org.tavall:tavall-qa-api"
+      ]
+    }
+  ],
+  "provenanceVersion": "1.0.0",
+  "repository": "github.com/TavallStudios/tavall-web-qa",
+  "rootType": "REPOSITORY"
+}
