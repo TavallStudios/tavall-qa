@@ -56,6 +56,33 @@ final class TaskBoardMigrationsPostgresIntegrationTest {
     }
 
     @Test
+    void designReviewMigrationCreatesTypedTableAndConstraints() throws Exception {
+        try (Connection connection = DriverManager.getConnection(postgres.url(), "postgres", "");
+             Statement statement = connection.createStatement();
+             ResultSet result = statement.executeQuery(
+                     "SELECT count(*) FROM information_schema.columns "
+                             + "WHERE table_name = 'task_board_design_review' "
+                             + "AND column_name IN ('task_id', 'surface', 'candidates_json', 'revision', "
+                             + "'registered_by_account_id', 'registered_at', 'winner_key', "
+                             + "'decided_by_account_id', 'decided_at', 'decision_note')")) {
+            result.next();
+            assertEquals(10, result.getInt(1),
+                    "Migration 041 must create all ten design-review columns");
+        }
+        try (Connection connection = DriverManager.getConnection(postgres.url(), "postgres", "");
+             Statement statement = connection.createStatement();
+             ResultSet result = statement.executeQuery(
+                     "SELECT count(*) FROM pg_constraint WHERE conrelid = "
+                             + "'task_board_design_review'::regclass AND contype = 'c' "
+                             + "AND conname IN ('task_board_design_candidates_check', "
+                             + "'task_board_design_decision_check')")) {
+            result.next();
+            assertEquals(2, result.getInt(1),
+                    "Migration 041 must create both design-review CHECK constraints");
+        }
+    }
+
+    @Test
     void ventureSeedPopulatesEveryVentureProject() throws Exception {
         try (Connection connection = DriverManager.getConnection(postgres.url(), "postgres", "");
              Statement statement = connection.createStatement();

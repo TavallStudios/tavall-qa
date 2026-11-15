@@ -99,6 +99,28 @@ final class TaskBoardSchemaMigrationsTest {
         assertTrue(migration.contains("uq_notion_sync_page_id UNIQUE (notion_page_id)"));
     }
 
+    @Test
+    void designReviewMigrationOwnsTypedCandidatesAndImmutableDecision() throws IOException {
+        String migration = resource("schema/postgres/041_task_board_design_review.sql");
+
+        assertTrue(migration.contains("CREATE TABLE IF NOT EXISTS task_board_design_review"));
+        assertTrue(migration.contains("task_id VARCHAR(36) PRIMARY KEY REFERENCES task_board_task(task_id) ON DELETE CASCADE"));
+        assertTrue(migration.contains("surface VARCHAR(200) NOT NULL"));
+        assertTrue(migration.contains("candidates_json TEXT NOT NULL"));
+        assertTrue(migration.contains("revision INTEGER NOT NULL CHECK (revision > 0)"));
+        assertTrue(migration.contains("registered_by_account_id VARCHAR(36) NOT NULL"));
+        assertTrue(migration.contains("registered_at TIMESTAMPTZ NOT NULL"));
+        assertTrue(migration.contains("winner_key VARCHAR(1)"));
+        assertTrue(migration.contains("decided_by_account_id VARCHAR(36)"));
+        assertTrue(migration.contains("decided_at TIMESTAMPTZ"));
+        assertTrue(migration.contains("decision_note VARCHAR(4000) NOT NULL DEFAULT ''"));
+        assertTrue(migration.contains("task_board_design_candidates_check"));
+        assertTrue(migration.contains("jsonb_typeof(candidates_json::jsonb) = 'array'"));
+        assertTrue(migration.contains("jsonb_array_length(candidates_json::jsonb) BETWEEN 2 AND 4"));
+        assertTrue(migration.contains("task_board_design_decision_check"));
+        assertTrue(migration.contains("winner_key IN ('A', 'B', 'C', 'D')"));
+    }
+
     private String resource(String path) throws IOException {
         ClassLoader classLoader = TaskBoardSchemaMigrationsTest.class.getClassLoader();
         try (InputStream inputStream = classLoader.getResourceAsStream(path)) {
