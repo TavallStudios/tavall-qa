@@ -2,12 +2,15 @@ import org.gradle.api.publish.maven.MavenPublication
 
 plugins {
     `java-library`
-    `maven-publish`
     id("org.tavall.web.frontend") version "0.1.1-SNAPSHOT"
 }
 
 group = "org.tavall"
 version = "0.1.1-SNAPSHOT"
+
+base {
+    archivesName.set("tavall-web-qa")
+}
 
 java {
     toolchain {
@@ -19,7 +22,7 @@ java {
 dependencies {
     api("org.tavall:tavall-web-api:0.1.1-SNAPSHOT")
     api("org.tavall:tavall-web-frontend:0.1.1-SNAPSHOT")
-    api("org.tavall:tavall-qa-api:0.1.0-SNAPSHOT")
+    api(project(":tavall-qa-api"))
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.11.4")
@@ -27,6 +30,10 @@ dependencies {
 
 tavallFrontend {
     generatedPackage.set("org.tavall.qa.web.generated")
+}
+
+configure<com.github.gradle.node.NodeExtension> {
+    download.set(false)
 }
 
 tasks.withType<JavaCompile>().configureEach {
@@ -37,19 +44,4 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("mavenJava") {
-            from(components["java"])
-            artifactId = "tavall-web-qa"
-        }
-    }
-    repositories {
-        maven {
-            name = "TavallPrivateSnapshots"
-            url = uri("/srv/dev-storage/deps/private/snapshots")
-        }
-    }
 }

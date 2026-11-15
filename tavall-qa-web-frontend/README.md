@@ -1,10 +1,10 @@
-# Tavall Web QA
+# Tavall QA Web Frontend
 
-The Tavall QA Board / QA Tracker browser product at `qa.tavall.org`. This is a **Tavall Web product surface**, not a second Spring service, task database, identity provider, or verification authority.
+The Tavall QA Board / QA Tracker browser product at `qa.tavall.org`. This is a **Tavall Web presentation module hosted in Tavall QA**, not a second Spring service, task database, identity provider, or verification authority.
 
 ## Ownership
 
-- `tavall-web-qa` — QA Forge browser presentation and stable route contracts (**primary module type: API; secondary role: LIBRARY**; runtime owner: `tavall-web-app`). The repository currently has one production module; its tests remain with that module.
+- `tavall-qa-web-frontend` — QA Forge browser presentation and stable route contracts (**primary module type: FEATURE; secondary role: PROVIDER**; runtime owner: `tavall-web-app`). Published under artifact coordinate `tavall-web-qa` for consumer compatibility with `tavall-web-app`.
 - `tavall-web-app` — shared Spring host, `qa.tavall.org` virtual host routing, session/authentication, Tavall Account / organization authorization, and trusted task projection adapters.
 - Authoritative backend task authority — `TavallStudios/tavall-qa` (`tavall-qa-api`, `tavall-qa-system`), canonical mapped-JPA task/evidence/progress authority. No duplicate writable `ProgressTask` or QA task table.
 

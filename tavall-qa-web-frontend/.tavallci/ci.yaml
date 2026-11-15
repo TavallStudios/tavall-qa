@@ -1,7 +1,7 @@
 version: 2
 
 source:
-  repository: TavallStudios/tavall-web-qa
+  repository: TavallStudios/tavall-qa
   provider: github
 
 build:
@@ -23,28 +23,35 @@ dependencies:
     versionProperty: tavallWebVersion
     pluginProjectPath: :tavall-web-frontend-gradle
     substitutions: "org.tavall:tavall-web-api=:tavall-web-api,org.tavall:tavall-web-frontend=:tavall-web-frontend,org.tavall:tavall-web-frontend-codegen=:tavall-web-frontend-codegen"
-  - kind: source
-    identity: TavallStudios/tavall-qa
-    role: SHARED_DEP
-    selector: required-source
-    digest: 1094b3737ca45b7ee476454c59825d111dd20fcc
-    substitutions: "org.tavall:tavall-qa-api=:tavall-qa-api"
+
+artifacts:
+  - name: tavall-web-qa
+    path: build/libs/tavall-web-qa-*.jar
 
 requiredChecks:
   - compilation
   - unit-tests
   - quality
+  - artifact
 
 checks:
   compilation:
     executor: gradle
+    networkMode: PUBLIC
     tasks:
-      - classes
+      - :tavall-qa-web-frontend:classes
   unit-tests:
     executor: gradle
+    networkMode: PUBLIC
     tasks:
-      - test
+      - :tavall-qa-web-frontend:test
   quality:
     executor: gradle
+    networkMode: PUBLIC
     tasks:
-      - check
+      - :tavall-qa-web-frontend:check
+  artifact:
+    executor: gradle
+    networkMode: PUBLIC
+    tasks:
+      - :tavall-qa-web-frontend:jar
