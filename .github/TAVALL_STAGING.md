@@ -23,6 +23,7 @@ Refreshed 2026-11-15 by qahouse-20261115: the previous root PR [#7](https://gith
 | [#8](https://github.com/TavallStudios/tavall-web-qa/pull/8) | `working/w18-house-tests-qa-20261107` | `41e955e0` | MERGED; gate `w18-house-tests-qa2` / request `41e955e0-4f2d-481c-a953-d8f3e0e2aed7` REQUIRED_ALL PASS; merge `9f0a5955b2806e85ada7775b82f11cdc71e59e14` |
 | [#9](https://github.com/TavallStudios/tavall-web-qa/pull/9) | `working/ldr-design-review-webqa` | `3b17b4acf5e59192e50b231e5d61266f7c198de6` | MERGED; gate `ldr-webqa-3b17b4a` / request `01e18ae6-1947-40f5-9a2b-fbbb608acd7c` REQUIRED_ALL PASS; merge `9339a68fc7633b5bcbaf79b6b479f145b00389c6` |
 | [#10](https://github.com/TavallStudios/tavall-web-qa/pull/10) | `working/ldr-webqa-root-refresh` | `9723bbc` | MERGED; docs-only staging manifest refresh, no separate gate; merge `3ea09b19c3b4a8191985bfe753d95b554d7818db` |
+| [#12](https://github.com/TavallStudios/tavall-web-qa/pull/12) | `working/qahouse-20261115-qa-page-tests` | `20dc0d4` | MERGED; gate `qahouse-20261115-20dc0d4` / request `a0fa5028-9394-42fc-ad6d-0c34c94548ca` REQUIRED_ALL PASS; merge `51e79b09abea98b9dcde1b1e699de0450103d63d` |
 
 ## Historical Reconciliation (`NEEDS_RECONCILIATION`)
 

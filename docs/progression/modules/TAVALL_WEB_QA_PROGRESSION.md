@@ -45,15 +45,17 @@ The QA presentation reads the review surface and candidate option maps from the 
 
 | Area | State | Evidence |
 | --- | --- | --- |
-| Page test house style | `LOCAL_VALIDATED` | All eight test classes are `final`, same-package JUnit 5 and exercise real page subjects/domain values; the combined venture test was split into `QaVentureViewTest`, `QaVenturesPageTest` and `QaVenturePageTest`. |
-| Exact-head CI acceptance | `PENDING` | `qahouse-*` gate is enqueued after this change; no PASS is claimed here. |
-| Production behavior / design | `UNCHANGED` | Only `src/test` and this document are modified. |
+| Page test house style | `LOCAL_VALIDATED` | All ten test classes are `final`, same-package JUnit 5 and exercise real page subjects/domain values with no mocked subject or test-only constructor; the combined venture test was split into `QaVentureViewTest`, `QaVenturesPageTest` and `QaVenturePageTest`. |
+| Exact-head CI acceptance | `PARTIAL` | Focused head `20dc0d4` has verified REQUIRED_ALL PASS (gate `qahouse-20261115-20dc0d4`, request `a0fa5028-9394-42fc-ad6d-0c34c94548ca`). The composed runtime staging root `51e79b0` (PR #11/#12 merge) is being gated once at its exact head; no composed-head PASS is claimed until that result is verified. |
+| Staging composition | `CURRENT` | `.github/TAVALL_STAGING.md` now records PR #12 in the active composition with its exact merge/gate evidence. |
+| Production behavior / design | `UNCHANGED` | Only `src/test`, this document and the staging manifest are modified. |
 
 ## Progression Timeline
 
 | Date / Time | State | Progression | Evidence | Result / Remaining Work |
 | --- | --- | --- | --- | --- |
 | 2026-11-15 | `LOCAL_VALIDATED` | Converted the remaining combined venture test into direct concrete-class tests and strengthened the two priority page tests with distinct real-behavior and failure-path methods. No production code changed. | Issue [tavall-web-qa#5](https://github.com/TavallStudios/tavall-web-qa/issues/5); `javac` compile of main + generated + test sources against pinned exact-source dependencies (Web `aa2f95a`, QA `1094b37`) followed by JUnit Platform launch: 30 tests found, 30 passed, 0 failed. | Exact-head `REQUIRED_ALL` gate and staging promotion remain pending. The Gradle `test` task could not finish locally because the shared composite `nodeSetup` task hung; the standalone exact-source compile/run above was used instead. |
+| 2026-11-15 3:48 AM PST | `INTEGRATED` | Focused PR #12 merged into runtime staging root at `51e79b0`; resumed audit confirmed all ten page/route/product test classes are `final`, same-package JUnit 5 with real subjects and no mocked collaborators, the venture split and priority-page failure paths are intact, and `QaPageAnimations.build()` behavior is asserted through its owning pages. Recording PR #12 in the staging manifest and gating the composed exact head once. | Gate `qahouse-20261115-20dc0d4` (request `a0fa5028-9394-42fc-ad6d-0c34c94548ca`) REQUIRED_ALL PASS on focused head `20dc0d4`; `java_gate.py status --sha 20dc0d4` = PASS; `java_gate.py status --sha 51e79b0` = NONE (composed gate not yet run). | Composed exact-head gate enqueued once; promotion of staging PR #11 to main remains contingent on that verified PASS. No code gap found. |
 
 <details>
 <summary>Documentation Update State</summary>
@@ -62,7 +64,7 @@ The QA presentation reads the review surface and candidate option maps from the 
 
 | Surface | Sync State | Location | Last Updated | Evidence |
 | --- | --- | --- | --- | --- |
-| GitHub | `PRIMARY` | `TavallStudios/tavall-web-qa/docs/progression/modules/TAVALL_WEB_QA_PROGRESSION.md` | 2026-11-15 | qahouse-20261115 house-test conversion |
+| GitHub | `PRIMARY` | `TavallStudios/tavall-web-qa/docs/progression/modules/TAVALL_WEB_QA_PROGRESSION.md` | 2026-11-15 3:48 AM PST | qahouse-20261115 house-test conversion + staging-root integration audit |
 | Notion | `PENDING` | 1:1 twin of the GitHub module PROGRESSION | 2026-11-15 | Sync owner action remains after merge. |
 
 ### Update History
@@ -70,5 +72,6 @@ The QA presentation reads the review surface and candidate option maps from the 
 | Timestamp | Surface | Event | Location | Previous Location | Evidence | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-11-15 | GitHub | `UPDATED` | Same path | Same path | issue tavall-web-qa#5 | Added canonical Current Status / Progression Timeline tables and the required collapsed Documentation Update State footer for the house-test conversion. |
+| 2026-11-15 3:48 AM PST | GitHub | `UPDATED` | Same path | Same path | issue tavall-web-qa#5; staging root `51e79b0` | Recorded focused-head REQUIRED_ALL PASS, composed-head gate-pending state, and PR #12 in the active staging composition. |
 
 </details>
