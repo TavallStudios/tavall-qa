@@ -5,6 +5,17 @@
 > **Module:** `tavall-qa-system` (`SYSTEM`, secondary role `PROVIDER`)
 > **Runtime owner:** `tavall-web-app`
 
+## Current design-review status
+
+| Boundary | State | Evidence / Remaining work |
+| --- | --- | --- |
+| Generic task-keyed review implementation | MERGED | QA main `cd74c548476232f37584fbc12d2091d8ef0a934c`, exact source `36af58d2e7200c80b2a06ca8cd47a1f317bb61ef`, [PR #24](https://github.com/TavallStudios/tavall-qa/pull/24). |
+| Exact composed QA source validation | REQUIRED_ALL PASS | Request `9174c660-f796-4353-9b3f-85a8e42a858d`; historical source gate, not a runtime receipt. |
+| A/B/C visual fixture | VERIFIED | Dashboard PR #27 provides six blank-profile Chromium captures (1440×1000 and 390×844); all candidate URLs returned HTTP 200; no horizontal phone clipping observed. Static sample data only. |
+| Live QA persistence | BLOCKED | Current typed read returned HTTP 500; registration stopped at a failed prerequisite read and sent no POST. Migration 041 exists in QA source, but current runtime migration application is unverified. Nov 13 `42P01` is historical, not a confirmed current response. |
+| Runtime / deployment | BLOCKED | QA is part of shared Web runtime. Inventory showed DEVELOPMENT generation 769 `DEGRADED`, no QA service, and no managed immutable release. Web staging/runtime ownership is outside this change. |
+| Owner decision journey | UNVERIFIED | No candidate or winner persistence; owner selection has not occurred. |
+
 ## Current state
 
 The SYSTEM owns mapped-JPA Task Board persistence through Tavall Database's `IPostgresDatabase.entities()` API, checked-in PostgreSQL migrations `027` and `028`, query and mutation handlers, audience-first weighted progress projections, assignment/evidence workflows, append-only audit history, task revision invalidation, and idempotent accepted-task VQC attribution. Its DI wiring resolves the shared database lazily on first operation so the Web runtime can register its database before QA persistence is selected. It is composed into the shared Tavall Web application; it does not own a process or runtime.
@@ -62,32 +73,20 @@ Candidate `b23112179d613fae8a85cdd83fc45877a107c2f1` repairs Spring recompositio
 - Verify the migration against the actual shared DEVELOPMENT runtime database before deployment; no schema was applied in this source test.
 - Merge and deploy only after the corresponding source, artifact, migration, and runtime gates pass.
 
-<details>
-<summary>Documentation Update State</summary>
 
-### Current Locations
-| Surface | Sync State | Location | Last Updated | Evidence |
-| --- | --- | --- | --- | --- |
-| GitHub | `PR_DRAFT` | `TavallStudios/tavall-qa/docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | 2026-10-26 12:28 PM PDT | Original docs PR #2; checkpoint implementation PR #3 |
-| Notion | `1:1_DRAFT_PR` | [Notion twin](https://app.notion.com/p/40438458ddfd812fb5f1d73a310307d1) | 2026-10-26 12:28 PM PDT | Existing typed page retained; checkpoint content update pending |
-
-### Update History
-| Timestamp | Surface | Event | Location | Previous Location | Evidence | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| 2026-10-25 2:17 AM PDT | GitHub | `UPDATED` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same file | Branch `docs/qa-board-examples-20261025` | Added verified source references, current design scope and footer. |
-
-| 2026-10-26 10:59 AM PDT | GitHub | `UPDATED` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same logical document from PR #2 | PR #3, source `fd44ada` and exact CI receipts | Documented real DI/Database checkpoint implementation; kept runtime, payload and provider-continuation gates separate. |
-| 2026-10-26 12:28 PM PDT | GitHub | `UPDATED` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same document | QA #3, source `63a3bbc` | Reconciled typed body persistence and current source-guarded resume candidate; PostgreSQL acceptance remains tied to `1fe4770`. |
-</details>
 
 
 ## Progression Timeline
 
 | Date / Time | State | Progression | Evidence | Result / Remaining Work |
 | --- | --- | --- | --- | --- |
+
+| `2026-11-15 00:44 UTC` | `PREVIEW_VERIFIED_RUNTIME_BLOCKED` | Verified A/B/C static previews at desktop and 390px and rechecked the shared QA API/runtime. | Dashboard PR #27 evidence; public QA page 302, typed review read HTTP 500, registration preflight stopped before POST; Cloud inventory generation 769 DEGRADED, no managed releases. | No candidate/winner write or deploy; authorized Web runtime/migration owner must restore a deployable shared runtime and apply/verify migration 041. |
 | `2026-11-04 21:01 UTC` | `MERGED_PRODUCTION` | Add QA external reference reconciliation. | [TavallStudios/tavall-qa#8](https://github.com/TavallStudios/tavall-qa/pull/8) merged as `e6c89ea`. | Exact-source CI request id and DEVELOPMENT deploy generation are not retrievable from merged history; validation and deployment state `unverified`. |
 | `2026-11-05 04:40 UTC` | `MERGED_PRODUCTION` | Tests: convert tavall-qa-system to Tavall house style. | [TavallStudios/tavall-qa#12](https://github.com/TavallStudios/tavall-qa/pull/12) merged as `0c88cc2`. | Exact-source CI request id and DEVELOPMENT deploy generation are not retrievable from merged history; validation and deployment state `unverified`. |
 | `2026-11-05 17:10 UTC` | `MERGED_PRODUCTION` | Add: seed admin-only tavall-engineering Task Board project. | [TavallStudios/tavall-qa#14](https://github.com/TavallStudios/tavall-qa/pull/14) merged as `68f03ee`. | Exact-source CI request id and DEVELOPMENT deploy generation are not retrievable from merged history; validation and deployment state `unverified`. |
+| 2026-11-13 7:33 AM PST | `SOURCE_PROMOTED_RUNTIME_BLOCKED` | Generic design-review composition passed its exact root gate and merged to main. | [QA PR #24](https://github.com/TavallStudios/tavall-qa/pull/24), merge `cd74c548476232f37584fbc12d2091d8ef0a934c`; request `9174c660-f796-4353-9b3f-85a8e42a858d`. | Apply/verify migration 041 through the authorized migration owner; then register live candidates and verify the winner and Production journey. |
+
 
 ## Generic web design reviews — November 13, 2026
 
@@ -97,4 +96,27 @@ The task-keyed aggregate is persisted by `tavall-qa-system` in `task_board_desig
 
 `ITaskBoardQueryHandler.findOpenDesignReviews` supplies the role-filtered open review list for the QA review page. The Forge page renders live sandboxed preview frames, builds option controls from candidate metadata, supports single/compare and desktop/tablet/phone widths, and posts winner choices through the existing CSRF-protected Account boundary. The agent ledger client registers candidates with a surface and reads the persisted winner; it never selects a winner.
 
-As of this source update, focused local API/handler, persistence simulation, QA web page, host controller, browser, composed staging and deployment validation are still pending. No runtime or public UI acceptance is inferred from source. Notion synchronization is unavailable in this provider harness (`notion.fetch` returned Unknown tool); the GitHub issue remains the work authority.
+As of 2026-11-15 00:44 UTC, the A/B/C static preview presentation is live and visually checked, but the authenticated QA task page redirects to sign-in and the typed review read returns HTTP 500. Candidate registration stopped before POST, so no persistence or winner is claimed. The shared Web runtime is DEGRADED and no immutable managed release is available. No QA deployment or authenticated end-to-end acceptance is inferred. Notion synchronization is unavailable in this provider harness; the GitHub issue remains the work authority.
+
+<details>
+<summary>Documentation Update State</summary>
+
+### Current Locations
+| Surface | Sync State | Location | Last Updated | Evidence |
+| --- | --- | --- | --- | --- |
+| GitHub | `PRIMARY` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | 2026-11-13 7:33 AM PST | QA #24 source-promotion checkpoint. |
+| Notion | `TEMPORARY_DRIFT` | [Existing twin](https://app.notion.com/p/40438458ddfd812fb5f1d73a310307d1) | 2026-11-15 00:44 UTC | Notion connector unavailable in this provider harness; no update or post-fetch verification was performed. |
+| GitHub | `PR_DRAFT` | `TavallStudios/tavall-qa/docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | 2026-10-26 12:28 PM PDT | Original docs PR #2; checkpoint implementation PR #3 |
+| Notion | `1:1_DRAFT_PR` | [Notion twin](https://app.notion.com/p/40438458ddfd812fb5f1d73a310307d1) | 2026-10-26 12:28 PM PDT | Existing typed page retained; checkpoint content update pending |
+
+### Update History
+| Timestamp | Surface | Event | Location | Previous Location | Evidence | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-13 7:37 AM PST | GitHub + Notion | `SYNCED` | Existing SYSTEM progression pair | Same locations | QA docs commit e61a31a; successful Notion update responses | Scoped source-promotion status and history row synchronized; no full historical parity claim. |
+| 2026-11-15 00:44 UTC | GitHub | `UPDATED_PENDING_NOTION_SYNC` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same path | Dashboard PR #27 screenshot evidence; public API observations; Cloud inventory | Refreshed aggregate visual and runtime status; no candidate write or QA deployment claimed. |
+| 2026-11-13 7:33 AM PST | GitHub | `UPDATED` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same path | QA #24 merge cd74c54 and request 9174c660 | Added source-promotion/runtime-blocker status and chronological event; scoped Notion checkpoint and metadata-history row synced; unrelated drift remains unaudited. |
+| 2026-10-25 2:17 AM PDT | GitHub | `UPDATED` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same file | Branch `docs/qa-board-examples-20261025` | Added verified source references, current design scope and footer. |
+
+| 2026-10-26 10:59 AM PDT | GitHub | `UPDATED` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same logical document from PR #2 | PR #3, source `fd44ada` and exact CI receipts | Documented real DI/Database checkpoint implementation; kept runtime, payload and provider-continuation gates separate. |
+| 2026-10-26 12:28 PM PDT | GitHub | `UPDATED` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same document | QA #3, source `63a3bbc` | Reconciled typed body persistence and current source-guarded resume candidate; PostgreSQL acceptance remains tied to `1fe4770`. |
+</details>
