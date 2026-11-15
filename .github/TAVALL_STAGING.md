@@ -41,7 +41,13 @@ Generation 3 retains ancestry from main `fcbe2563b6fb018f3379a260a6ec3747d378d63
 
 The prior `staging/platform-v2` source `36af58d2e7200c80b2a06ca8cd47a1f317bb61ef` is a strict ancestor of current main `cd74c548476232f37584fbc12d2091d8ef0a934c`. This successor root fast-forwards the persistent staging line to that main baseline and refreshes only documentation. No active focused QA children were present when PR #24 merged. Legacy root #4 is explicitly SUPERSEDED by #18 and is not the active integration authority.
 
-Successor Draft root [PR #29](https://github.com/TavallStudios/tavall-qa/pull/29), initially opened at `e61a31aecd63d1ba6ba607598bf3d90c0c6fd799`, remains the path for future migration/deployment follow-up; its documentation-only source has no new runtime acceptance claim or standalone feature gate.
+Root [PR #29](https://github.com/TavallStudios/tavall-qa/pull/29) was MERGED to `main` at `51c9d3ed5d607a77d337c14efb8ed8f8db741760` on exact head `785b8adf32d24f97099be8c52db5fee5d3c72bf8` (request `8a0643ef-d256-4f41-a737-51369ba5bbf9`, REQUIRED_ALL PASS). Its documentation-only source introduced no runtime acceptance claim.
+
+## Generation 5 opening checkpoint
+
+`staging/platform-v2` was a strict ancestor of `main` when no active staging child PR remained. This checkpoint fast-forwards the persistent staging line to main `c4fb7844cc0d139ed9506b1ecab46f49c81d81bb`, which includes merged [PR #30](https://github.com/TavallStudios/tavall-qa/pull/30) (progression) and [PR #31](https://github.com/TavallStudios/tavall-qa/pull/31) (migration-041 persistence-contract tests, exact head `499f8ee4f1b60338a17963012a179370e2717a7a`, request `44fcc365-08ab-49e7-9d47-df7f88ce7869`, REQUIRED_ALL PASS). No source was removed or rewritten.
+
+Migration `041_task_board_design_review.sql` is now applied out-of-band to DEVELOPMENT `novus_web` and PRODUCTION `tavall_web_production` through the owner-documented path (backups under `/srv/storage-0/backups/novus_web/`; table, 10 columns, three CHECK constraints and DML grants verified; candidate A/B/C → winner C round-trip committed then rolled back). Deployments do not apply DDL (`generateSchema` false). The remaining owner action is a single authenticated browser sign-in at `http://localhost:19081` and winner selection; the public QA endpoint still redirects anonymously (301/302). This documentation-only root refresh adds no new runtime acceptance claim.
 
 <details>
 <summary>Documentation Update State</summary>
@@ -50,13 +56,14 @@ Successor Draft root [PR #29](https://github.com/TavallStudios/tavall-qa/pull/29
 
 | Surface | Sync State | Location | Last Updated | Evidence |
 | --- | --- | --- | --- | --- |
-| GitHub | `PRIMARY` | `TavallStudios/tavall-qa/.github/TAVALL_STAGING.md` | 2026-11-13 7:33 AM PST | QA #24 merged at cd74c54; successor staging checkpoint. |
-| Notion | `NOT_APPLICABLE` | — | 2026-11-13 7:33 AM PST | Git integration topology manifest; GitHub PRs remain authoritative. |
+| GitHub | `PRIMARY` | `TavallStudios/tavall-qa/.github/TAVALL_STAGING.md` | 2026-11-15 15:20 UTC | Generation 5 fast-forward to main c4fb784; migration 041 applied/verified in DEV+PROD. |
+| Notion | `NOT_APPLICABLE` | — | 2026-11-15 15:20 UTC | Git integration topology manifest; GitHub PRs remain authoritative. |
 
 ### Update History
 
 | Timestamp | Surface | Event | Location | Previous Location | Evidence | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-11-13 7:33 AM PST | GitHub | `UPDATED` | `.github/TAVALL_STAGING.md` | Same path | QA #24 exact-source gate and merge | Refreshed successor Generation 4 and recorded source acceptance; earlier history retained. |
+| 2026-11-15 15:20 UTC | GitHub | `UPDATED` | `.github/TAVALL_STAGING.md` | Same path | QA #29/#30/#31 merges; migration 041 applied/verified | Opened Generation 5 from strict-ancestor fast-forward; recorded out-of-band migration application and single owner sign-in step; earlier history retained. |
 
 </details>
