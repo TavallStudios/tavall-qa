@@ -49,6 +49,12 @@ Root [PR #29](https://github.com/TavallStudios/tavall-qa/pull/29) was MERGED to 
 
 Migration `041_task_board_design_review.sql` is now applied out-of-band to DEVELOPMENT `novus_web` and PRODUCTION `tavall_web_production` through the owner-documented path (backups under `/srv/storage-0/backups/novus_web/`; table, 10 columns, three CHECK constraints and DML grants verified; candidate A/B/C → winner C round-trip committed then rolled back). Deployments do not apply DDL (`generateSchema` false). The remaining owner action is a single authenticated browser sign-in at `http://localhost:19081` and winner selection; the public QA endpoint still redirects anonymously (301/302). This documentation-only root refresh adds no new runtime acceptance claim.
 
+Generation 5 was promoted to `main` via PR [#32](https://github.com/TavallStudios/tavall-qa/pull/32) at commit `29619567af0b749678c8bfc21853608915d5c8b8`.
+
+## Generation 6 opening checkpoint
+
+`staging/platform-v2` was a strict ancestor of `main` following promotion of Generation 5. This checkpoint fast-forwards the persistent staging line to main `29619567af0b749678c8bfc21853608915d5c8b8` and opens Generation 6 to receive the consolidation of `tavall-web-qa` into `tavall-qa/tavall-qa-web-frontend` under [tavall-web#185](https://github.com/TavallStudios/tavall-web/issues/185) and [tavall-qa#22](https://github.com/TavallStudios/tavall-qa/issues/22).
+
 <details>
 <summary>Documentation Update State</summary>
 
@@ -56,8 +62,8 @@ Migration `041_task_board_design_review.sql` is now applied out-of-band to DEVEL
 
 | Surface | Sync State | Location | Last Updated | Evidence |
 | --- | --- | --- | --- | --- |
-| GitHub | `PRIMARY` | `TavallStudios/tavall-qa/.github/TAVALL_STAGING.md` | 2026-11-15 15:20 UTC | Generation 5 fast-forward to main c4fb784; migration 041 applied/verified in DEV+PROD. |
-| Notion | `NOT_APPLICABLE` | — | 2026-11-15 15:20 UTC | Git integration topology manifest; GitHub PRs remain authoritative. |
+| GitHub | `PRIMARY` | `TavallStudios/tavall-qa/.github/TAVALL_STAGING.md` | 2026-11-15 22:25 UTC | Generation 6 fast-forward to main 2961956. |
+| Notion | `NOT_APPLICABLE` | — | 2026-11-15 22:25 UTC | Git integration topology manifest; GitHub PRs remain authoritative. |
 
 ### Update History
 
@@ -65,5 +71,6 @@ Migration `041_task_board_design_review.sql` is now applied out-of-band to DEVEL
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-11-13 7:33 AM PST | GitHub | `UPDATED` | `.github/TAVALL_STAGING.md` | Same path | QA #24 exact-source gate and merge | Refreshed successor Generation 4 and recorded source acceptance; earlier history retained. |
 | 2026-11-15 15:20 UTC | GitHub | `UPDATED` | `.github/TAVALL_STAGING.md` | Same path | QA #29/#30/#31 merges; migration 041 applied/verified | Opened Generation 5 from strict-ancestor fast-forward; recorded out-of-band migration application and single owner sign-in step; earlier history retained. |
+| 2026-11-15 22:25 UTC | GitHub | `UPDATED` | `.github/TAVALL_STAGING.md` | Same path | Fast-forward to main 2961956 (PR #32) | Opened Generation 6 staging root for tavall-web-qa frontend consolidation (#22/#185). |
 
 </details>
