@@ -40,3 +40,35 @@ Sanitized public and Message Editor screenshots and the exact result report are 
 ## Generic live design review — November 13, 2026
 
 The QA presentation reads the review surface and candidate option maps from the typed Task Board projection. It renders live sandboxed frames, exposes only candidate-declared option values, and provides a cross-task list of open reviews visible to the current staff subject. Winner forms remain server-authorized and CSRF-protected. The implementation has no dashboard product dependency; dashboard A/B/C is the first registered use. Local page tests, exact hosted checks, browser screenshots and runtime acceptance remain pending for the current source.
+
+## Current Status
+
+| Area | State | Evidence |
+| --- | --- | --- |
+| Page test house style | `LOCAL_VALIDATED` | All eight test classes are `final`, same-package JUnit 5 and exercise real page subjects/domain values; the combined venture test was split into `QaVentureViewTest`, `QaVenturesPageTest` and `QaVenturePageTest`. |
+| Exact-head CI acceptance | `PENDING` | `qahouse-*` gate is enqueued after this change; no PASS is claimed here. |
+| Production behavior / design | `UNCHANGED` | Only `src/test` and this document are modified. |
+
+## Progression Timeline
+
+| Date / Time | State | Progression | Evidence | Result / Remaining Work |
+| --- | --- | --- | --- | --- |
+| 2026-11-15 | `LOCAL_VALIDATED` | Converted the remaining combined venture test into direct concrete-class tests and strengthened the two priority page tests with distinct real-behavior and failure-path methods. No production code changed. | Issue [tavall-web-qa#5](https://github.com/TavallStudios/tavall-web-qa/issues/5); `javac` compile of main + generated + test sources against pinned exact-source dependencies (Web `aa2f95a`, QA `1094b37`) followed by JUnit Platform launch: 30 tests found, 30 passed, 0 failed. | Exact-head `REQUIRED_ALL` gate and staging promotion remain pending. The Gradle `test` task could not finish locally because the shared composite `nodeSetup` task hung; the standalone exact-source compile/run above was used instead. |
+
+<details>
+<summary>Documentation Update State</summary>
+
+### Current Locations
+
+| Surface | Sync State | Location | Last Updated | Evidence |
+| --- | --- | --- | --- | --- |
+| GitHub | `PRIMARY` | `TavallStudios/tavall-web-qa/docs/progression/modules/TAVALL_WEB_QA_PROGRESSION.md` | 2026-11-15 | qahouse-20261115 house-test conversion |
+| Notion | `PENDING` | 1:1 twin of the GitHub module PROGRESSION | 2026-11-15 | Sync owner action remains after merge. |
+
+### Update History
+
+| Timestamp | Surface | Event | Location | Previous Location | Evidence | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-15 | GitHub | `UPDATED` | Same path | Same path | issue tavall-web-qa#5 | Added canonical Current Status / Progression Timeline tables and the required collapsed Documentation Update State footer for the house-test conversion. |
+
+</details>
