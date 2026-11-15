@@ -9,11 +9,13 @@
 
 | Boundary | State | Evidence / Remaining work |
 | --- | --- | --- |
-| Generic task-keyed review contracts and persistence implementation | MERGED | QA main `cd74c548476232f37584fbc12d2091d8ef0a934c`, promoting exact source `36af58d2e7200c80b2a06ca8cd47a1f317bb61ef` through [PR #24](https://github.com/TavallStudios/tavall-qa/pull/24). |
-| Exact composed QA source validation | REQUIRED_ALL PASS | Request `9174c660-f796-4353-9b3f-85a8e42a858d`; COMPILATION, UNIT_TESTS, INTEGRATION and QUALITY all passed. |
-| Web consumer delivery and preview browser | DEVELOPMENT/STAGING VERIFIED | Web source `ffb5e0acc89efd4722abd8b8bb98e2536e925bed`; registry generations 755/756; A/B/C at 1440px and 390px in [verified Web evidence](https://github.com/TavallStudios/tavall-web/pull/199#issuecomment-6857148017). Fixture preview acceptance does not validate winner persistence. |
-| Live review persistence | BLOCKED | Development reports HTTP 500 / SQL `42P01`: `task_board_design_review` is absent. Migration `041_task_board_design_review.sql` needs an authorized schema operation; direct PostgreSQL access is forbidden to this worker and the installed Cloud database CLI exposes no migration command. |
-| Production and owner/reviewer decision journey | UNVERIFIED | Real dashboard task `cf62acf6-e6b0-369d-8b4e-bca92a1aad29` exists in both boards, but candidates are not registered. Production migration/backup and artifact promotion remain unattempted; no owner-ready acceptance is claimed. |
+| Generic task-keyed review contracts and persistence implementation | MERGED | QA main `cd74c548476232f37584fbc12d2091d8ef0a934c`, exact source `36af58d2e7200c80b2a06ca8cd47a1f317bb61ef`, [PR #24](https://github.com/TavallStudios/tavall-qa/pull/24). |
+| Exact composed QA source validation | REQUIRED_ALL PASS | Request `9174c660-f796-4353-9b3f-85a8e42a858d`; historical source gate, separate from current runtime acceptance. |
+| A/B/C preview presentation | VERIFIED | Dashboard PR #27 evidence contains blank-profile Chromium captures at 1440×1000 and 390×844; all three fixture URLs returned HTTP 200 and phone captures show no horizontal clipping. Static sample content only. |
+| Authenticated task page and review read | BLOCKED | The public task page redirects to sign-in (302); typed design-review read returned HTTP 500. No authenticated session was used. |
+| Candidate registration / persistence | BLOCKED | Registration CLI failed its prerequisite read and sent no POST. No candidate was written. Migration 041 is present in QA main, but application to the shared runtime was not verified; the historical Nov 13 SQLSTATE `42P01` observation is not independently confirmed by the current masked HTTP 500. |
+| Shared runtime and deployability | BLOCKED | Typed inventory showed `tavall-web` DEVELOPMENT generation 769 `DEGRADED`, no separate QA service; managed release inventory was empty and had no current revision. No immutable artifact was available to deploy. |
+| Production and owner/reviewer decision journey | UNVERIFIED | Dashboard task `cf62acf6-e6b0-369d-8b4e-bca92a1aad29` exists, but candidates and winner are not persisted. No production migration, backup or promotion is claimed. |
 
 ## Current state
 
@@ -53,6 +55,8 @@ The current candidate is QA PR #1; the workflow guard change rejects tasks only 
 
 | Date / Time | State | Progression | Evidence | Result / Remaining Work |
 | --- | --- | --- | --- | --- |
+
+| `2026-11-15 00:44 UTC` | `PREVIEW_VERIFIED_RUNTIME_BLOCKED` | Verified A/B/C static previews at desktop and 390px and rechecked the shared QA API/runtime. | Dashboard PR #27 evidence; public QA page 302, typed review read HTTP 500, registration preflight stopped before POST; Cloud inventory generation 769 DEGRADED, no managed releases. | No candidate/winner write or deploy; authorized Web runtime/migration owner must restore a deployable shared runtime and apply/verify migration 041. |
 | `2026-11-04 21:01 UTC` | `MERGED_PRODUCTION` | Add QA external reference reconciliation. | [TavallStudios/tavall-qa#8](https://github.com/TavallStudios/tavall-qa/pull/8) merged as `e6c89ea`. | Exact-source CI request id and DEVELOPMENT deploy generation are not retrievable from merged history; validation and deployment state `unverified`. |
 | `2026-11-05 03:44 UTC` | `MERGED_PRODUCTION` | Test: Convert tavall-qa-api tests to house style. | [TavallStudios/tavall-qa#11](https://github.com/TavallStudios/tavall-qa/pull/11) merged as `7adeac1`. | Exact-source CI request id and DEVELOPMENT deploy generation are not retrievable from merged history; validation and deployment state `unverified`. |
 | `2026-11-05 05:19 UTC` | `MERGED_PRODUCTION` | Convert tavall-qa test-suite tests to house style. | [TavallStudios/tavall-qa#13](https://github.com/TavallStudios/tavall-qa/pull/13) merged as `ff0a8db`. | Exact-source CI request id and DEVELOPMENT deploy generation are not retrievable from merged history; validation and deployment state `unverified`. |
@@ -76,7 +80,7 @@ The earlier source-only validation note is superseded for source acceptance by t
 
 | Surface | Sync State | Location | Last Updated | Evidence |
 | --- | --- | --- | --- | --- |
-| GitHub | `PRIMARY` | `TavallStudios/tavall-qa/docs/progression/modules/TAVALL_QA_API_PROGRESSION.md` | 2026-11-13 7:33 AM PST | QA PR #24 merge cd74c54 and exact-source request 9174c660. |
+| GitHub | `PRIMARY` | `TavallStudios/tavall-qa/docs/progression/modules/TAVALL_QA_API_PROGRESSION.md` | 2026-11-15 00:44 UTC | Current masked HTTP 500; registration preflight sent no POST; shared Web runtime generation 769 DEGRADED; QA PR #24 historical source gate. |
 | Notion | `TEMPORARY_DRIFT` | No verified API-specific twin found | 2026-11-13 7:33 AM PST | Searches for Tavall QA API Progression and tavall-qa-api found the existing SYSTEM progression but no verified API-specific twin. The SYSTEM page receives the scoped acceptance checkpoint; no API 1:1 sync is claimed. |
 
 ### Update History
@@ -84,5 +88,6 @@ The earlier source-only validation note is superseded for source acceptance by t
 | Timestamp | Surface | Event | Location | Previous Location | Evidence | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-11-13 7:33 AM PST | GitHub | `UPDATED` | `docs/progression/modules/TAVALL_QA_API_PROGRESSION.md` | Same path | QA #24 merge cd74c54; request 9174c660 | Added current design-review source acceptance, runtime blocker and metadata footer. Earlier document history was not backfilled. |
+| 2026-11-15 00:44 UTC | GitHub | `UPDATED_PENDING_NOTION_SYNC` | `docs/progression/modules/TAVALL_QA_API_PROGRESSION.md` | Same path | Dashboard PR #27 screenshot evidence; public API observations; Cloud inventory | Reconciled current runtime, page, read and registration-preflight outcomes; no candidate write claimed. |
 
 </details>
