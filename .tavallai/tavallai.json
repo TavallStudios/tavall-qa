@@ -3,15 +3,15 @@
   "authorities": {
     "docs": {
       "authority": "github.com/TavallStudios/tavall-docs",
-      "observedAt": "2026-10-22T03:40:00Z",
+      "observedAt": "2026-11-20T10:18:28Z",
       "ref": "refs/heads/main",
-      "revision": "aea8af518cee8ffc7e0a2f8c98d88ee3825ae97e"
+      "revision": "0f847ee62b6afd4d81a2e231fae602bdb340593f"
     },
     "git": {
       "authority": "github.com/TavallStudios/tavall-qa",
-      "observedAt": "2026-10-22T03:41:00Z",
-      "ref": "refs/heads/main",
-      "revision": "initial"
+      "observedAt": "2026-11-20T10:18:28Z",
+      "ref": "refs/heads/working/qaventures-20261120",
+      "revision": "48b9685201d31640cf3049c6307145cfdf8694cb"
     },
     "ledger": {
       "authority": "tavall-agent-ledger",
@@ -49,8 +49,8 @@
       "secondaryRole": "LIBRARY"
     },
     {
-      "name": "tavall-qa-core",
-      "path": "tavall-qa-core",
+      "name": "tavall-qa-system",
+      "path": "tavall-qa-system",
       "primaryType": "SYSTEM",
       "secondaryRole": "PROVIDER"
     },
@@ -59,6 +59,12 @@
       "path": "tavall-qa-test-suite",
       "primaryType": "TEST_SUITE",
       "secondaryRole": null
+    },
+    {
+      "name": "tavall-qa-web-frontend",
+      "path": "tavall-qa-web-frontend",
+      "primaryType": "FEATURE",
+      "secondaryRole": "PROVIDER"
     }
   ],
   "schemaVersion": 1,

@@ -3,31 +3,39 @@
   "activeRun": {
     "agent": "tavall-orchestrator",
     "agentMode": "ROLE",
+    "docFreshness": {
+      "localEqualsRemoteMain": true,
+      "remoteMain": "0f847ee62b6afd4d81a2e231fae602bdb340593f"
+    },
     "docs": {
       "authority": "github.com/TavallStudios/tavall-docs",
-      "revision": "aea8af518cee8ffc7e0a2f8c98d88ee3825ae97e"
+      "revision": "0f847ee62b6afd4d81a2e231fae602bdb340593f"
     },
     "git": {
       "authority": "github.com/TavallStudios/tavall-qa",
-      "branch": "main",
-      "headCommit": "initial",
+      "base": "staging/platform-v2",
+      "branch": "working/qaventures-20261120",
+      "headCommit": "48b9685201d31640cf3049c6307145cfdf8694cb",
       "pullRequest": null
     },
     "ledger": {
-      "agentId": "gemini-tavall-orchestrator",
+      "agentId": "tavall-orchestrator-agent",
       "authority": "tavall-agent-ledger",
-      "taskId": "tb_task_board_recovery_issue_263",
-      "workerId": "wt_b09d32d6-9562-4535-be7c-84a4a29616bf"
+      "taskId": "73620db4-b4fd-3864-b448-36e5006e3b04",
+      "workerId": "qaventures-20261120"
     },
-    "runId": "run-20261022-tavall-qa-authority-scaffold",
+    "runId": "qaventures-20261120",
     "scope": {
       "path": ".",
       "repository": "TavallStudios/tavall-qa",
       "type": "REPOSITORY_ROOT"
     },
-    "startedAt": "2026-10-22T03:40:00Z",
+    "sourceHeads": {
+      "staging/platform-v2": "48b9685201d31640cf3049c6307145cfdf8694cb"
+    },
+    "startedAt": "2026-11-20T09:37:36Z",
     "status": "ACTIVE",
-    "threadId": "b09d32d6-9562-4535-be7c-84a4a29616bf",
-    "title": "Establish Tavall QA and Task Board authority repository"
+    "threadId": "01a1f851-8c37-7393-b59f-1224f14637fe",
+    "title": "Separate QA ventures from Task Board projects (tavall-qa#38)"
   }
 }

@@ -9,8 +9,8 @@
 
 | Capability | Owner | Boundary |
 | --- | --- | --- |
-| Task, section, project, QA state, assignments, evidence, history, and weighted progress | `tavall-qa` | One mapped-JPA PostgreSQL authority through `IPostgresDatabase.entities()`; checked-in schema migrations are owned here. |
-| QA domain contracts and projections | `tavall-qa-api` | Typed domain values, requests, results, public/staff views, and handler interfaces. |
+| Task, section, task project, separate venture directory, QA state, assignments, evidence, history, and weighted progress | `tavall-qa` | One mapped-JPA PostgreSQL authority through `IPostgresDatabase.entities()`; checked-in schema migrations are owned here. Ventures never become task projects. |
+| QA domain contracts and projections | `tavall-qa-api` | Typed domain values, requests, results, public/staff views, venture directory records, and handler interfaces. |
 | QA implementation | `tavall-qa-system` | Mapped entities, query/mutation handlers, persistence adapter, and progress aggregation; no independent process or runtime. |
 | Account identity and authorization facts | Tavall Account modules in `tavall-web-app` | SSO principal binding, current Account standing, explicit entitlement grants, organization membership/service binding, global authority, and separately linked Minecraft identity. |
 | Host routing, HTTP authorization boundary, and Account-to-QA context resolution | `tavall-web-app` | Spring adapter in the existing Tavall Web shared runtime. Every request resolves current Account facts before querying or mutating QA state. |
@@ -65,6 +65,8 @@ Tavall Account remains the authority for identity, Account standing, and explici
 ## Persistence and migration ownership
 
 `tavall-qa-system` owns mapped JPA entities and checked-in PostgreSQL migrations. The Web runtime registers the QA entity package in its existing Tavall Database composition and does not create an EntityManagerFactory, run runtime DDL, or duplicate QA schema files. QA handler wiring defers resolving the shared Database capability until the first handler call, after the Web composition root has registered its runtime-owned database. Migration `027_task_board.sql` owns the base project/task graph; `028_task_board_qa_workflows.sql` adds Account attribution, scoped assignments, evidence, append-only audit history, QA/QC eligibility, task revisions, and idempotent VQC attribution.
+
+Migration `042_task_board_ventures.sql` creates the independent `task_board_venture` directory, seeded from the 28 `venture/<slug>/venture-card` records and metadata in `rehome_ventures.py`. It restores the distinct task external keys re-homed by migration 040 to `tavall-engineering` by changing only `project_key`, then retires the 26 venture project rows migration 040 introduced. `project-novus` and `tavall-pvp` remain. `tavall-qa-api` defines the typed read-only venture query contract and canonical `/api/ventures` paths; the handler requires a current QA subject with project-management authority and filters associated tasks from `tavall-engineering`. The shared Web runtime remains the HTTP route and Account-context owner. Its existing `/ventures` page is still backed by task-project projections and needs an authorized consumer integration before the new directory is live.
 
 Evidence submission, evidence review, task acceptance, and Human Verify are separate mutations. Review can accept or reject evidence but awards no VQC. Task acceptance requires an accepted, current task fingerprint in the authorized environment, records `TASK_ACCEPTED`, sets the work status to `DONE`, and keeps QA state `NHV`. A qualifying accepted task adds one base VQC for the evidence submitter, uniquely keyed by task and Account. Human Verify remains a separate action requiring accepted current evidence, a current authorization check, active organization/service binding, and linked Minecraft identity. Rejection increments the task revision so older evidence cannot be reused. Material task changes invalidate prior verification and evidence fingerprints.
 
@@ -141,8 +143,8 @@ QA holds no Notion credentials and runs no recurring polling loop. External sync
 ### Current Locations
 | Surface | Sync State | Location | Last Updated | Evidence |
 | --- | --- | --- | --- | --- |
-| GitHub | `1:1_DRAFT_PR` | `TavallStudios/tavall-qa/docs/technical/TAVALL_QA_TASK_BOARD_TECHNICAL_DESIGN.md` | 2026-10-26 12:28 PM PDT | [Draft PR](https://github.com/TavallStudios/tavall-qa/pull/2); linked Notion twin |
-| Notion | `1:1_DRAFT_PR` | [Notion twin](https://app.notion.com/p/40438458ddfd8142b3fef192175a7bfa) | 2026-10-26 12:28 PM PDT | Created Notion twin https://app.notion.com/p/40438458ddfd8142b3fef192175a7bfa |
+| GitHub | `PR_DRAFT` | `TavallStudios/tavall-qa/docs/technical/TAVALL_QA_TASK_BOARD_TECHNICAL_DESIGN.md` | 2026-11-20 | Issue #38 venture-directory ownership and migration details; current change PR link will be recorded when created. |
+| Notion | `PENDING` | [Notion twin](https://app.notion.com/p/40438458ddfd8142b3fef192175a7bfa) | 2026-11-20 | The QA-only scope does not include editing the external Notion twin; no sync is claimed. |
 
 ### Update History
 | Timestamp | Surface | Event | Location | Previous Location | Evidence | Notes |

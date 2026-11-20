@@ -16,11 +16,28 @@
 | Runtime / deployment | BLOCKED | QA is part of shared Web runtime. Inventory showed DEVELOPMENT generation 769 `DEGRADED`, no QA service, and no managed immutable release. Web staging/runtime ownership is outside this change. |
 | Owner decision journey | UNVERIFIED | No candidate or winner persistence; owner selection has not occurred. |
 
+## Current Status
+
+| Area | State | Evidence |
+| --- | --- | --- |
+| Venture directory contract and mapped data | `SOURCE_CANDIDATE` | Typed API record, managed read handlers, migration 042 and current local API/SYSTEM/test/frontend checks are in the issue #38 worktree; exact committed-head gates pending. |
+| Migration 042 PostgreSQL acceptance | `BLOCKED_LOCAL / PENDING_CI` | The burst host lacks `/usr/lib/postgresql/14/bin/initdb` and `pg_ctl`; required integration test fails closed before test bodies. Full migration CI is required. |
+| HTTP route and Account adapter | `BLOCKED_SCOPE` | The shared Web controller remains project-derived; issue #38 makes the Web repository read-only. No new `/ventures` or `/api/ventures` runtime route is claimed. |
+| DEVELOPMENT / PRODUCTION migration | `NOT_APPLIED` | No database dump or migration application performed; service migration path and post-migration count/status checks remain pending. |
+
 ## Current state
 
 The SYSTEM owns mapped-JPA Task Board persistence through Tavall Database's `IPostgresDatabase.entities()` API, checked-in PostgreSQL migrations `027` and `028`, query and mutation handlers, audience-first weighted progress projections, assignment/evidence workflows, append-only audit history, task revision invalidation, and idempotent accepted-task VQC attribution. Its DI wiring resolves the shared database lazily on first operation so the Web runtime can register its database before QA persistence is selected. It is composed into the shared Tavall Web application; it does not own a process or runtime.
 
 Evidence review, task acceptance, and Human Verify are independent operations. Acceptance requires accepted evidence for the current task fingerprint and environment; it marks the task `DONE` while preserving `NHV`. VQC is awarded once per accepted eligible task to the evidence submitter. Rejection is available only for `REVIEW`/`DONE` tasks and changes the task revision so previous evidence is stale. Human Verify requires the separate authorization, valid evidence, active service context, and linked Minecraft identity.
+
+## Venture directory implementation candidate — November 20, 2026
+
+The issue #38 candidate adds a typed `TaskBoardVenture` record, a separate mapped `task_board_venture` table seeded with 28 venture-card identities, and a QA-authorized read-only query contract with `/api/ventures` path constants plus repository-filtered task discovery from `tavall-engineering`. Queries require a request-time subject with `MANAGE_PROJECTS` or global QA administrator authority. Migration `042_task_board_ventures.sql` updates only `task_board_task.project_key` for the 165 distinct successful external keys recorded in `rehome_ventures.out`, checks that no tasks remain in the 26 venture project rows introduced by migration 040, then deletes those rows. It preserves the existing `project-novus` and `tavall-pvp` projects. The output contains 197 attempted operations: 196 succeeded and `github/TavallStudios/tavall-content/issues/72` failed with HTTP 500; 31 of the successful rows repeat external keys, leaving 165 distinct identities actually moved. The failed key is not part of migration 042. Live URLs and goal-family references are absent from the authoritative `VENTURES` map and are represented as empty/null values rather than inferred.
+
+This is a source candidate only. Compile, module tests, exact-head migration gate, hosted migration, database backup, and task/status count verification remain separate acceptance steps. The read-only Web consumer still derives `/ventures` from task project projections; its HTTP route and Account subject binding are outside this repository-only issue scope, so the new API/page flow is not yet integrated or browser-verified.
+
+Focused burst results for the candidate worktree based on `staging/platform-v2@48b9685201d31640cf3049c6307145cfdf8694cb`: `:tavall-qa-system` PASS, 64 tests, 0 failures; `:tavall-qa-web-frontend` PASS, 32 tests, 0 failures. The `:tavall-qa-test-suite` JUnit XML reports 32 tests, 0 failures, and 19 PostgreSQL-gated skips, but its latest Gradle invocation exited nonzero during result finalization with `No space left on device`; the burst root filesystem `/dev/sda1` was full (140K available). No cache/repository cleanup was performed. The required burst `:tavall-qa-test-suite:executionCheckpointIntegrationTest` task also failed before test bodies because `/usr/lib/postgresql/14/bin/initdb` and `pg_ctl` are unavailable. Its four selected PostgreSQL test classes, including `VentureMigrationPostgresIntegrationTest`, reported initialization errors. Full CI migration integration remains required. These module runs include the candidate working-tree changes but precede the implementation commit; exact-head Java verification and migration REQUIRED_ALL CI are pending. `java_gate quick` remains advisory and cannot load the pinned Tavall Database classes from its local javac classpath; burst Gradle compilation resolves them from the pinned source build. The `/ventures` HTTP adapter, hosted migration, backup, database count/status checks, and browser captures remain unverified.
 
 ## Phase 6 Notion 1:1 Task Mapping and WebMCP Task Views
 
@@ -81,11 +98,12 @@ Candidate `b23112179d613fae8a85cdd83fc45877a107c2f1` repairs Spring recompositio
 | Date / Time | State | Progression | Evidence | Result / Remaining Work |
 | --- | --- | --- | --- | --- |
 
-| `2026-11-15 00:44 UTC` | `PREVIEW_VERIFIED_RUNTIME_BLOCKED` | Verified A/B/C static previews at desktop and 390px and rechecked the shared QA API/runtime. | Dashboard PR #27 evidence; public QA page 302, typed review read HTTP 500, registration preflight stopped before POST; Cloud inventory generation 769 DEGRADED, no managed releases. | No candidate/winner write or deploy; authorized Web runtime/migration owner must restore a deployable shared runtime and apply/verify migration 041. |
 | `2026-11-04 21:01 UTC` | `MERGED_PRODUCTION` | Add QA external reference reconciliation. | [TavallStudios/tavall-qa#8](https://github.com/TavallStudios/tavall-qa/pull/8) merged as `e6c89ea`. | Exact-source CI request id and DEVELOPMENT deploy generation are not retrievable from merged history; validation and deployment state `unverified`. |
 | `2026-11-05 04:40 UTC` | `MERGED_PRODUCTION` | Tests: convert tavall-qa-system to Tavall house style. | [TavallStudios/tavall-qa#12](https://github.com/TavallStudios/tavall-qa/pull/12) merged as `0c88cc2`. | Exact-source CI request id and DEVELOPMENT deploy generation are not retrievable from merged history; validation and deployment state `unverified`. |
 | `2026-11-05 17:10 UTC` | `MERGED_PRODUCTION` | Add: seed admin-only tavall-engineering Task Board project. | [TavallStudios/tavall-qa#14](https://github.com/TavallStudios/tavall-qa/pull/14) merged as `68f03ee`. | Exact-source CI request id and DEVELOPMENT deploy generation are not retrievable from merged history; validation and deployment state `unverified`. |
 | 2026-11-13 7:33 AM PST | `SOURCE_PROMOTED_RUNTIME_BLOCKED` | Generic design-review composition passed its exact root gate and merged to main. | [QA PR #24](https://github.com/TavallStudios/tavall-qa/pull/24), merge `cd74c548476232f37584fbc12d2091d8ef0a934c`; request `9174c660-f796-4353-9b3f-85a8e42a858d`. | Apply/verify migration 041 through the authorized migration owner; then register live candidates and verify the winner and Production journey. |
+| `2026-11-15 00:44 UTC` | `PREVIEW_VERIFIED_RUNTIME_BLOCKED` | Verified A/B/C static previews at desktop and 390px and rechecked the shared QA API/runtime. | Dashboard PR #27 evidence; public QA page 302, typed review read HTTP 500, registration preflight stopped before POST; Cloud inventory generation 769 DEGRADED, no managed releases. | No candidate/winner write or deploy; authorized Web runtime/migration owner must restore a deployable shared runtime and apply/verify migration 041. |
+| `2026-11-20 UTC` | `SOURCE_CANDIDATE` | Added the separate venture directory contract and migration 042; re-homed 165 successful distinct task keys by project-key update; added repo-filtered engineering task queries. | Issue #38; worktree based on `staging/platform-v2@48b9685`; `:tavall-qa-test-suite` 32/0, `:tavall-qa-system` 64/0, `:tavall-qa-web-frontend` 32/0; exact CI pending. | Local PostgreSQL integration is blocked by missing `initdb`/`pg_ctl`; hosted REQUIRED_ALL migration gate, Web route/Account binding, browser evidence, backup and database count/status checks remain pending. |
 
 
 ## Generic web design reviews — November 13, 2026
@@ -105,7 +123,7 @@ As of 2026-11-15 00:44 UTC, the A/B/C static preview presentation is live and vi
 | Surface | Sync State | Location | Last Updated | Evidence |
 | --- | --- | --- | --- | --- |
 | GitHub | `PRIMARY` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | 2026-11-13 7:33 AM PST | QA #24 source-promotion checkpoint. |
-| Notion | `TEMPORARY_DRIFT` | [Existing twin](https://app.notion.com/p/40438458ddfd812fb5f1d73a310307d1) | 2026-11-15 00:44 UTC | Notion connector unavailable in this provider harness; no update or post-fetch verification was performed. |
+| Notion | `PENDING` | [Existing twin](https://app.notion.com/p/40438458ddfd812fb5f1d73a310307d1) | 2026-11-20 | The QA-only scope does not include editing the external Notion twin; no sync is claimed. |
 | GitHub | `PR_DRAFT` | `TavallStudios/tavall-qa/docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | 2026-10-26 12:28 PM PDT | Original docs PR #2; checkpoint implementation PR #3 |
 | Notion | `1:1_DRAFT_PR` | [Notion twin](https://app.notion.com/p/40438458ddfd812fb5f1d73a310307d1) | 2026-10-26 12:28 PM PDT | Existing typed page retained; checkpoint content update pending |
 

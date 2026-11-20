@@ -5,6 +5,7 @@ import org.tavall.qa.domain.TaskBoardProjectStatus;
 import org.tavall.qa.domain.TaskBoardQaStatus;
 import org.tavall.qa.domain.TaskBoardTaskPriority;
 import org.tavall.qa.domain.TaskBoardTaskStatus;
+import org.tavall.qa.domain.TaskBoardVenture;
 import org.tavall.qa.view.TaskBoardPublicProjectSummaryView;
 import org.tavall.qa.view.TaskBoardPublicProjectView;
 import org.tavall.qa.view.TaskBoardPublicSectionView;
@@ -40,6 +41,22 @@ final class QaVenturePageTest {
         assertTrue(html.contains("Ship deals page"));
         assertFalse(html.contains("Old done task"));
         assertTrue(html.contains("href=\"/projects/tavall-times\""));
+    }
+
+    @Test
+    void typedVenturePageShowsBlockerAndLinksTasksToEngineering() {
+        TaskBoardVenture record = new TaskBoardVenture(
+                "tavall-qa", "venture/tavall-qa/venture-card", "QA authority",
+                List.of("tavall-qa", "tavall-web-qa"), "LIVE", List.of(),
+                "Authenticated Web route adapter remains to be wired", null);
+        QaVentureView view = QaVentureView.fromVenture(record);
+
+        String html = renderer.render(QaVenturePage.build(view)).body();
+
+        assertTrue(html.contains("QA authority"));
+        assertTrue(html.contains("tavall-web-qa"));
+        assertTrue(html.contains("Authenticated Web route adapter remains to be wired"));
+        assertTrue(html.contains("href=\"/projects/tavall-engineering\""));
     }
 
     @Test

@@ -7,6 +7,7 @@ Canonical in-process Task Board and QA authority implementation.
 ### Owns
 
 - Mapped-JPA Task Board entities and checked-in PostgreSQL migrations.
+- Read-only typed venture query contract and repository-filtered links into `tavall-engineering` tasks, guarded by QA project-management authority.
 - Task/project queries, mutations, scoped assignments, evidence review, immutable history, and weighted progress.
 - The `tavall-qa-api` SYSTEM composition contract.
 
@@ -30,7 +31,7 @@ tavall-qa/
 
 | Module / System | Relationship |
 | --- | --- |
-| `tavall-qa-api` | Typed public contracts and projections implemented by this SYSTEM. |
+| `tavall-qa-api` | Typed task-board and venture contracts implemented by this SYSTEM. |
 | `tavall-qa-test-suite` | Exercises this module through production handlers and the API contract. |
 | `tavall-web-app` | Composition/runtime owner; registers this module's entity package with the shared Tavall Database runtime. |
 | Tavall Account | Supplies current Account facts; QA does not duplicate identity or authorization state. |
@@ -61,4 +62,4 @@ Runtime owner: `tavall-web-app`. Current runtime integration: Tavall Web PR #76.
 - **Current PR Stack:** [QA authority PR #1](https://github.com/TavallStudios/tavall-qa/pull/1), source `641e00cb6ec26fd53362bc88077381ad1c7dbe69`; consumer integration in WebQA PR #2 and Tavall Web PR #76.
 - **Runtime PR:** Tavall Web PR #76.
 - **Progression:** [`../docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md`](../docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md)
-- **Schema ownership:** `schema/postgres/027_task_board.sql` and `028_task_board_qa_workflows.sql`.
+- **Schema ownership:** `schema/postgres/027_task_board.sql`, `028_task_board_qa_workflows.sql`, and `042_task_board_ventures.sql`.

@@ -5,13 +5,14 @@ Authoritative backend task, progress, and QA verification plane for Tavall.
 ## Authority
 
 `tavall-qa` is the canonical **mapped-JPA Task Board and QA verification authority**. It owns:
-- Project lifecycle and audience definitions.
+- Task project lifecycle and audience definitions; ventures have a separate typed directory and are not task projects.
 - Task graph, section mapping, priority, weight, and status.
 - QA state (`NHV`, `REVIEW_REQUIRED`, `HUMAN_VERIFIED`), verifier identity, and timestamps.
 - Action targets, discussion/suggestion/QA-note threads.
 - Task-scoped QA assignments, evidence review, audit history, and VQC contributions.
 - PostgreSQL schema migrations (`schema/postgres/027_task_board.sql` and `028_task_board_qa_workflows.sql`).
 - Public and staff query projections.
+- Typed read-only venture-directory contract with `/api/ventures` route constants; callers must supply a QA subject with project-management authority. Venture task discovery filters tasks still owned by `tavall-engineering`.
 
 ## Architecture
 
