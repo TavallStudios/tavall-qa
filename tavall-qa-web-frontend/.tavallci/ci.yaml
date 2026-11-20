@@ -42,21 +42,21 @@ requiredChecks:
 checks:
   compilation:
     executor: gradle
-    networkMode: PUBLIC
+    networkMode: ISOLATED
     tasks:
       - :tavall-qa-web-frontend:classes
   unit-tests:
     executor: gradle
-    networkMode: PUBLIC
+    networkMode: ISOLATED
     tasks:
       - :tavall-qa-web-frontend:test
   quality:
     executor: gradle
-    networkMode: PUBLIC
+    networkMode: ISOLATED
     tasks:
       - :tavall-qa-web-frontend:check
   artifact:
     executor: gradle
-    networkMode: PUBLIC
+    networkMode: ISOLATED
     tasks:
       - :tavall-qa-web-frontend:jar

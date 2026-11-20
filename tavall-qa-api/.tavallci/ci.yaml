@@ -16,12 +16,12 @@ checks:
     executor: gradle
     tasks:
       - :tavall-qa-api:classes
-    networkMode: PUBLIC
+    networkMode: ISOLATED
   quality:
     executor: gradle
     tasks:
       - :tavall-qa-api:check
-    networkMode: PUBLIC
+    networkMode: ISOLATED
 dependencies:
   - kind: artifact
     identity: tavall-public-maven-mirror

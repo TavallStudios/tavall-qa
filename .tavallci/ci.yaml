@@ -25,23 +25,23 @@ checks:
       - :tavall-qa-api:classes
       - :tavall-qa-system:classes
       - :tavall-qa-web-frontend:classes
-    networkMode: PUBLIC
+    networkMode: ISOLATED
   unit-tests:
     executor: gradle
     tasks:
       - :tavall-qa-test-suite:test
       - :tavall-qa-web-frontend:test
-    networkMode: PUBLIC
+    networkMode: ISOLATED
   quality:
     executor: gradle
     tasks:
       - check
-    networkMode: PUBLIC
+    networkMode: ISOLATED
   integration:
     executor: gradle
     tasks:
       - :tavall-qa-test-suite:executionCheckpointIntegrationTest
-    networkMode: PUBLIC
+    networkMode: ISOLATED
 dependencies:
   - kind: artifact
     identity: tavall-public-maven-mirror

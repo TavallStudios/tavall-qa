@@ -52,9 +52,9 @@ checks:
     executor: gradle
     tasks:
       - :tavall-qa-system:classes
-    networkMode: PUBLIC
+    networkMode: ISOLATED
   quality:
     executor: gradle
     tasks:
       - :tavall-qa-system:check
-    networkMode: PUBLIC
+    networkMode: ISOLATED

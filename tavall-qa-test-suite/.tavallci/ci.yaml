@@ -54,19 +54,19 @@ checks:
     executor: gradle
     tasks:
       - :tavall-qa-test-suite:testClasses
-    networkMode: PUBLIC
+    networkMode: ISOLATED
   unit-tests:
     executor: gradle
     tasks:
       - :tavall-qa-test-suite:test
-    networkMode: PUBLIC
+    networkMode: ISOLATED
   quality:
     executor: gradle
     tasks:
       - :tavall-qa-test-suite:check
-    networkMode: PUBLIC
+    networkMode: ISOLATED
   integration:
     executor: gradle
     tasks:
       - :tavall-qa-test-suite:executionCheckpointIntegrationTest
-    networkMode: PUBLIC
+    networkMode: ISOLATED
