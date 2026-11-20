@@ -143,7 +143,8 @@ QA holds no Notion credentials and runs no recurring polling loop. External sync
 ### Current Locations
 | Surface | Sync State | Location | Last Updated | Evidence |
 | --- | --- | --- | --- | --- |
-| GitHub | `PR_DRAFT` | `TavallStudios/tavall-qa/docs/technical/TAVALL_QA_TASK_BOARD_TECHNICAL_DESIGN.md` | 2026-11-20 | Issue #38 venture-directory ownership and migration details; current change PR link will be recorded when created. |
+| GitHub | `PRIMARY` | `TavallStudios/tavall-qa/docs/technical/TAVALL_QA_TASK_BOARD_TECHNICAL_DESIGN.md` | 2026-10-29 11:49 UTC | QA docs PR #2 merged; the main document remains current apart from the #38 candidate recorded below. |
+| GitHub | `PR_DRAFT` | `TavallStudios/tavall-qa/docs/technical/TAVALL_QA_TASK_BOARD_TECHNICAL_DESIGN.md` | 2026-11-20 | [QA PR #39](https://github.com/TavallStudios/tavall-qa/pull/39), issue #38 venture-directory ownership and migration details. |
 | Notion | `PENDING` | [Notion twin](https://app.notion.com/p/40438458ddfd8142b3fef192175a7bfa) | 2026-11-20 | The QA-only scope does not include editing the external Notion twin; no sync is claimed. |
 
 ### Update History
@@ -153,6 +154,7 @@ QA holds no Notion credentials and runs no recurring polling loop. External sync
 
 | 2026-10-26 10:59 AM PDT | GitHub | `UPDATED` | `docs/technical/TAVALL_QA_TASK_BOARD_TECHNICAL_DESIGN.md` | Same logical document from PR #2 | PR #3, source `fd44ada` and exact CI receipts | Documented real DI/Database checkpoint implementation; kept runtime, payload and provider-continuation gates separate. |
 | 2026-10-26 12:28 PM PDT | GitHub | `UPDATED` | `docs/technical/TAVALL_QA_TASK_BOARD_TECHNICAL_DESIGN.md` | Same document | QA #3, source `63a3bbc` | Reconciled typed body persistence and current source-guarded resume candidate; PostgreSQL acceptance remains tied to `1fe4770`. |
+| 2026-11-20 | GitHub | `UPDATED_PENDING_NOTION_SYNC` | `docs/technical/TAVALL_QA_TASK_BOARD_TECHNICAL_DESIGN.md` | Same path | [QA PR #39](https://github.com/TavallStudios/tavall-qa/pull/39), issue #38 | Documented the separate venture table, authorization boundary, task re-home migration, and shared-Web route integration blocker. |
 </details>
 
 

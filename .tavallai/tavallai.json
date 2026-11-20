@@ -9,9 +9,9 @@
     },
     "git": {
       "authority": "github.com/TavallStudios/tavall-qa",
-      "observedAt": "2026-11-20T10:18:28Z",
+      "observedAt": "2026-11-20T11:27:01Z",
       "ref": "refs/heads/working/qaventures-20261120",
-      "revision": "48b9685201d31640cf3049c6307145cfdf8694cb"
+      "revision": "78e86157b2fd6e3f75bf366550cb148449ed887d"
     },
     "ledger": {
       "authority": "tavall-agent-ledger",

@@ -67,7 +67,7 @@ The QA source now provides a typed venture record for the existing page model, i
 
 | Surface | Sync State | Location | Last Updated | Evidence |
 | --- | --- | --- | --- | --- |
-| GitHub | `PRIMARY` | `TavallStudios/tavall-qa/docs/progression/modules/TAVALL_QA_WEB_FRONTEND_PROGRESSION.md` | 2026-11-20 | Issue #38 source-candidate and route-integration blocker update. |
+| GitHub | `PR_DRAFT` | `TavallStudios/tavall-qa/docs/progression/modules/TAVALL_QA_WEB_FRONTEND_PROGRESSION.md` | 2026-11-20 | [QA PR #39](https://github.com/TavallStudios/tavall-qa/pull/39), targeting staging root #34; route integration and browser acceptance pending. |
 | Notion | `PENDING` | 1:1 twin of the GitHub module PROGRESSION | 2026-11-15 | External twin not updated in this tavall-qa-repository-only scope. |
 
 ### Update History
@@ -76,6 +76,6 @@ The QA source now provides a typed venture record for the existing page model, i
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-11-15 | GitHub | `UPDATED` | Same path | Same path | issue tavall-web-qa#5 | Added canonical Current Status / Progression Timeline tables and the required collapsed Documentation Update State footer for the house-test conversion. |
 | 2026-11-15 3:48 AM PST | GitHub | `UPDATED` | Same path | Same path | issue tavall-web-qa#5; staging root `51e79b0` | Recorded focused-head REQUIRED_ALL PASS, composed-head gate-pending state, and PR #12 in the active staging composition. |
-| 2026-11-20 | GitHub | `UPDATED_PENDING_NOTION_SYNC` | `docs/progression/modules/TAVALL_QA_WEB_FRONTEND_PROGRESSION.md` | Former `tavall-web-qa` owner path | QA #38 candidate page-model tests and Web route scope boundary | Recorded typed venture page-model support, engineering task links and unverified shared-Web HTTP integration. |
+| 2026-11-20 | GitHub | `UPDATED_PENDING_NOTION_SYNC` | `docs/progression/modules/TAVALL_QA_WEB_FRONTEND_PROGRESSION.md` | Former `tavall-web-qa` owner path | [QA PR #39](https://github.com/TavallStudios/tavall-qa/pull/39); 32 frontend page tests | Recorded typed venture page-model support, engineering task links and the Web-owned route/capture blocker. |
 
 </details>

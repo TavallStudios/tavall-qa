@@ -124,8 +124,7 @@ As of 2026-11-15 00:44 UTC, the A/B/C static preview presentation is live and vi
 | --- | --- | --- | --- | --- |
 | GitHub | `PRIMARY` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | 2026-11-13 7:33 AM PST | QA #24 source-promotion checkpoint. |
 | Notion | `PENDING` | [Existing twin](https://app.notion.com/p/40438458ddfd812fb5f1d73a310307d1) | 2026-11-20 | The QA-only scope does not include editing the external Notion twin; no sync is claimed. |
-| GitHub | `PR_DRAFT` | `TavallStudios/tavall-qa/docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | 2026-10-26 12:28 PM PDT | Original docs PR #2; checkpoint implementation PR #3 |
-| Notion | `1:1_DRAFT_PR` | [Notion twin](https://app.notion.com/p/40438458ddfd812fb5f1d73a310307d1) | 2026-10-26 12:28 PM PDT | Existing typed page retained; checkpoint content update pending |
+| GitHub | `PR_DRAFT` | `TavallStudios/tavall-qa/docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | 2026-11-20 | [QA PR #39](https://github.com/TavallStudios/tavall-qa/pull/39), targeting staging root #34; venture source candidate and acceptance limits. |
 
 ### Update History
 | Timestamp | Surface | Event | Location | Previous Location | Evidence | Notes |
@@ -133,6 +132,7 @@ As of 2026-11-15 00:44 UTC, the A/B/C static preview presentation is live and vi
 | 2026-11-13 7:37 AM PST | GitHub + Notion | `SYNCED` | Existing SYSTEM progression pair | Same locations | QA docs commit e61a31a; successful Notion update responses | Scoped source-promotion status and history row synchronized; no full historical parity claim. |
 | 2026-11-15 00:44 UTC | GitHub | `UPDATED_PENDING_NOTION_SYNC` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same path | Dashboard PR #27 screenshot evidence; public API observations; Cloud inventory | Refreshed aggregate visual and runtime status; no candidate write or QA deployment claimed. |
 | 2026-11-13 7:33 AM PST | GitHub | `UPDATED` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same path | QA #24 merge cd74c54 and request 9174c660 | Added source-promotion/runtime-blocker status and chronological event; scoped Notion checkpoint and metadata-history row synced; unrelated drift remains unaudited. |
+| 2026-11-20 | GitHub | `UPDATED_PENDING_NOTION_SYNC` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same path | Issue #38 and [QA PR #39](https://github.com/TavallStudios/tavall-qa/pull/39) | Recorded venture directory source candidate, test results, missing local PostgreSQL fixture, and Web route integration scope blocker. |
 | 2026-10-25 2:17 AM PDT | GitHub | `UPDATED` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same file | Branch `docs/qa-board-examples-20261025` | Added verified source references, current design scope and footer. |
 
 | 2026-10-26 10:59 AM PDT | GitHub | `UPDATED` | `docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md` | Same logical document from PR #2 | PR #3, source `fd44ada` and exact CI receipts | Documented real DI/Database checkpoint implementation; kept runtime, payload and provider-continuation gates separate. |

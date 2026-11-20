@@ -2,6 +2,7 @@
   "activeScope": {
     "base": "staging/platform-v2",
     "branch": "working/qaventures-20261120",
+    "implementationCommit": "78e86157b2fd6e3f75bf366550cb148449ed887d",
     "issue": "https://github.com/TavallStudios/tavall-qa/issues/38",
     "modules": [
       "tavall-qa-api: API/LIBRARY",
@@ -9,7 +10,9 @@
       "tavall-qa-test-suite: TEST_SUITE",
       "tavall-qa-web-frontend: FEATURE/PROVIDER"
     ],
+    "pullRequest": "https://github.com/TavallStudios/tavall-qa/pull/39",
     "repository": "TavallStudios/tavall-qa",
+    "stagingPR": "https://github.com/TavallStudios/tavall-qa/pull/34",
     "taskId": "73620db4-b4fd-3864-b448-36e5006e3b04",
     "tasks": [
       "Typed venture directory API contract and query handler",
@@ -18,7 +21,7 @@
       "Module tests, exact Java compile, migration CI gate"
     ]
   },
-  "lastUpdated": "2026-11-20T10:18:28Z",
+  "lastUpdated": "2026-11-20T11:27:01Z",
   "threadId": "01a1f851-8c37-7393-b59f-1224f14637fe",
   "workerId": "qaventures-20261120"
 }

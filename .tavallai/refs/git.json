@@ -2,7 +2,8 @@
   "authority": "github.com/TavallStudios/tavall-qa",
   "base": "staging/platform-v2",
   "branch": "working/qaventures-20261120",
-  "observedAt": "2026-11-20T10:18:28Z",
-  "revision": "48b9685201d31640cf3049c6307145cfdf8694cb",
+  "observedAt": "2026-11-20T11:27:01Z",
+  "pullRequest": "https://github.com/TavallStudios/tavall-qa/pull/39",
+  "revision": "78e86157b2fd6e3f75bf366550cb148449ed887d",
   "worktree": "/srv/dev-storage/workspaces/tavall-qa/working/qaventures-20261120"
 }
