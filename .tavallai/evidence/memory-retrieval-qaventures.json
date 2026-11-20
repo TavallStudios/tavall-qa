@@ -1,0 +1,28 @@
+{
+  "providers": {
+    "graphify": {
+      "reason": "query_graph returned graph.json not found at /srv/dev-storage/workspaces/tavall-qa/repo_root/graphify-out/graph.json",
+      "status": "UNAVAILABLE"
+    },
+    "graphiti": {
+      "factsQuery": "10 facts returned; no issue #38 or venture endpoint decision matched",
+      "nodesQuery": "10 nodes returned; no QA venture/task-board nodes matched",
+      "sourceRefs": [
+        "episode:4417db5f-cc62-4a00-b2e4-c12146ba8236",
+        "episode:2a942b90-bc5c-49ac-b6bb-ed0562bc0420",
+        "episode:1e2db2c2-6452-4b7a-b340-58118e1b5654"
+      ],
+      "status": "AVAILABLE"
+    }
+  },
+  "query": "For Tavall QA Task Board ventures endpoint and tavall-qa issue #38, identify current owners/modules/code/docs/tests/active PRs and temporal accepted requirements, rejected or superseded proposals, rationale, unresolved dependencies with dates and source refs.",
+  "result": "PARTIAL: temporal retrieval returned no task-specific decision evidence; verified issue #38 owner decision and current source/docs directly.",
+  "retrievedAt": "2026-11-20T10:18:28Z",
+  "verifiedCurrentSources": [
+    "TavallStudios/tavall-qa#38",
+    "tavall-qa/working/qaventures-20261120@48b9685201d31640cf3049c6307145cfdf8694cb",
+    "tavall-docs@0f847ee62b6afd4d81a2e231fae602bdb340593f",
+    "rehome_ventures.py",
+    "rehome_ventures.out"
+  ]
+}

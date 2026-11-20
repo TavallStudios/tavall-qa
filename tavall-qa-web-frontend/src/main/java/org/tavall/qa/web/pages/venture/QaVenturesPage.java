@@ -42,9 +42,11 @@ public final class QaVenturesPage extends AbstractPage<QaVenturesPage> {
 
     private static HTMLElement card(QaVentureView venture) {
         String copy = venture.purpose().isBlank() ? "Purpose not recorded yet." : venture.purpose();
-        List<String> tags = venture.liveLinks().isEmpty() ? List.of("No live link yet") : List.of("Live");
+        List<String> tags = venture.ownerRepos().isEmpty()
+                ? (venture.liveLinks().isEmpty() ? List.of("No live link yet") : List.of("Live"))
+                : venture.ownerRepos().stream().limit(3).toList();
         return Forge.card(new ForgeCard("◆", venture.name(), stageLabel(venture.stage()), copy,
-                venture.progressPercent() + "%", tags,
+                venture.progressPercent() < 0 ? "" : venture.progressPercent() + "%", tags,
                 venture.openTaskCount() + " open " + (venture.openTaskCount() == 1 ? "task" : "tasks"),
                 "View venture", QaRoutes.venture(venture.key())));
     }

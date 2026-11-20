@@ -5,6 +5,10 @@ import org.tavall.qa.domain.TaskBoardProjectStatus;
 import org.tavall.qa.domain.TaskBoardQaStatus;
 import org.tavall.qa.domain.TaskBoardTaskPriority;
 import org.tavall.qa.domain.TaskBoardTaskStatus;
+import org.tavall.qa.domain.TaskBoardAudience;
+import org.tavall.qa.domain.TaskBoardQaStatus;
+import org.tavall.qa.domain.TaskBoardTask;
+import org.tavall.qa.domain.TaskBoardVenture;
 import org.tavall.qa.view.TaskBoardPublicProjectSummaryView;
 import org.tavall.qa.view.TaskBoardPublicProjectView;
 import org.tavall.qa.view.TaskBoardPublicSectionView;
@@ -46,6 +50,29 @@ final class QaVentureViewTest {
         assertTrue(venture.openTasks().stream()
                 .allMatch(task -> task.href().startsWith("/projects/tavall-times/tasks/")));
         assertEquals(TaskBoardTaskStatus.ACTIVE, venture.openTasks().getFirst().status());
+    }
+
+    @Test
+    void fromVentureLinksFilteredWorkBackToTheEngineeringProject() {
+        UUID taskId = UUID.randomUUID();
+        Instant createdAt = Instant.parse("2026-11-20T09:00:00Z");
+        TaskBoardVenture ventureData = new TaskBoardVenture(
+                "tavall-qa", "venture/tavall-qa/venture-card", "QA authority",
+                List.of("tavall-qa", "tavall-web-qa"), "LIVE", List.of(), "API consumer wiring", null);
+        TaskBoardTask linkedTask = new TaskBoardTask(taskId, "tavall-engineering", "qa", "Add venture query",
+                "Add venture query", "", "", TaskBoardTaskStatus.ACTIVE, TaskBoardTaskPriority.HIGH,
+                TaskBoardQaStatus.NHV, TaskBoardAudience.ADMIN_ONLY, 1, false, "github-issue",
+                "https://github.com/TavallStudios/tavall-qa/issues/38", true, 1,
+                UUID.randomUUID(), null, null, null, null, null, 1, createdAt, createdAt);
+
+        QaVentureView venture = QaVentureView.fromVenture(ventureData, List.of(linkedTask));
+
+        assertEquals("tavall-qa", venture.key());
+        assertEquals(List.of("tavall-qa", "tavall-web-qa"), venture.ownerRepos());
+        assertEquals("API consumer wiring", venture.topBlocker());
+        assertEquals("/projects/tavall-engineering/tasks/" + taskId,
+                venture.openTasks().getFirst().href());
+        assertEquals(-1, venture.progressPercent());
     }
 
     @Test
