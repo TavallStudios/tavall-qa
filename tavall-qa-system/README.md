@@ -7,7 +7,7 @@ Canonical in-process Task Board and QA authority implementation.
 ### Owns
 
 - Mapped-JPA Task Board entities and checked-in PostgreSQL migrations.
-- Read-only typed venture query contract and repository-filtered links into `tavall-engineering` tasks, guarded by QA project-management authority.
+- Read-only typed venture query contract with typed owner-repository matching against `TaskBoardProjectKey.ENGINEERING` tasks, guarded by QA project-management authority.
 - Task/project queries, mutations, scoped assignments, evidence review, immutable history, and weighted progress.
 - The `tavall-qa-api` SYSTEM composition contract.
 

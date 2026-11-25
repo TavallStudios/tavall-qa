@@ -1,5 +1,9 @@
 package org.tavall.qa.web.pages.venture;
 
+import org.tavall.qa.domain.TaskBoardProjectKey;
+import org.tavall.qa.domain.TaskBoardVenture;
+import org.tavall.qa.domain.auth.QaSubjectContext;
+import org.tavall.qa.handler.ITaskBoardVentureQueryHandler;
 import org.tavall.qa.web.pages.shared.QaPageAnimations;
 import org.tavall.qa.web.pages.shared.QaProduct;
 import org.tavall.qa.web.routes.QaRoutes;
@@ -15,6 +19,7 @@ import org.tavall.web.frontend.html.HTML;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /** One venture at {@code qa.tavall.org/ventures/{key}}: purpose, stage, live links, metrics and open tasks. */
 public final class QaVenturePage extends AbstractPage<QaVenturePage> {
@@ -24,6 +29,22 @@ public final class QaVenturePage extends AbstractPage<QaVenturePage> {
                 .title(venture.name() + " | Ventures | Tavall QA")
                 .html(document(venture))
                 .animations(QaPageAnimations.build());
+    }
+
+    /**
+     * Builds one venture through the QA venture query contract, including the engineering tasks
+     * matched to its owner repositories.
+     */
+    public static QaVenturePage build(
+            ITaskBoardVentureQueryHandler ventures,
+            String slug,
+            QaSubjectContext subject
+    ) {
+        Objects.requireNonNull(ventures, "ventures");
+        TaskBoardVenture venture = ventures.findVenture(slug, subject)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown venture: " + slug));
+        return build(QaVentureView.fromVenture(
+                venture, ventures.findVentureTasks(slug, subject)));
     }
 
     static HTMLDocument document(QaVentureView venture) {
@@ -71,7 +92,9 @@ public final class QaVenturePage extends AbstractPage<QaVenturePage> {
         }
 
         String purpose = venture.purpose().isBlank() ? "Purpose not recorded yet." : venture.purpose();
-        String taskBoardKey = venture.ownerRepos().isEmpty() ? venture.key() : "tavall-engineering";
+        String taskBoardKey = venture.ownerRepos().isEmpty()
+                ? venture.key()
+                : TaskBoardProjectKey.ENGINEERING.value();
         String taskBoardLabel = venture.ownerRepos().isEmpty()
                 ? "Full project board"
                 : "Engineering task board";

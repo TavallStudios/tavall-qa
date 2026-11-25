@@ -5,6 +5,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.tavall.qa.domain.TaskBoardAuditEntry;
 import org.tavall.qa.domain.TaskBoardAuditEventType;
 import org.tavall.qa.domain.TaskBoardAudience;
+import org.tavall.qa.domain.TaskBoardProjectKey;
 import org.tavall.qa.domain.TaskBoardQaStatus;
 import org.tavall.qa.domain.TaskBoardTask;
 import org.tavall.qa.domain.TaskBoardTaskPriority;
@@ -56,6 +57,46 @@ final class TaskBoardVentureQueryHandlerTest {
             assertEquals(List.of(linkedTask), subject.findVentureTasks("tavall-qa", manager));
             assertThrows(SecurityException.class,
                     () -> subject.findVentures(QaSubjectContext.anonymous()));
+        }
+    }
+
+    @Test
+    void ventureTaskFilterMatchesTypedRepositoryIdentityAcrossSourceForms() {
+        TaskBoardVenture venture = new TaskBoardVenture(
+                "tavall-qa", "venture/tavall-qa/venture-card", "QA authority",
+                List.of("TavallStudios/tavall-qa"), "LIVE", List.of(), "No blocker", null);
+        InMemoryTaskBoardDataHandler tasks = new InMemoryTaskBoardDataHandler();
+        TaskBoardTask issueUrl = task(TaskBoardProjectKey.ENGINEERING.value(),
+                "https://github.com/TavallStudios/tavall-qa/issues/38", 1);
+        TaskBoardTask providerPath = task(TaskBoardProjectKey.ENGINEERING.value(),
+                "github/TavallStudios/tavall-qa/issues/39", 2);
+        TaskBoardTask ventureCard = task(TaskBoardProjectKey.ENGINEERING.value(),
+                "venture/tavall-qa/venture-card", 3);
+        TaskBoardTask similarRepository = task(TaskBoardProjectKey.ENGINEERING.value(),
+                "https://github.com/TavallStudios/tavall-web-qa/issues/5", 4);
+        TaskBoardTask otherProject = task("project-novus",
+                "https://github.com/TavallStudios/tavall-qa/issues/99", 5);
+        save(tasks, issueUrl);
+        save(tasks, providerPath);
+        save(tasks, ventureCard);
+        save(tasks, similarRepository);
+        save(tasks, otherProject);
+        ITaskBoardVentureDataHandler ventures = new InMemoryVentureDataHandler(List.of(venture));
+
+        try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
+            context.registerBean(ITaskBoardDataHandler.class, () -> tasks);
+            context.registerBean(ITaskBoardVentureDataHandler.class, () -> ventures);
+            context.registerBean(TaskBoardVentureQueryHandler.class);
+            context.refresh();
+
+            TaskBoardVentureQueryHandler subject = context.getBean(TaskBoardVentureQueryHandler.class);
+            List<UUID> matched = subject.findVentureTasks("tavall-qa", ventureManager()).stream()
+                    .map(TaskBoardTask::taskId)
+                    .sorted()
+                    .toList();
+
+            assertEquals(List.of(issueUrl.taskId(), providerPath.taskId(), ventureCard.taskId()).stream()
+                    .sorted().toList(), matched);
         }
     }
 

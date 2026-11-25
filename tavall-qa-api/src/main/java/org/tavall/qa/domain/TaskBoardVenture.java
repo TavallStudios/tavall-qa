@@ -25,6 +25,12 @@ public record TaskBoardVenture(
         goalFamilyRef = goalFamilyRef == null ? null : requireText(goalFamilyRef, "goalFamilyRef");
     }
 
+    /** True when any declared owner repository matches the supplied identity. */
+    public boolean owns(TaskBoardRepositoryIdentity repository) {
+        Objects.requireNonNull(repository, "repository");
+        return ownerRepos.stream().anyMatch(repository::matches);
+    }
+
     private static List<String> normalized(List<String> values, String name) {
         return Objects.requireNonNull(values, name).stream()
                 .map(value -> requireText(value, name + " entry"))

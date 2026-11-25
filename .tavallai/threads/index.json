@@ -7,13 +7,6 @@
       "provider": "antigravity-cli",
       "ref": "threads/refs/b09d32d6-9562-4535-be7c-84a4a29616bf.json",
       "title": "TAVALL QA BOARD - Recover, Complete, Integrate & Ship"
-    },
-    {
-      "id": "01a1f851-8c37-7393-b59f-1224f14637fe",
-      "observedAt": "2026-11-20T10:18:28Z",
-      "provider": "codex",
-      "ref": "threads/refs/01a1f851-8c37-7393-b59f-1224f14637fe.json",
-      "title": "Separate QA ventures from Task Board projects (tavall-qa#38)"
     }
   ]
 }
