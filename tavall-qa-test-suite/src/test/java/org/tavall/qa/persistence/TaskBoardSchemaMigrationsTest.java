@@ -5,8 +5,12 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -119,6 +123,42 @@ final class TaskBoardSchemaMigrationsTest {
         assertTrue(migration.contains("jsonb_array_length(candidates_json::jsonb) BETWEEN 2 AND 4"));
         assertTrue(migration.contains("task_board_design_decision_check"));
         assertTrue(migration.contains("winner_key IN ('A', 'B', 'C', 'D')"));
+    }
+
+    @Test
+    void ventureMigrationCreatesSeparateDirectoryAndMovesOnlyTaskProjectOwnership() throws IOException {
+        String migration = resource("schema/postgres/042_task_board_ventures.sql");
+
+        assertTrue(migration.contains("CREATE TABLE IF NOT EXISTS task_board_venture"));
+        assertTrue(migration.contains("source_task_key VARCHAR(255) NOT NULL UNIQUE"));
+        assertTrue(migration.contains("owner_repos_json TEXT NOT NULL"));
+        assertTrue(migration.contains("live_urls_json TEXT NOT NULL DEFAULT '[]'"));
+        assertTrue(migration.contains("goal_family_ref VARCHAR(255)"));
+        assertTrue(migration.contains("UPDATE task_board_task\nSET project_key = 'tavall-engineering'"));
+        assertTrue(migration.contains("venture/tavall-web/venture-card"));
+        assertTrue(migration.contains("venture/tavall-open-harness/venture-card"));
+        assertTrue(migration.contains("refusing project deletion"));
+        assertTrue(migration.contains("DELETE FROM task_board_project"));
+        assertFalse(migration.contains("INSERT INTO task_board_task"));
+        assertFalse(migration.contains("SET status ="));
+        assertFalse(migration.contains("github/TavallStudios/tavall-content/issues/72"));
+
+        int deleteStart = migration.indexOf("DELETE FROM task_board_project");
+        String retiredProjects = migration.substring(deleteStart);
+        assertFalse(retiredProjects.contains("'project-novus'"));
+        assertFalse(retiredProjects.contains("'tavall-pvp'"));
+
+        int keysStart = migration.indexOf("WHERE external_key IN (") + "WHERE external_key IN (".length();
+        int keysEnd = migration.indexOf("\n);", keysStart);
+        Matcher keyMatcher = Pattern.compile("'([^']+)'").matcher(migration.substring(keysStart, keysEnd));
+        HashSet<String> taskKeys = new HashSet<>();
+        int taskKeyCount = 0;
+        while (keyMatcher.find()) {
+            taskKeyCount++;
+            taskKeys.add(keyMatcher.group(1));
+        }
+        assertEquals(165, taskKeyCount);
+        assertEquals(165, taskKeys.size());
     }
 
     private String resource(String path) throws IOException {

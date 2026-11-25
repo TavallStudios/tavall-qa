@@ -48,7 +48,9 @@ The QA presentation reads the review surface and candidate option maps from the 
 | Page test house style | `LOCAL_VALIDATED` | All ten test classes are `final`, same-package JUnit 5 and exercise real page subjects/domain values with no mocked subject or test-only constructor; the combined venture test was split into `QaVentureViewTest`, `QaVenturesPageTest` and `QaVenturePageTest`. |
 | Exact-head CI acceptance | `PARTIAL` | Focused head `20dc0d4` has verified REQUIRED_ALL PASS (gate `qahouse-20261115-20dc0d4`, request `a0fa5028-9394-42fc-ad6d-0c34c94548ca`). The composed runtime staging root `51e79b0` (PR #11/#12 merge) is being gated once at its exact head; no composed-head PASS is claimed until that result is verified. |
 | Staging composition | `CURRENT` | `.github/TAVALL_STAGING.md` now records PR #12 in the active composition with its exact merge/gate evidence. |
-| Production behavior / design | `UNCHANGED` | Only `src/test`, this document and the staging manifest are modified. |
+| Production behavior / design | `SOURCE_CANDIDATE` | The QA source has a typed venture page model and handler-backed `build(ITaskBoardVentureQueryHandler, ...)` factories for both venture pages; the shared Web controller still uses the legacy project-based adapter. Integration remains blocked by the repository-only scope of QA #38. |
+
+The QA source now provides a typed venture record for the existing page model, including owner repositories and the recorded blocker. The model can render this record independently of project summaries, and `QaVenturesPage`/`QaVenturePage` expose handler-backed factories that resolve the directory and its engineering tasks through `ITaskBoardVentureQueryHandler`. The shared Web controller still invokes the legacy project-based adapter. The Web repository is read-only for issue #38; route integration and browser acceptance therefore remain unverified.
 
 ## Progression Timeline
 
@@ -56,6 +58,8 @@ The QA presentation reads the review surface and candidate option maps from the 
 | --- | --- | --- | --- | --- |
 | 2026-11-15 | `LOCAL_VALIDATED` | Converted the remaining combined venture test into direct concrete-class tests and strengthened the two priority page tests with distinct real-behavior and failure-path methods. No production code changed. | Issue [tavall-web-qa#5](https://github.com/TavallStudios/tavall-web-qa/issues/5); `javac` compile of main + generated + test sources against pinned exact-source dependencies (Web `aa2f95a`, QA `1094b37`) followed by JUnit Platform launch: 30 tests found, 30 passed, 0 failed. | Exact-head `REQUIRED_ALL` gate and staging promotion remain pending. The Gradle `test` task could not finish locally because the shared composite `nodeSetup` task hung; the standalone exact-source compile/run above was used instead. |
 | 2026-11-15 3:48 AM PST | `INTEGRATED` | Focused PR #12 merged into runtime staging root at `51e79b0`; resumed audit confirmed all ten page/route/product test classes are `final`, same-package JUnit 5 with real subjects and no mocked collaborators, the venture split and priority-page failure paths are intact, and `QaPageAnimations.build()` behavior is asserted through its owning pages. Recording PR #12 in the staging manifest and gating the composed exact head once. | Gate `qahouse-20261115-20dc0d4` (request `a0fa5028-9394-42fc-ad6d-0c34c94548ca`) REQUIRED_ALL PASS on focused head `20dc0d4`; `java_gate.py status --sha 20dc0d4` = PASS; `java_gate.py status --sha 51e79b0` = NONE (composed gate not yet run). | Composed exact-head gate enqueued once; promotion of staging PR #11 to main remains contingent on that verified PASS. No code gap found. |
+| `2026-11-20 UTC` | `SOURCE_CANDIDATE` | Added a typed venture page-model factory with owner-repository tags, blocker display and task links back to `tavall-engineering`. Existing project-derived rendering retains its current tags and links for compatibility. | Issue #38; `:tavall-qa-web-frontend` burst module test, 32 tests passed, 0 failed; exact source based on QA staging head `48b9685`. | New route data is not wired by the shared Web controller; browser capture/deployed behavior is not verified and remains outside the QA-only scope. |
+| `2026-11-25 UTC` | `SOURCE_CANDIDATE` | Documentation-compliance follow-up: removed the unused `QaApiRoutes` namespace so `QaRoutes` is the single compile-time route owner, added handler-backed `QaVenturesPage`/`QaVenturePage` factories over `ITaskBoardVentureQueryHandler`, and replaced venture literals with typed `TaskBoardProjectKey.ENGINEERING`/`TaskBoardRepositoryIdentity`. | Issue #39; `:tavall-qa-api` 27 tests, `:tavall-qa-system` 65 tests, `:tavall-qa-web-frontend` 35 tests, all passed with 0 failures against exact-source Web `aa2f95a`. | The shared Web controller still serves the project-derived page until its own consumer change; browser acceptance remains unverified. |
 
 <details>
 <summary>Documentation Update State</summary>
@@ -64,8 +68,8 @@ The QA presentation reads the review surface and candidate option maps from the 
 
 | Surface | Sync State | Location | Last Updated | Evidence |
 | --- | --- | --- | --- | --- |
-| GitHub | `PRIMARY` | `TavallStudios/tavall-web-qa/docs/progression/modules/TAVALL_WEB_QA_PROGRESSION.md` | 2026-11-15 3:48 AM PST | qahouse-20261115 house-test conversion + staging-root integration audit |
-| Notion | `PENDING` | 1:1 twin of the GitHub module PROGRESSION | 2026-11-15 | Sync owner action remains after merge. |
+| GitHub | `PR_DRAFT` | `TavallStudios/tavall-qa/docs/progression/modules/TAVALL_QA_WEB_FRONTEND_PROGRESSION.md` | 2026-11-20 | [QA PR #39](https://github.com/TavallStudios/tavall-qa/pull/39), targeting staging root #34; route integration and browser acceptance pending. |
+| Notion | `PENDING` | 1:1 twin of the GitHub module PROGRESSION | 2026-11-15 | External twin not updated in this tavall-qa-repository-only scope. |
 
 ### Update History
 
@@ -73,5 +77,7 @@ The QA presentation reads the review surface and candidate option maps from the 
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-11-15 | GitHub | `UPDATED` | Same path | Same path | issue tavall-web-qa#5 | Added canonical Current Status / Progression Timeline tables and the required collapsed Documentation Update State footer for the house-test conversion. |
 | 2026-11-15 3:48 AM PST | GitHub | `UPDATED` | Same path | Same path | issue tavall-web-qa#5; staging root `51e79b0` | Recorded focused-head REQUIRED_ALL PASS, composed-head gate-pending state, and PR #12 in the active staging composition. |
+| 2026-11-20 | GitHub | `UPDATED_PENDING_NOTION_SYNC` | `docs/progression/modules/TAVALL_QA_WEB_FRONTEND_PROGRESSION.md` | Former `tavall-web-qa` owner path | [QA PR #39](https://github.com/TavallStudios/tavall-qa/pull/39); 32 frontend page tests | Recorded typed venture page-model support, engineering task links and the Web-owned route/capture blocker. |
+| 2026-11-25 | GitHub | `UPDATED_PENDING_NOTION_SYNC` | `docs/progression/modules/TAVALL_QA_WEB_FRONTEND_PROGRESSION.md` | Same path | Issue #39; 35 frontend page tests with exact-source Web `aa2f95a` | Recorded handler-backed venture page factories, removed dead `QaApiRoutes`, typed project/repository identity, and the unchanged Web-controller scope blocker. |
 
 </details>

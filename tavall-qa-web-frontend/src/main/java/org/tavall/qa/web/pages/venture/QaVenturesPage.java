@@ -1,5 +1,8 @@
 package org.tavall.qa.web.pages.venture;
 
+import org.tavall.qa.domain.TaskBoardStorageUnavailableException;
+import org.tavall.qa.domain.auth.QaSubjectContext;
+import org.tavall.qa.handler.ITaskBoardVentureQueryHandler;
 import org.tavall.qa.web.pages.shared.QaPageAnimations;
 import org.tavall.qa.web.pages.shared.QaProduct;
 import org.tavall.qa.web.routes.QaRoutes;
@@ -14,6 +17,7 @@ import org.tavall.web.frontend.generated.TavallForgeCSS;
 import org.tavall.web.frontend.html.HTML;
 
 import java.util.List;
+import java.util.Objects;
 
 /** Ventures index at {@code qa.tavall.org/ventures}: one card per venture the viewer may see. */
 public final class QaVenturesPage extends AbstractPage<QaVenturesPage> {
@@ -23,6 +27,23 @@ public final class QaVenturesPage extends AbstractPage<QaVenturesPage> {
                 .title("Ventures | Tavall QA")
                 .html(document(ventures, available))
                 .animations(QaPageAnimations.build());
+    }
+
+    /**
+     * Builds the index from the QA venture query contract, including each venture's matched
+     * engineering tasks, so the presentation never knows where venture records come from.
+     */
+    public static QaVenturesPage build(ITaskBoardVentureQueryHandler ventures, QaSubjectContext subject) {
+        Objects.requireNonNull(ventures, "ventures");
+        try {
+            List<QaVentureView> models = ventures.findVentures(subject).stream()
+                    .map(venture -> QaVentureView.fromVenture(
+                            venture, ventures.findVentureTasks(venture.slug(), subject)))
+                    .toList();
+            return build(models, true);
+        } catch (TaskBoardStorageUnavailableException unavailable) {
+            return build(List.of(), false);
+        }
     }
 
     static HTMLDocument document(List<QaVentureView> ventures, boolean available) {
@@ -42,9 +63,11 @@ public final class QaVenturesPage extends AbstractPage<QaVenturesPage> {
 
     private static HTMLElement card(QaVentureView venture) {
         String copy = venture.purpose().isBlank() ? "Purpose not recorded yet." : venture.purpose();
-        List<String> tags = venture.liveLinks().isEmpty() ? List.of("No live link yet") : List.of("Live");
+        List<String> tags = venture.ownerRepos().isEmpty()
+                ? (venture.liveLinks().isEmpty() ? List.of("No live link yet") : List.of("Live"))
+                : venture.ownerRepos().stream().limit(3).toList();
         return Forge.card(new ForgeCard("◆", venture.name(), stageLabel(venture.stage()), copy,
-                venture.progressPercent() + "%", tags,
+                venture.progressPercent() < 0 ? "" : venture.progressPercent() + "%", tags,
                 venture.openTaskCount() + " open " + (venture.openTaskCount() == 1 ? "task" : "tasks"),
                 "View venture", QaRoutes.venture(venture.key())));
     }

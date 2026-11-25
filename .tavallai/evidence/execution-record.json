@@ -1,21 +1,60 @@
 {
-  "provider": "antigravity-cli",
-  "scope": {
-    "repository": "TavallStudios/tavall-qa",
-    "path": ".",
-    "type": "REPOSITORY_ROOT"
+  "acceptance": {
+    "browserEvidence": "BLOCKED: no deployed candidate route exists to capture; no screenshot or PUBLISHED_VERIFIED receipt claimed",
+    "databaseDumpAndMigration": "NOT_RUN; no DEV/PROD apply before exact gate and verified backup",
+    "exactHeadJavaGate": "PENDING: full profile REQUIRED_ALL will run the exact compilation check; verify java_gate status after result.",
+    "httpRouteAndAccountBinding": "BLOCKED_BY_SCOPE: Web route owner is read-only and current /ventures controller still uses project projections",
+    "localChecks": [
+      {
+        "module": ":tavall-qa-system",
+        "reportPath": "tavall-qa-system/build/test-results/test",
+        "runner": "burst",
+        "status": "PASS",
+        "testsFailed": 0,
+        "testsRun": 64,
+        "tool": "tavall-module-test"
+      },
+      {
+        "module": ":tavall-qa-web-frontend",
+        "reportPath": "tavall-qa-web-frontend/build/test-results/test",
+        "runner": "burst",
+        "status": "PASS",
+        "testsFailed": 0,
+        "testsRun": 32,
+        "tool": "tavall-module-test"
+      },
+      {
+        "failure": "Gradle result finalization failed with No space left on device on burst /dev/sda1 (100% full, 140K free). No caches or repositories cleaned.",
+        "module": ":tavall-qa-test-suite",
+        "reportPath": "tavall-qa-test-suite/build/test-results/test",
+        "runner": "burst",
+        "status": "TESTS_PASS_RUNNER_INFRA_FAILURE",
+        "testsFailed": 0,
+        "testsRun": 32,
+        "testsSkipped": 19,
+        "tool": "tavall-module-test"
+      },
+      {
+        "failure": "Required isolated PostgreSQL fixture binaries unavailable at /usr/lib/postgresql/14/bin/initdb and pg_ctl; four test classes failed at initialization before test bodies.",
+        "reportPath": "tavall-qa-test-suite/build/test-results/executionCheckpointIntegrationTest",
+        "status": "BLOCKED_INFRASTRUCTURE",
+        "task": ":tavall-qa-test-suite:executionCheckpointIntegrationTest",
+        "tool": "burst-exec Gradle"
+      },
+      {
+        "failure": "javac quick classpath lacks the nested tavall-database module pin; exact Gradle module test compilation resolved the dependency.",
+        "status": "ADVISORY_ERRORS",
+        "tool": "java_gate quick"
+      },
+      {
+        "status": "PASS",
+        "tool": "git diff --check"
+      }
+    ],
+    "requiredAllMigrationGate": "PENDING",
+    "status": "IN_PROGRESS",
+    "testedWorktreeBase": "48b9685201d31640cf3049c6307145cfdf8694cb"
   },
-  "sourceHeads": {
-    "currentHead": "initial",
-    "targetBranch": "main"
-  },
-  "entrySequence": [
-    "tavall-agent-memory",
-    "tavall-agent-ledger",
-    "tavall-agent-provenance",
-    "tavall-docs-agent",
-    "tavall-orchestrator"
-  ],
   "agents": [
     "tavall-agent-memory",
     "tavall-agent-ledger",
@@ -23,95 +62,161 @@
     "tavall-docs-agent",
     "tavall-orchestrator",
     "tavall-agent-authoring",
-    "tavall-agent-module-boundaries",
     "tavall-agent-code-architecture",
-    "tavall-agent-data"
+    "tavall-agent-module-boundaries",
+    "tavall-agent-architecture-validation",
+    "tavall-agent-pr-workflow",
+    "tavall-agent-pr-readiness"
   ],
+  "documentReads": [
+    {
+      "receipt": "/srv/dev-storage/workspaces/tavall-qa/working/qaventures-20261120/.tavallai/evidence/canonical-sections-qaventures.json"
+    }
+  ],
+  "entrySequence": [
+    "tavall-agent-memory",
+    "tavall-agent-ledger",
+    "tavall-agent-provenance",
+    "tavall-docs-agent",
+    "tavall-orchestrator"
+  ],
+  "gitWork": true,
+  "javaVerification": [],
+  "ledgerRef": "/srv/dev-storage/workspaces/tavall-qa/working/qaventures-20261120/.tavallai/work/current.json",
+  "memory": {
+    "providers": {
+      "graphify": "UNAVAILABLE: graph.json missing",
+      "graphiti": "AVAILABLE: results unrelated to task #38"
+    },
+    "query": "For Tavall QA Task Board ventures endpoint and tavall-qa issue #38, identify current owners/modules/code/docs/tests/active PRs and temporal accepted requirements, rejected or superseded proposals, rationale, unresolved dependencies with dates and source refs.",
+    "receipt": "/srv/dev-storage/workspaces/tavall-qa/working/qaventures-20261120/.tavallai/evidence/memory-retrieval-qaventures.json",
+    "status": "USED"
+  },
+  "ownership": {
+    "concurrency": "No concurrent mutable gameplay state; read-only synchronous query, no new concurrency primitives",
+    "dependencies": "Existing tavall-database-postgres, tavall-di, Spring context; Jackson already used by API dependency. Maven mirror pin 8c106128dae3edada19c1362f9b971d36093a937c7b424bd08284357c244ef9c added identically to root and all four module CI manifests.",
+    "javaTools": "Tavall Database entity persistence for task_board_venture; Tavall DI/Spring composition uses existing TavallQaConfiguration boundary; handlers own read/filter behavior; no builder needed for simple immutable record; CLI/ICLIBootstrap not applicable because this is a same-JVM QA API with no CLI or subprocess",
+    "moduleType": "tavall-qa-api: API/LIBRARY; tavall-qa-system: SYSTEM/PROVIDER; tavall-qa-test-suite: TEST_SUITE; tavall-qa-web-frontend: FEATURE/PROVIDER",
+    "persistence": "Tavall Database mapped entity TaskBoardVentureEntity; schema/postgres/042_task_board_ventures.sql changes task_board_task.project_key only and guards project deletion; no JDBC, local EntityManagerFactory, or task upserts",
+    "runtimeOwner": "tavall-web-app; QA modules have no independent process"
+  },
+  "provider": "codex",
+  "providerAccount": "codex-tj",
+  "reviewEvidence": {
+    "reason": "The page model changes visual content, but the shared Web controller still supplies project-derived venture data. Web is read-only under issue #38, so no truthful deployed desktop/mobile capture of this candidate route can be produced in scope.",
+    "status": "BLOCKED"
+  },
+  "scope": {
+    "issue": "https://github.com/TavallStudios/tavall-qa/issues/38",
+    "path": ".",
+    "repository": "TavallStudios/tavall-qa",
+    "type": "REPOSITORY_ROOT"
+  },
+  "skillCandidateReview": {
+    "decision": "NONE",
+    "reason": "Existing Tavall code architecture, PR workflow, and testing owners cover this bounded API, persistence, and migration change; no new reusable procedure gap identified.",
+    "status": "REVIEWED"
+  },
   "skillReads": [
     {
       "path": "agents/tavall-agent-memory/skills/tavall-agent-memory/SKILL.md",
-      "sha256": "a90e1b13589f1e208995be353598a9fdb88541006fc4f5ac949a65378479b652"
+      "sha256": "e5a00646afe96230dc2b17ed806f4c5c1f902b7a398ebaa50e03359962d24164"
     },
     {
       "path": "agents/tavall-agent-ledger/skills/tavall-agent-ledger/SKILL.md",
-      "sha256": "21d353158bba6e41a1244e23d2f9ffb18ff29d4cd161601d2713091a96fa29e9"
+      "sha256": "416c7304a26f1cc853e340cbe47993aee1bfca2828711c521974eedaa090b1de"
     },
     {
-      "path": "agents/tavall-agent-provenance/skills/SKILL.md",
-      "sha256": "b23489e662c25b768b8f8d5b3e5d24b76274c4e60db0258f476256222c1693ce"
+      "path": "agents/tavall-agent-provenance/skills/tavall-agent-provenance/SKILL.md",
+      "sha256": "e704412f7f9009f375ac88e1027f28a21d91cd68c3fe7e5be270064094fb9644"
     },
     {
       "path": "agents/tavall-agent-provenance/skills/start/SKILL.md",
       "sha256": "712120aa7a73a1dac065ff5638ddc22ee1f317daf45390245ac5f60f008149e1"
     },
     {
+      "path": "agents/tavall-agent-provenance/skills/update/SKILL.md",
+      "sha256": "1998ef8bf3705536f69e37eed4d16508dd30384559696cf105747d116eb7dab5"
+    },
+    {
+      "path": "agents/tavall-agent-provenance/skills/finalize/SKILL.md",
+      "sha256": "a052d22177180da4829c08d56c885416f11502cd1f2792725467c1c1af50b41f"
+    },
+    {
+      "path": "agents/tavall-docs-agent/skills/tavall-docs-agent/SKILL.md",
+      "sha256": "03df094cd609bbc1a9d672203de57376e7a7fdd36445416573e886f16e9ab7b6"
+    },
+    {
       "path": "agents/tavall-orchestrator/skills/tavall-skill-orchestrator/SKILL.md",
-      "sha256": "35780a3323e05a3f43fe38c0ab59bfcf3f8426f82253eedfa0fb2762fc2513c0"
+      "sha256": "aa67a085f94f0b18aee3538f8ef253214b2c159223b3cd619a9f5c9bd3a77f5b"
+    },
+    {
+      "path": "agents/tavall-orchestrator/skills/tavall-agent-orchestration/SKILL.md",
+      "sha256": "3bd9e0525e7a8a5e8f261767255e44fc06eef66cbb06f3387ff05a73ea6b799e"
     },
     {
       "path": "agents/tavall-agent-authoring/skills/chat-skill-candidate-review/SKILL.md",
       "sha256": "1d1aa54a6866b82efe2dbdbe35c93c0c940dead53b82ab132af087068a2f58f4"
     },
     {
-      "path": "agents/tavall-agent-module-boundaries/skills/canonical-module-types/SKILL.md",
-      "sha256": "68d3da93258100462fc38adb63aab4c9484f23ba11875f5ca591fd07f1f5d94b"
+      "path": "agents/tavall-agent-code-architecture/skills/code-architecture/SKILL.md",
+      "sha256": "f2e6a2d834bda86fad28963ae0c273ed3c43c323e1352621274594f892ccd513"
     },
     {
       "path": "agents/tavall-agent-code-architecture/skills/dependency-injection/SKILL.md",
       "sha256": "e8fd08c1496162971fc371376599d2b2d94d7818f9283b27079f28c9860ae7fd"
     },
     {
-      "path": "agents/tavall-agent-code-architecture/skills/tavall-database-and-durable-persistence/SKILL.md",
-      "sha256": "b14d531a3cd5c5acbdce7a26d6582eb144689d57fb16b153dfc593647f08490f"
+      "path": "agents/tavall-agent-code-architecture/skills/builders-handlers-services-orchestrators-and-routers/SKILL.md",
+      "sha256": "d073a591c2ee693c23f322eb3e1b887c719d3dcbad68a7ede2e8ff451517e845"
     },
     {
       "path": "agents/tavall-agent-code-architecture/skills/typed-data-requests-results-keys-and-local-types/SKILL.md",
       "sha256": "29b3ae438fd8a46b80edb294507b263361fc02f4e22f4ee48651ece938fc1225"
     },
     {
-      "path": "agents/tavall-agent-data/skills/tavall-postgres/SKILL.md",
-      "sha256": "0668f332b5f44528ebd9086a00d72dd1588a01e1c01134a994f02aa1bdb55ce7"
-    }
-  ],
-  "documentReads": [
-    {
-      "receipt": "/srv/dev-storage/workspaces/tavall-qa/repo_root/.tavallai/evidence/canonical-module-types.json"
+      "path": "agents/tavall-agent-code-architecture/skills/tavall-database-and-durable-persistence/SKILL.md",
+      "sha256": "b14d531a3cd5c5acbdce7a26d6582eb144689d57fb16b153dfc593647f08490f"
     },
     {
-      "receipt": "/srv/dev-storage/workspaces/tavall-qa/repo_root/.tavallai/evidence/dependency-injection.json"
+      "path": "agents/tavall-agent-code-architecture/skills/cli-architecture/SKILL.md",
+      "sha256": "699bb05c0644147b123d17c20fa227149138fa435500291172cea60b980c2aac"
     },
     {
-      "receipt": "/srv/dev-storage/workspaces/tavall-qa/repo_root/.tavallai/evidence/typed-data.json"
+      "path": "agents/tavall-agent-module-boundaries/skills/canonical-module-types/SKILL.md",
+      "sha256": "68d3da93258100462fc38adb63aab4c9484f23ba11875f5ca591fd07f1f5d94b"
+    },
+    {
+      "path": "agents/tavall-agent-architecture-validation/skills/testing/SKILL.md",
+      "sha256": "47d97f17743f553ef14fd627f153efe8186314039f6dfcbac7792053774753fc"
+    },
+    {
+      "path": "agents/tavall-agent-pr-workflow/skills/tavall-agent-pr-workflow/SKILL.md",
+      "sha256": "442d0a4aa3c9509ad8f5cd44b660705e853a939845ec582d35bbafb79ca45f18"
+    },
+    {
+      "path": "agents/tavall-agent-pr-workflow/skills/git-workflow/SKILL.md",
+      "sha256": "a05aff07c5af3124f8faf562cd682a05e37b11cae260cbe76cb7c7bb0967a73f"
+    },
+    {
+      "path": "agents/tavall-agent-pr-workflow/skills/review-evidence-and-media-proof/SKILL.md",
+      "sha256": "5e453e16a7f0d624532246d57025116373587b7fc4da7ae4a9b4488cfe96ce4b"
+    },
+    {
+      "path": "agents/tavall-agent-pr-readiness/skills/before-requesting-review/SKILL.md",
+      "sha256": "922c6e829889019b402df76f8cd2e1fdae9b935400ef6657dd0a739862ea5db9"
+    },
+    {
+      "path": "agents/tavall-agent-pr-readiness/skills/github-review-readiness/SKILL.md",
+      "sha256": "5e0d658364c8d8e699de8ff56854f14be845db114ec9842991f574cbb4083ac1"
     }
   ],
-  "memory": {
-    "status": "USED",
-    "query": "QA Board Task Board issue 263 qa.tavall.org",
-    "receipt": "/srv/dev-storage/workspaces/tavall-qa/repo_root/.tavallai/evidence/memory-retrieval.json",
-    "providers": {
-      "graphify": "AVAILABLE",
-      "graphiti": "AVAILABLE",
-      "semantic": "AVAILABLE"
-    }
+  "sourceHeads": {
+    "baseBranch": "staging/platform-v2",
+    "baseHead": "48b9685201d31640cf3049c6307145cfdf8694cb",
+    "currentHead": "48b9685201d31640cf3049c6307145cfdf8694cb",
+    "workingTree": "dirty"
   },
-  "ownership": {
-    "moduleType": "tavall-qa-api (API/LIBRARY), tavall-qa-core (SYSTEM/PROVIDER), tavall-qa-test-suite (TEST_SUITE)",
-    "runtimeOwner": "tavall-qa owns backend task/progress/QA authority; consumed by tavall-web-app",
-    "javaTools": "Java 25, Gradle 9.6.1, Tavall Database (IPostgresDatabase entities API), Tavall DI (IDependencyMap)",
-    "concurrency": "Paper/server and controller thread safety preserved; domain mutations use atomic database transactions",
-    "persistence": "Authoritative mapped JPA entities (TaskBoardProjectEntity, TaskBoardTaskEntity, TaskBoardActionEntity, TaskBoardCommentEntity) and checked-in PostgreSQL migration 027_task_board.sql; no raw JDBC or competing stores",
-    "dependencies": "org.tavall:tavall-database-postgres:1.0.0, org.tavall:tavall-di:1.0.0, jakarta.persistence-api:3.1.0"
-  },
-  "ledgerRef": "/srv/dev-storage/workspaces/tavall-qa/repo_root/.tavallai/work/current.json",
-  "gitWork": false,
-  "skillCandidateReview": {
-    "status": "REVIEWED",
-    "decision": "NONE",
-    "reason": "Existing canonical skills for module-boundaries, tavall-postgres, and code-architecture fully govern this authority port; no reusable procedural gap identified."
-  },
-  "acceptance": {
-    "status": "PASS",
-    "tests": "22 tests passed across QueryHandler, MutationHandler, ActionTargetResolver, SchemaResource, and AuthTest",
-    "build": "Java 25 Gradle build successful with zero warnings/errors"
-  }
+  "threadId": "01a1f851-8c37-7393-b59f-1224f14637fe",
+  "workerId": "qaventures-20261120"
 }

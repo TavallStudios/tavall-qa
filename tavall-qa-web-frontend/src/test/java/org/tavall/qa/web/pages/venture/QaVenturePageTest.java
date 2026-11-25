@@ -1,10 +1,18 @@
 package org.tavall.qa.web.pages.venture;
 
 import org.junit.jupiter.api.Test;
+import org.tavall.qa.domain.TaskBoardAudience;
+import org.tavall.qa.domain.TaskBoardProjectKey;
 import org.tavall.qa.domain.TaskBoardProjectStatus;
 import org.tavall.qa.domain.TaskBoardQaStatus;
+import org.tavall.qa.domain.TaskBoardTask;
 import org.tavall.qa.domain.TaskBoardTaskPriority;
 import org.tavall.qa.domain.TaskBoardTaskStatus;
+import org.tavall.qa.domain.TaskBoardVenture;
+import org.tavall.qa.domain.auth.QaCapability;
+import org.tavall.qa.domain.auth.QaSubjectContext;
+import org.tavall.qa.domain.auth.QaSubjectStatus;
+import org.tavall.qa.handler.ITaskBoardVentureQueryHandler;
 import org.tavall.qa.view.TaskBoardPublicProjectSummaryView;
 import org.tavall.qa.view.TaskBoardPublicProjectView;
 import org.tavall.qa.view.TaskBoardPublicSectionView;
@@ -14,6 +22,8 @@ import org.tavall.web.frontend.render.HTMLRenderer;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -43,6 +53,22 @@ final class QaVenturePageTest {
     }
 
     @Test
+    void typedVenturePageShowsBlockerAndLinksTasksToEngineering() {
+        TaskBoardVenture record = new TaskBoardVenture(
+                "tavall-qa", "venture/tavall-qa/venture-card", "QA authority",
+                List.of("tavall-qa", "tavall-web-qa"), "LIVE", List.of(),
+                "Authenticated Web route adapter remains to be wired", null);
+        QaVentureView view = QaVentureView.fromVenture(record);
+
+        String html = renderer.render(QaVenturePage.build(view)).body();
+
+        assertTrue(html.contains("QA authority"));
+        assertTrue(html.contains("tavall-web-qa"));
+        assertTrue(html.contains("Authenticated Web route adapter remains to be wired"));
+        assertTrue(html.contains("href=\"/projects/tavall-engineering\""));
+    }
+
+    @Test
     void missingVentureDataIsSaidNotInvented() {
         String html = renderer.render(QaVenturePage.build(venture(List.of(), List.of()))).body();
 
@@ -68,6 +94,22 @@ final class QaVenturePageTest {
         assertFalse(html.contains("Ship deals page"));
     }
 
+    @Test
+    void handlerBackedBuildRendersResolvedVentureAndMatchedEngineeringTasks() {
+        UUID taskId = UUID.randomUUID();
+        TaskBoardVenture record = new TaskBoardVenture(
+                "tavall-qa", "venture/tavall-qa/venture-card", "QA authority",
+                List.of("tavall-qa"), "LIVE", List.of(), "Wiring", null);
+
+        String html = renderer.render(QaVenturePage.build(
+                new StubVentureQueryHandler(record, List.of(linkedTask(taskId))),
+                "tavall-qa", ventureManager())).body();
+
+        assertTrue(html.contains("QA authority"));
+        assertTrue(html.contains("Add venture query"));
+        assertTrue(html.contains("href=\"/projects/tavall-engineering/tasks/" + taskId + "\""));
+    }
+
     private static QaVentureView venture(List<ForgeLink> links, List<QaVentureView.Metric> metrics) {
         TaskBoardPublicProjectView project = new TaskBoardPublicProjectView(
                 new TaskBoardPublicProjectSummaryView("tavall-times", "Tavall Times",
@@ -85,5 +127,46 @@ final class QaVenturePageTest {
     private static TaskBoardPublicTaskView task(String title, TaskBoardTaskStatus status, TaskBoardTaskPriority priority) {
         return new TaskBoardPublicTaskView(UUID.randomUUID(), "tavall-times", "launch", title, "", status, priority,
                 TaskBoardQaStatus.NHV, 1, "github-issue", Instant.now(), List.of());
+    }
+
+    private static TaskBoardTask linkedTask(UUID taskId) {
+        Instant created = Instant.parse("2026-11-20T09:00:00Z");
+        return new TaskBoardTask(taskId, TaskBoardProjectKey.ENGINEERING.value(), "qa", "Add venture query",
+                "Add venture query", "", "", TaskBoardTaskStatus.ACTIVE, TaskBoardTaskPriority.HIGH,
+                TaskBoardQaStatus.NHV, TaskBoardAudience.ADMIN_ONLY, 1, false, "github-issue",
+                "https://github.com/TavallStudios/tavall-qa/issues/38", true, 1,
+                UUID.randomUUID(), null, null, null, null, null, 1, created, created);
+    }
+
+    private static QaSubjectContext ventureManager() {
+        return new QaSubjectContext(Optional.of(new UUID(0, 20)), QaSubjectStatus.ACTIVE,
+                Optional.empty(), Optional.of(new UUID(0, 30)), true, false,
+                Set.of(), Optional.empty(), Set.of(),
+                Set.of(QaCapability.MANAGE_PROJECTS), List.of(), false);
+    }
+
+    private static final class StubVentureQueryHandler implements ITaskBoardVentureQueryHandler {
+        private final TaskBoardVenture venture;
+        private final List<TaskBoardTask> tasks;
+
+        private StubVentureQueryHandler(TaskBoardVenture venture, List<TaskBoardTask> tasks) {
+            this.venture = venture;
+            this.tasks = List.copyOf(tasks);
+        }
+
+        @Override
+        public List<TaskBoardVenture> findVentures(QaSubjectContext subject) {
+            return List.of(venture);
+        }
+
+        @Override
+        public Optional<TaskBoardVenture> findVenture(String slug, QaSubjectContext subject) {
+            return venture.slug().equals(slug) ? Optional.of(venture) : Optional.empty();
+        }
+
+        @Override
+        public List<TaskBoardTask> findVentureTasks(String slug, QaSubjectContext subject) {
+            return tasks;
+        }
     }
 }

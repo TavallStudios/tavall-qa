@@ -9,6 +9,11 @@ build:
 resources:
   mode: SYSTEM
 dependencies:
+  - kind: artifact
+    identity: tavall-public-maven-mirror
+    role: MAVEN_MIRROR
+    selector: sha256
+    digest: 8c106128dae3edada19c1362f9b971d36093a937c7b424bd08284357c244ef9c
   - kind: source
     identity: TavallStudios/tavall-database
     role: SHARED_DEP
@@ -47,9 +52,9 @@ checks:
     executor: gradle
     tasks:
       - :tavall-qa-system:classes
-    networkMode: PUBLIC
+    networkMode: ISOLATED
   quality:
     executor: gradle
     tasks:
       - :tavall-qa-system:check
-    networkMode: PUBLIC
+    networkMode: ISOLATED

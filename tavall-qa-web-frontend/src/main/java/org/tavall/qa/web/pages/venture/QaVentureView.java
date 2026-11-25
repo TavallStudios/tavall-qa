@@ -1,6 +1,9 @@
 package org.tavall.qa.web.pages.venture;
 
+import org.tavall.qa.domain.TaskBoardProjectKey;
 import org.tavall.qa.domain.TaskBoardTaskStatus;
+import org.tavall.qa.domain.TaskBoardTask;
+import org.tavall.qa.domain.TaskBoardVenture;
 import org.tavall.qa.view.TaskBoardPublicProjectSummaryView;
 import org.tavall.qa.view.TaskBoardPublicProjectView;
 import org.tavall.qa.view.TaskBoardPublicTaskView;
@@ -20,6 +23,8 @@ public record QaVentureView(
         String key,
         String name,
         String purpose,
+        List<String> ownerRepos,
+        String topBlocker,
         String stage,
         List<ForgeLink> liveLinks,
         List<Metric> metrics,
@@ -33,6 +38,8 @@ public record QaVentureView(
         key = Objects.requireNonNull(key, "key").trim();
         name = Objects.requireNonNull(name, "name").trim();
         purpose = Objects.requireNonNullElse(purpose, "").trim();
+        ownerRepos = List.copyOf(ownerRepos);
+        topBlocker = Objects.requireNonNullElse(topBlocker, "").trim();
         stage = Objects.requireNonNullElse(stage, "").trim();
         liveLinks = List.copyOf(liveLinks);
         metrics = List.copyOf(metrics);
@@ -60,6 +67,35 @@ public record QaVentureView(
         return openTasks.size();
     }
 
+    public QaVentureView(String key, String name, String purpose, String stage,
+                         List<ForgeLink> liveLinks, List<Metric> metrics, int progressPercent,
+                         int taskCount, List<OpenTask> openTasks) {
+        this(key, name, purpose, List.of(), "", stage, liveLinks, metrics,
+                progressPercent, taskCount, openTasks);
+    }
+
+    public static QaVentureView fromVenture(TaskBoardVenture venture) {
+        return fromVenture(venture, List.of());
+    }
+
+    /** Venture tasks are filtered by owner repository and retain the main engineering project identity. */
+    public static QaVentureView fromVenture(TaskBoardVenture venture, List<TaskBoardTask> linkedTasks) {
+        List<ForgeLink> links = venture.liveUrls().stream()
+                .map(url -> new ForgeLink(url, url))
+                .toList();
+        String name = java.util.Arrays.stream(venture.slug().split("-"))
+                .map(part -> part.isEmpty() ? part : Character.toUpperCase(part.charAt(0)) + part.substring(1))
+                .collect(java.util.stream.Collectors.joining(" "));
+        List<OpenTask> open = linkedTasks.stream()
+                .filter(task -> !CLOSED.contains(task.status()))
+                .sorted(Comparator.comparing(TaskBoardTask::updatedAt).reversed())
+                .map(task -> new OpenTask(task.title(), task.status(),
+                        org.tavall.qa.web.routes.QaRoutes.task(TaskBoardProjectKey.ENGINEERING.value(), task.taskId())))
+                .toList();
+        return new QaVentureView(venture.slug(), name, venture.purpose(), venture.ownerRepos(),
+                venture.topBlocker(), venture.stage(), links, List.of(), -1, linkedTasks.size(), open);
+    }
+
     /**
      * A board project as a venture: its description is the purpose, its board status the stage, and its
      * not-done tasks the open work. Live links and metrics come only from recorded venture data.
@@ -75,6 +111,7 @@ public record QaVentureView(
                 .map(task -> new OpenTask(task.title(), task.status(), taskHref.apply(task)))
                 .toList();
         return new QaVentureView(summary.projectKey(), summary.displayName(), summary.description(),
-                summary.status().name(), liveLinks, metrics, summary.progressPercent(), summary.taskCount(), open);
+                List.of(), "", summary.status().name(), liveLinks, metrics,
+                summary.progressPercent(), summary.taskCount(), open);
     }
 }
