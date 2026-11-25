@@ -9,6 +9,9 @@ import org.tavall.dependency.annotations.CompositionBoundary;
 import org.tavall.qa.persistence.ITaskBoardDataHandler;
 import org.tavall.qa.persistence.TaskBoardDataHandler;
 import org.tavall.qa.persistence.UnavailableTaskBoardDataHandler;
+import org.tavall.qa.persistence.ITaskBoardVentureDataHandler;
+import org.tavall.qa.persistence.TaskBoardVentureDataHandler;
+import org.tavall.qa.persistence.UnavailableTaskBoardVentureDataHandler;
 import org.tavall.qa.persistence.ITaskBoardExternalReferenceDataHandler;
 import org.tavall.qa.persistence.TaskBoardExternalReferenceDataHandler;
 import org.tavall.qa.persistence.UnavailableTaskBoardExternalReferenceDataHandler;
@@ -36,6 +39,23 @@ public class TavallQaConfiguration {
             return new UnavailableTaskBoardDataHandler();
         }
         return new TaskBoardDataHandler(database);
+    }
+
+    @Bean
+    public ITaskBoardVentureDataHandler taskBoardVentureDataHandler() {
+        IPostgresDatabase database = dependencyMap.findInstance(IPostgresDatabase.class);
+        if (database == null || !database.isAvailable() || !database.entities().isOpen()) {
+            return new UnavailableTaskBoardVentureDataHandler();
+        }
+        return new TaskBoardVentureDataHandler(database);
+    }
+
+    @Bean
+    public org.tavall.qa.handler.ITaskBoardVentureQueryHandler taskBoardVentureQueryHandler(
+            @Lazy ITaskBoardVentureDataHandler ventures,
+            @Lazy ITaskBoardDataHandler tasks
+    ) {
+        return new org.tavall.qa.handler.TaskBoardVentureQueryHandler(ventures, tasks);
     }
 
     @Bean

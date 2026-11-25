@@ -1,0 +1,38 @@
+[
+  {
+    "key": "A",
+    "name": "Ledger",
+    "previewUrl": "https://dashboard.tavall.org/__preview/design-review?direction=a",
+    "rationale": "Editorial direction with ruled sections, hairlines and serif numerals.",
+    "optionParameters": {
+      "density": ["comfortable", "compact"],
+      "accent": ["neutral", "gold", "cyan"],
+      "radius": ["sharp", "soft"],
+      "state": ["loaded", "empty", "error"]
+    }
+  },
+  {
+    "key": "B",
+    "name": "Console",
+    "previewUrl": "https://dashboard.tavall.org/__preview/design-review?direction=b",
+    "rationale": "Operator-dense direction with monospaced figures, rails and zebra rows.",
+    "optionParameters": {
+      "density": ["comfortable", "compact"],
+      "accent": ["neutral", "gold", "cyan"],
+      "radius": ["sharp", "soft"],
+      "state": ["loaded", "empty", "error"]
+    }
+  },
+  {
+    "key": "C",
+    "name": "Studio",
+    "previewUrl": "https://dashboard.tavall.org/__preview/design-review?direction=c",
+    "rationale": "Roomier direction with soft raised cards and filled chips.",
+    "optionParameters": {
+      "density": ["comfortable", "compact"],
+      "accent": ["neutral", "gold", "cyan"],
+      "radius": ["sharp", "soft"],
+      "state": ["loaded", "empty", "error"]
+    }
+  }
+]

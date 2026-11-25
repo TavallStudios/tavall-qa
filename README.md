@@ -5,19 +5,21 @@ Authoritative backend task, progress, and QA verification plane for Tavall.
 ## Authority
 
 `tavall-qa` is the canonical **mapped-JPA Task Board and QA verification authority**. It owns:
-- Project lifecycle and audience definitions.
+- Task project lifecycle and audience definitions; ventures have a separate typed directory and are not task projects.
 - Task graph, section mapping, priority, weight, and status.
 - QA state (`NHV`, `REVIEW_REQUIRED`, `HUMAN_VERIFIED`), verifier identity, and timestamps.
 - Action targets, discussion/suggestion/QA-note threads.
 - Task-scoped QA assignments, evidence review, audit history, and VQC contributions.
 - PostgreSQL schema migrations (`schema/postgres/027_task_board.sql` and `028_task_board_qa_workflows.sql`).
 - Public and staff query projections.
+- Typed read-only venture-directory contract resolved through `ITaskBoardVentureQueryHandler`; callers must supply a QA subject with project-management authority. Venture task discovery matches owner repositories by typed `TaskBoardRepositoryIdentity` against tasks owned by `TaskBoardProjectKey.ENGINEERING`, and the QA presentation exposes handler-backed venture page factories. The shared Web runtime remains the HTTP route owner.
 
 ## Architecture
 
 - **`tavall-qa-api`**: Typed domain records, enums, request contracts, view projections, and handler interfaces. Primary type `API`; secondary role `LIBRARY`; runtime owner `tavall-web-app`.
 - **`tavall-qa-system`**: Mapped JPA entities, `IPostgresDatabase` integration, mutation/query handlers, action target resolver, and SQL migrations. Primary type `SYSTEM`; secondary role `PROVIDER`; runtime owner `tavall-web-app`.
 - **`tavall-qa-test-suite`**: Unit and integration coverage for queries, mutations, assignments, evidence, verification, invalidation, and authorization. Primary type `TEST_SUITE`; runtime owner `None`.
+- **`tavall-qa-web-frontend`**: Public and staff QA presentation module (Forge views, Task Board, Focus Workspace, and design review UI). Primary type `FEATURE`; secondary role `PROVIDER`; runtime owner `tavall-web-app`.
 
 ## Principles
 

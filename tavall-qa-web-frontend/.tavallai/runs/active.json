@@ -1,0 +1,33 @@
+{
+  "$schema": "https://tavall.org/schemas/tavallai/run-active/v1.json",
+  "activeRun": {
+    "agent": "tavall-orchestrator",
+    "agentMode": "ROLE",
+    "docs": {
+      "authority": "github.com/TavallStudios/tavall-docs",
+      "revision": "aea8af518cee8ffc7e0a2f8c98d88ee3825ae97e"
+    },
+    "git": {
+      "authority": "github.com/TavallStudios/tavall-qa",
+      "branch": "main",
+      "headCommit": "initial",
+      "pullRequest": null
+    },
+    "ledger": {
+      "agentId": "gemini-tavall-orchestrator",
+      "authority": "tavall-agent-ledger",
+      "taskId": "tb_task_board_recovery_issue_263",
+      "workerId": "wt_b09d32d6-9562-4535-be7c-84a4a29616bf"
+    },
+    "runId": "run-20261022-tavall-qa-authority-scaffold",
+    "scope": {
+      "path": ".",
+      "repository": "TavallStudios/tavall-qa",
+      "type": "REPOSITORY_ROOT"
+    },
+    "startedAt": "2026-10-22T03:40:00Z",
+    "status": "ACTIVE",
+    "threadId": "b09d32d6-9562-4535-be7c-84a4a29616bf",
+    "title": "Establish Tavall QA and Task Board authority repository"
+  }
+}
