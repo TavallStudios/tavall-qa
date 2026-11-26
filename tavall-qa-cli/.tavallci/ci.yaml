@@ -8,6 +8,12 @@ build:
   gradle: 9.6.1
 resources:
   mode: SYSTEM
+
+artifacts:
+  - name: tavall-qa-cli
+    path: build/libs/tavall-qa-cli-0.1.0-SNAPSHOT.jar
+    channel: SNAPSHOT
+
 requiredChecks:
   - compilation
   - unit-tests
@@ -27,6 +33,7 @@ checks:
     executor: gradle
     tasks:
       - :tavall-qa-cli:check
+      - :tavall-qa-cli:allJar
     networkMode: ISOLATED
 dependencies:
   - kind: artifact

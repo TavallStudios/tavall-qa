@@ -8,6 +8,8 @@ build:
   gradle: 9.6.1
 resources:
   mode: SYSTEM
+
+
 modules:
   - tavall-qa-api
   - tavall-qa-cli
@@ -39,6 +41,7 @@ checks:
     executor: gradle
     tasks:
       - check
+      - :tavall-qa-cli:allJar
     networkMode: ISOLATED
   integration:
     executor: gradle
