@@ -10,6 +10,7 @@ resources:
   mode: SYSTEM
 modules:
   - tavall-qa-api
+  - tavall-qa-cli
   - tavall-qa-system
   - tavall-qa-test-suite
   - tavall-qa-web-frontend
@@ -23,12 +24,14 @@ checks:
     executor: gradle
     tasks:
       - :tavall-qa-api:classes
+      - :tavall-qa-cli:classes
       - :tavall-qa-system:classes
       - :tavall-qa-web-frontend:classes
     networkMode: ISOLATED
   unit-tests:
     executor: gradle
     tasks:
+      - :tavall-qa-cli:test
       - :tavall-qa-test-suite:test
       - :tavall-qa-web-frontend:test
     networkMode: ISOLATED
@@ -80,3 +83,35 @@ dependencies:
     versionProperty: tavallWebVersion
     pluginProjectPath: :tavall-web-frontend-gradle
     substitutions: "org.tavall:tavall-web-api=:tavall-web-api,org.tavall:tavall-web-frontend=:tavall-web-frontend,org.tavall:tavall-web-frontend-codegen=:tavall-web-frontend-codegen"
+  - kind: source
+    identity: TavallStudios/tavall-cli
+    role: SHARED_DEP
+    selector: required-source
+    digest: 7cd8ac1ec367905b6d9dabf848e12e0fbe253755
+    substitutions: 'org.tavall:tavall-cli-api=:tavall-cli-api,org.tavall:tavall-cli=:'
+  - kind: source
+    identity: TavallStudios/tavall-di
+    role: SHARED_DEP
+    selector: required-source
+    digest: 86de4c75a6b09c5922ef60a2fb06111c5244fda8
+    sourceVersion: 1.0.0
+    versionProperty: tavallDiVersion
+    substitutions: 'org.tavall:tavall-di=:'
+  - kind: source
+    identity: TavallStudios/tavall-eventbus
+    role: SHARED_DEP
+    selector: required-source
+    digest: 5458524247f5e757153c986222c1415b5beedb33
+    substitutions: 'org.tavall:tavall-eventbus=:'
+  - kind: source
+    identity: TavallStudios/tavall-registry
+    role: SHARED_DEP
+    selector: required-source
+    digest: 9ff6c035769eae79947efd4cf78dec1af0a09e3f
+    substitutions: 'org.tavall:tavall-registry=:'
+  - kind: source
+    identity: TavallStudios/tavall-concurrency
+    role: SHARED_DEP
+    selector: required-source
+    digest: e5578a2ba6f5d2317400585569acc0c1f94c4444
+    substitutions: 'org.tavall:tavall-concurrency=:'

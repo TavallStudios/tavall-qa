@@ -80,6 +80,7 @@ rootProject.name = "tavall-qa"
 
 include(
     "tavall-qa-api",
+    "tavall-qa-cli",
     "tavall-qa-system",
     "tavall-qa-test-suite",
     "tavall-qa-web-frontend"
@@ -143,6 +144,29 @@ includeSourceComposite(
         "tavall-filesystem-api" to ":tavall-filesystem-api",
         "tavall-filesystem" to ":tavall-filesystem"
     )
+)
+includeSourceComposite(
+    "TAVALL_CLI_BUILD",
+    "tavall-cli-source",
+    mapOf(
+        "tavall-cli-api" to ":tavall-cli-api",
+        "tavall-cli" to ":"
+    )
+)
+includeSourceComposite(
+    "TAVALL_EVENTBUS_BUILD",
+    "tavall-eventbus-source",
+    mapOf("tavall-eventbus" to ":")
+)
+includeSourceComposite(
+    "TAVALL_REGISTRY_BUILD",
+    "tavall-registry-source",
+    mapOf("tavall-registry" to ":")
+)
+includeSourceComposite(
+    "TAVALL_CONCURRENCY_BUILD",
+    "tavall-concurrency-source",
+    mapOf("tavall-concurrency" to ":")
 )
 includeSourceComposite(
     "TAVALL_WEB_BUILD",
