@@ -93,7 +93,7 @@ dependencies:
     identity: TavallStudios/tavall-di
     role: SHARED_DEP
     selector: required-source
-    digest: 86de4c75a6b09c5922ef60a2fb06111c5244fda8
+    digest: d16c1de2c205f3c72fe63cd5a2765c3b1bf55368
     sourceVersion: 1.0.0
     versionProperty: tavallDiVersion
     substitutions: 'org.tavall:tavall-di=:'
