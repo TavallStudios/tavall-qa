@@ -1,11 +1,16 @@
 package org.tavall.qa.config;
 
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.tavall.database.postgres.IPostgresDatabase;
 import org.tavall.dependency.maps.interfaces.IDependencyMap;
 import org.tavall.dependency.annotations.CompositionBoundary;
+import org.tavall.qa.handler.TaskBoardExternalReferenceHandler;
+import org.tavall.qa.handler.TaskBoardExternalReferenceHandlerDependencyAccess;
+import org.tavall.qa.handler.TaskBoardMutationHandler;
+import org.tavall.qa.handler.TaskBoardMutationHandlerDependencyAccess;
 import org.tavall.qa.persistence.ITaskBoardDataHandler;
 import org.tavall.qa.persistence.TaskBoardDataHandler;
 import org.tavall.qa.persistence.UnavailableTaskBoardDataHandler;
@@ -20,25 +25,61 @@ import org.tavall.qa.persistence.TaskBoardExecutionCheckpointDataHandler;
 import org.tavall.qa.handler.ITaskBoardExecutionCheckpointHandler;
 import org.tavall.qa.handler.TaskBoardExecutionCheckpointHandler;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.time.Clock;
 
 @Configuration
 @CompositionBoundary("Binds Spring-owned QA capabilities into the existing process dependency map")
-public class TavallQaConfiguration {
+public class TavallQaConfiguration implements DisposableBean {
     private final IDependencyMap dependencyMap;
+    private final List<RegisteredDependency> registeredDependencies = new ArrayList<>();
+
+    private record RegisteredDependency(Class<?> token, Object instance) {
+    }
 
     public TavallQaConfiguration(IDependencyMap dependencyMap) {
         this.dependencyMap = Objects.requireNonNull(dependencyMap, "dependencyMap");
     }
 
+    /**
+     * Registers one Tavall-managed instance under the given token and remembers the registration so
+     * {@link #destroy()} can retire it in reverse order. Registrations displaced by a newer
+     * composition are skipped on teardown because they no longer own the token.
+     */
+    private <T> T registerOwned(Class<T> token, T instance) {
+        dependencyMap.registerInstance(token, instance);
+        synchronized (registeredDependencies) {
+            registeredDependencies.add(new RegisteredDependency(token, instance));
+        }
+        return instance;
+    }
+
+    @Override
+    public void destroy() {
+        List<RegisteredDependency> registrations;
+        synchronized (registeredDependencies) {
+            registrations = new ArrayList<>(registeredDependencies);
+            registeredDependencies.clear();
+        }
+        for (int index = registrations.size() - 1; index >= 0; index--) {
+            RegisteredDependency registration = registrations.get(index);
+            if (dependencyMap.findInstance(registration.token()) != registration.instance()) {
+                continue;
+            }
+            dependencyMap.removeDependency(registration.token());
+        }
+    }
+
     @Bean
     public ITaskBoardDataHandler taskBoardDataHandler() {
         IPostgresDatabase database = dependencyMap.findInstance(IPostgresDatabase.class);
-        if (database == null || !database.isAvailable() || !database.entities().isOpen()) {
-            return new UnavailableTaskBoardDataHandler();
-        }
-        return new TaskBoardDataHandler(database);
+        ITaskBoardDataHandler handler =
+                (database == null || !database.isAvailable() || !database.entities().isOpen())
+                        ? new UnavailableTaskBoardDataHandler()
+                        : new TaskBoardDataHandler(database);
+        return registerOwned(ITaskBoardDataHandler.class, handler);
     }
 
     @Bean
@@ -61,15 +102,12 @@ public class TavallQaConfiguration {
     @Bean
     public ITaskBoardExternalReferenceDataHandler taskBoardExternalReferenceDataHandler() {
         IPostgresDatabase database = dependencyMap.findInstance(IPostgresDatabase.class);
-        if (database == null || !database.isAvailable() || !database.entities().isOpen()) {
-            return new UnavailableTaskBoardExternalReferenceDataHandler();
-        }
-        Clock clock = dependencyMap.findInstance(Clock.class);
-        if (clock == null) {
-            clock = Clock.systemUTC();
-            dependencyMap.registerInstance(Clock.class, clock);
-        }
-        return new TaskBoardExternalReferenceDataHandler(database, clock);
+        Clock clock = registerClockIfAbsent();
+        ITaskBoardExternalReferenceDataHandler handler =
+                (database == null || !database.isAvailable() || !database.entities().isOpen())
+                        ? new UnavailableTaskBoardExternalReferenceDataHandler()
+                        : new TaskBoardExternalReferenceDataHandler(database, clock);
+        return registerOwned(ITaskBoardExternalReferenceDataHandler.class, handler);
     }
 
     @Bean
@@ -77,17 +115,17 @@ public class TavallQaConfiguration {
             @Lazy ITaskBoardExternalReferenceDataHandler externalReferences,
             @Lazy ITaskBoardDataHandler tasks
     ) {
-        Clock clock = dependencyMap.findInstance(Clock.class);
-        if (clock == null) {
-            clock = Clock.systemUTC();
-            dependencyMap.registerInstance(Clock.class, clock);
-        }
-        return new org.tavall.qa.handler.TaskBoardExternalReferenceHandler(externalReferences, tasks, clock);
+        registerClockIfAbsent();
+        registerOwned(TaskBoardExternalReferenceHandlerDependencyAccess.class,
+                new TaskBoardExternalReferenceHandlerDependencyAccess(dependencyMap));
+        return registerOwned(org.tavall.qa.handler.ITaskBoardExternalReferenceHandler.class,
+                new TaskBoardExternalReferenceHandler());
     }
 
     @Bean
     public org.tavall.qa.handler.ITaskBoardActionTargetResolver taskBoardActionTargetResolver() {
-        return new org.tavall.qa.handler.TaskBoardActionTargetResolver();
+        return registerOwned(org.tavall.qa.handler.ITaskBoardActionTargetResolver.class,
+                new org.tavall.qa.handler.TaskBoardActionTargetResolver());
     }
 
     @Bean
@@ -99,11 +137,20 @@ public class TavallQaConfiguration {
     }
 
     @Bean
-    public org.tavall.qa.handler.ITaskBoardMutationHandler taskBoardMutationHandler(
-            @Lazy ITaskBoardDataHandler dataHandler,
-            org.tavall.qa.handler.ITaskBoardActionTargetResolver resolver
-    ) {
-        return new org.tavall.qa.handler.TaskBoardMutationHandler(dataHandler, resolver);
+    public org.tavall.qa.handler.ITaskBoardMutationHandler taskBoardMutationHandler() {
+        registerOwned(TaskBoardMutationHandlerDependencyAccess.class,
+                new TaskBoardMutationHandlerDependencyAccess(dependencyMap));
+        return registerOwned(org.tavall.qa.handler.ITaskBoardMutationHandler.class,
+                new TaskBoardMutationHandler());
+    }
+
+    /** Registers the process Clock when no composition before this one already owns it. */
+    private Clock registerClockIfAbsent() {
+        Clock clock = dependencyMap.findInstance(Clock.class);
+        if (clock == null) {
+            clock = registerOwned(Clock.class, Clock.systemUTC());
+        }
+        return clock;
     }
 
     @Bean
@@ -118,14 +165,12 @@ public class TavallQaConfiguration {
         // Spring is the external composition boundary; consumers resolve these through typed Tavall DI.
         ITaskBoardDataHandler current = dependencyMap.findInstance(ITaskBoardDataHandler.class);
         if (current == null) {
-            dependencyMap.registerInstance(ITaskBoardDataHandler.class, tasks);
+            registerOwned(ITaskBoardDataHandler.class, tasks);
         } else if (current != tasks) {
             dependencyMap.replaceInstance(ITaskBoardDataHandler.class, () -> tasks);
         }
-        if (dependencyMap.findInstance(Clock.class) == null) {
-            dependencyMap.registerInstance(Clock.class, Clock.systemUTC());
-        }
-        return dependencyMap.registerInstance(ITaskBoardExecutionCheckpointHandler.class,
+        registerClockIfAbsent();
+        return registerOwned(ITaskBoardExecutionCheckpointHandler.class,
                 new TaskBoardExecutionCheckpointHandler());
     }
 
@@ -162,11 +207,7 @@ public class TavallQaConfiguration {
             @Lazy org.tavall.qa.handler.ITaskBoardMutationHandler mutationHandler,
             org.tavall.qa.domain.notion.INotionTaskMappingRegistry mappingRegistry
     ) {
-        java.time.Clock clock = dependencyMap.findInstance(java.time.Clock.class);
-        if (clock == null) {
-            clock = java.time.Clock.systemUTC();
-            dependencyMap.registerInstance(java.time.Clock.class, clock);
-        }
+        java.time.Clock clock = registerClockIfAbsent();
         return new org.tavall.qa.handler.TaskBoardNotionSyncHandler(syncDataHandler, dataHandler, mutationHandler, mappingRegistry, clock);
     }
 

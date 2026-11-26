@@ -18,6 +18,32 @@ Canonical in-process Task Board and QA authority implementation.
 - A duplicate `progress_task` database or `publicProgressTaskId` synchronization.
 - Cache, CMS, roadmap, and Discord subscribers before their owning contracts are verified.
 
+## Dependency Injection Ownership
+
+- `TavallQaConfiguration` is the only `@CompositionBoundary`. It owns Spring bean construction and
+  binds the QA-managed collaborators the handlers resolve through Tavall DI into the process
+  `IDependencyMap` (`ITaskBoardDataHandler`, `ITaskBoardExternalReferenceDataHandler`,
+  `ITaskBoardActionTargetResolver`, `Clock` when absent, the generated `TaskBoardMutationHandler-
+  /TaskBoardExternalReferenceHandlerDependencyAccess` access surfaces, and the
+  `ITaskBoardMutationHandler` / `ITaskBoardExternalReferenceHandler` /
+  `ITaskBoardExecutionCheckpointHandler` handlers themselves). It implements `DisposableBean` and
+  retires the registrations it created in reverse order on context shutdown; registrations already
+  displaced by a newer composition are left alone.
+- `TaskBoardMutationHandler`, `TaskBoardExternalReferenceHandler`, and
+  `TaskBoardExecutionCheckpointHandler` are Tavall DI-managed: they extend
+  `GenerationOwnedDependencyAccess`, declare their collaborators through typed `DependencyAccess<...>`
+  (lowered into the generated `*DependencyAccess` accessors at build time), and resolve them live on
+  every call, so a `replaceInstance(...)` generation swap is visible without reconstructing the
+  handler and a retired generation fails closed. They have no constructor-held Tavall-managed
+  collaborators and no `@Component` stereotype.
+- Remaining handlers (`TaskBoardQueryHandler`, `TaskBoardVentureQueryHandler`,
+  `TaskBoardAgentViewHandler`, `TaskBoardNotionSyncHandler`) are Spring-composed by the same
+  configuration boundary; migrating them to typed `DependencyAccess` is follow-up work, not a
+  licence for constructor-held collaborators in new code.
+- QA keeps canonical ownership of task/assignment/evidence/Human Verify policy and transactional
+  consistency (advisory-lock + optimistic `expectedUpdatedAt` version checks in the data handlers);
+  no extra module or generic service layer mediates between handlers and data handlers.
+
 ## Repository Structure
 
 ```text

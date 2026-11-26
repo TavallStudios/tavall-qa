@@ -1,6 +1,8 @@
 package org.tavall.qa.handler;
 
-import org.springframework.stereotype.Component;
+import org.tavall.dependency.DependencyAccess;
+import org.tavall.dependency.GenerationOwnedDependencyAccess;
+import org.tavall.dependency.annotations.DelegatesTo;
 import org.tavall.qa.domain.TaskBoardAction;
 import org.tavall.qa.domain.TaskBoardDesignReview;
 import org.tavall.qa.request.TaskBoardDesignReviewRegisterRequest;
@@ -53,8 +55,10 @@ import java.util.UUID;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
-@Component
-public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler {
+@DelegatesTo(ITaskBoardMutationHandler.class)
+public final class TaskBoardMutationHandler extends GenerationOwnedDependencyAccess
+        implements ITaskBoardMutationHandler,
+        DependencyAccess<ITaskBoardDataHandler, ITaskBoardActionTargetResolver> {
     private static final Pattern PROJECT_KEY = Pattern.compile("^[a-z0-9][a-z0-9-]{0,95}$");
     private static final Pattern SECTION_KEY = Pattern.compile("^[a-z0-9][a-z0-9-]{0,127}$");
     private static final Set<QaCapability> ASSIGNABLE_CAPABILITIES = Set.of(
@@ -66,15 +70,12 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
             QaCapability.TECHNICAL_DEV_EXECUTION
     );
 
-    private final ITaskBoardDataHandler dataHandler;
-    private final ITaskBoardActionTargetResolver actionTargetResolver;
+    private ITaskBoardDataHandler taskBoardDataHandler() {
+        return getInstance().taskBoardDataHandler();
+    }
 
-    public TaskBoardMutationHandler(
-            ITaskBoardDataHandler dataHandler,
-            ITaskBoardActionTargetResolver actionTargetResolver
-    ) {
-        this.dataHandler = Objects.requireNonNull(dataHandler, "dataHandler");
-        this.actionTargetResolver = Objects.requireNonNull(actionTargetResolver, "actionTargetResolver");
+    private ITaskBoardActionTargetResolver actionTargetResolver() {
+        return getInstance().taskBoardActionTargetResolver();
     }
 
     @Override
@@ -86,7 +87,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
         TaskBoardTask task = requireTask(request.taskId());
         require(task.status() != TaskBoardTaskStatus.DONE && task.status() != TaskBoardTaskStatus.CANCELLED,
                 "A completed or cancelled task cannot start a design review");
-        Optional<TaskBoardDesignReview> current = dataHandler.findDesignReview(task.taskId());
+        Optional<TaskBoardDesignReview> current = taskBoardDataHandler().findDesignReview(task.taskId());
         if (current.isPresent() && current.get().surface().equals(request.surface())
                 && current.get().candidates().equals(request.candidates())) return current.get();
         require(current.isEmpty() || !current.get().decided(), "A decided review cannot replace its candidates");
@@ -98,7 +99,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
         TaskBoardDesignReview review = TaskBoardDesignReview.register(task.taskId(), request.surface(), request.candidates(),
                 revision + 1, subject.accountId().orElseThrow(), now);
         TaskBoardTask reviewing = copyWithStatus(task, TaskBoardTaskStatus.REVIEW, now);
-        return dataHandler.saveDesignReview(review, revision, reviewing, task.updatedAt(), audit(subject,
+        return taskBoardDataHandler().saveDesignReview(review, revision, reviewing, task.updatedAt(), audit(subject,
                 Optional.of(task.taskId()), task.projectKey(), TaskBoardAuditEventType.TASK_UPDATED,
                 "Registered design candidates " + review.candidates().stream().map(candidate -> candidate.key()).toList(), now));
     }
@@ -110,9 +111,9 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
         require(subject.canSelectDesignReview(request.taskId()), "Design selection requires owner or assigned reviewer authority");
         requireAvailable();
         TaskBoardTask task = requireTask(request.taskId());
-        TaskBoardProject project = dataHandler.findProject(task.projectKey()).orElseThrow();
+        TaskBoardProject project = taskBoardDataHandler().findProject(task.projectKey()).orElseThrow();
         require(subject.canManageTask(task.taskId()) || subject.canViewTask(project, task), "Task is not visible to this reviewer");
-        TaskBoardDesignReview current = dataHandler.findDesignReview(task.taskId())
+        TaskBoardDesignReview current = taskBoardDataHandler().findDesignReview(task.taskId())
                 .orElseThrow(() -> new IllegalArgumentException("Task has no design review"));
         String key = Objects.requireNonNull(request.candidateKey(), "candidateKey").trim().toUpperCase(Locale.ROOT);
         String note = request.note() == null ? "" : request.note().trim();
@@ -129,7 +130,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
         }
         Instant now = Instant.now();
         TaskBoardDesignReview decided = current.select(key, subject.accountId().orElseThrow(), note, now);
-        return dataHandler.saveDesignReview(decided, current.revision(), copyWithStatus(task, TaskBoardTaskStatus.READY, now),
+        return taskBoardDataHandler().saveDesignReview(decided, current.revision(), copyWithStatus(task, TaskBoardTaskStatus.READY, now),
                 task.updatedAt(), audit(subject, Optional.of(task.taskId()), task.projectKey(),
                         TaskBoardAuditEventType.TASK_UPDATED, "Selected design candidate " + key + "; task ready to continue", now));
     }
@@ -142,7 +143,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
         requireAvailable();
 
         String projectKey = normalizeProjectKey(request.projectKey());
-        if (dataHandler.findProject(projectKey).isPresent()) {
+        if (taskBoardDataHandler().findProject(projectKey).isPresent()) {
             throw new IllegalArgumentException("Task Board project already exists: " + projectKey);
         }
         Instant now = Instant.now();
@@ -164,7 +165,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
                 "Created project " + projectKey,
                 now
         );
-        return dataHandler.saveProject(project, auditEntry);
+        return taskBoardDataHandler().saveProject(project, auditEntry);
     }
 
     @Override
@@ -176,7 +177,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
 
         String projectKey = normalizeProjectKey(request.projectKey());
         String sectionKey = normalizeSectionKey(request.sectionKey());
-        TaskBoardProject project = dataHandler.findProject(projectKey)
+        TaskBoardProject project = taskBoardDataHandler().findProject(projectKey)
                 .orElseThrow(() -> new IllegalArgumentException("Task Board project not found: " + projectKey));
         UUID taskId = UUID.randomUUID();
         Instant now = Instant.now();
@@ -215,7 +216,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
                 "Created task in section " + sectionKey + " with audience " + task.audience(),
                 now
         );
-        return dataHandler.saveTask(task, Optional.empty(), auditEntry);
+        return taskBoardDataHandler().saveTask(task, Optional.empty(), auditEntry);
     }
 
     @Override
@@ -228,7 +229,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
         TaskBoardTaskCreateRequest input = request.task();
         String projectKey = normalizeProjectKey(input.projectKey());
         String sectionKey = normalizeSectionKey(input.sectionKey());
-        dataHandler.findProject(projectKey)
+        taskBoardDataHandler().findProject(projectKey)
                 .orElseThrow(() -> new IllegalArgumentException("Task Board project not found: " + projectKey));
         String externalKey = request.externalKey();
         UUID taskId = request.existingTaskId() != null
@@ -243,7 +244,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
                 input.sortOrder(), now, now);
         TaskBoardAuditEntry auditEntry = audit(subject, Optional.of(taskId), projectKey,
                 TaskBoardAuditEventType.TASK_UPSERTED, "Upserted task from external key " + externalKey, now);
-        return dataHandler.upsertTask(externalKey, task, Optional.ofNullable(request.existingTaskId()), auditEntry);
+        return taskBoardDataHandler().upsertTask(externalKey, task, Optional.ofNullable(request.existingTaskId()), auditEntry);
     }
 
     @Override
@@ -354,7 +355,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
                         + (materialChange && current.humanVerified() ? "; prior Human Verify invalidated" : ""),
                 now
         );
-        return dataHandler.saveTask(updated, Optional.of(current.updatedAt()), auditEntry);
+        return taskBoardDataHandler().saveTask(updated, Optional.of(current.updatedAt()), auditEntry);
     }
 
     @Override
@@ -368,7 +369,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
         }
         require(subject.canHumanVerify(current.taskId(), request.environment()),
                 "Human Verify requires an active linked Minecraft identity, current QA authorization, and task assignment");
-        TaskBoardEvidence evidence = dataHandler.findEvidenceById(request.evidenceId())
+        TaskBoardEvidence evidence = taskBoardDataHandler().findEvidenceById(request.evidenceId())
                 .orElseThrow(() -> new IllegalArgumentException("QA evidence not found: " + request.evidenceId()));
         String currentFingerprint = TaskBoardTaskFingerprint.compute(current);
         if (!evidence.taskId().equals(current.taskId())
@@ -399,7 +400,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
                 "Human Verified using accepted evidence " + evidence.evidenceId(),
                 now
         );
-        return dataHandler.saveTask(verified, Optional.of(current.updatedAt()), auditEntry);
+        return taskBoardDataHandler().saveTask(verified, Optional.of(current.updatedAt()), auditEntry);
     }
 
     @Override
@@ -439,7 +440,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
                 "Task rejected: " + safeReason,
                 now
         );
-        return dataHandler.saveTask(rejected, Optional.of(current.updatedAt()), auditEntry);
+        return taskBoardDataHandler().saveTask(rejected, Optional.of(current.updatedAt()), auditEntry);
     }
 
     @Override
@@ -486,7 +487,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
                         + request.accountId(),
                 now
         );
-        return dataHandler.saveAssignment(assignment, auditEntry);
+        return taskBoardDataHandler().saveAssignment(assignment, auditEntry);
     }
 
     @Override
@@ -495,7 +496,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
         requireAccount(subject);
         require(subject.canAssignTask(), "Task assignment capability required");
         requireAvailable();
-        TaskBoardAssignment current = dataHandler.findAssignment(request.assignmentId())
+        TaskBoardAssignment current = taskBoardDataHandler().findAssignment(request.assignmentId())
                 .orElseThrow(() -> new IllegalArgumentException("Task assignment not found: " + request.assignmentId()));
         TaskBoardTask task = requireTask(current.taskId());
         Instant now = Instant.now();
@@ -508,7 +509,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
                 "Revoked assignment " + current.assignmentId() + ": " + requireText(request.reason(), "reason"),
                 now
         );
-        return dataHandler.saveAssignment(revoked, auditEntry);
+        return taskBoardDataHandler().saveAssignment(revoked, auditEntry);
     }
 
     @Override
@@ -551,7 +552,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
                 "Submitted evidence " + evidence.evidenceId() + " for " + request.environment(),
                 now
         );
-        return dataHandler.saveEvidence(evidence, auditEntry);
+        return taskBoardDataHandler().saveEvidence(evidence, auditEntry);
     }
 
     @Override
@@ -559,7 +560,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
         Objects.requireNonNull(request, "request");
         requireAccount(subject);
         requireAvailable();
-        TaskBoardEvidence current = dataHandler.findEvidenceById(request.evidenceId())
+        TaskBoardEvidence current = taskBoardDataHandler().findEvidenceById(request.evidenceId())
                 .orElseThrow(() -> new IllegalArgumentException("QA evidence not found: " + request.evidenceId()));
         TaskBoardTask task = requireTask(current.taskId());
         require(subject.canReviewEvidence(task.taskId(), request.environment()),
@@ -590,7 +591,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
                         + (request.reason().isBlank() ? "" : ": " + request.reason().trim()),
                 now
         );
-        return dataHandler.reviewEvidence(reviewed, auditEntry);
+        return taskBoardDataHandler().reviewEvidence(reviewed, auditEntry);
     }
 
     @Override
@@ -604,7 +605,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
         if (current.status() != TaskBoardTaskStatus.REVIEW && current.status() != TaskBoardTaskStatus.DONE) {
             throw new IllegalArgumentException("Only REVIEW or DONE tasks can be accepted");
         }
-        TaskBoardEvidence evidence = dataHandler.findEvidenceById(request.evidenceId())
+        TaskBoardEvidence evidence = taskBoardDataHandler().findEvidenceById(request.evidenceId())
                 .orElseThrow(() -> new IllegalArgumentException("QA evidence not found: " + request.evidenceId()));
         if (!evidence.taskId().equals(current.taskId())
                 || evidence.status() != TaskBoardEvidenceStatus.ACCEPTED
@@ -649,7 +650,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
                         now
                 ))
                 : Optional.empty();
-        return dataHandler.acceptTask(
+        return taskBoardDataHandler().acceptTask(
                 accepted,
                 Optional.of(current.updatedAt()),
                 evidence,
@@ -665,7 +666,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
         require(subject.canManageTask(request.taskId()), "Task management capability required");
         requireAvailable();
         TaskBoardTask task = requireTask(request.taskId());
-        String target = actionTargetResolver.normalizeTarget(
+        String target = actionTargetResolver().normalizeTarget(
                 Objects.requireNonNull(request.type(), "type"),
                 request.target()
         );
@@ -687,7 +688,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
                 "Added task action " + request.type() + ": " + request.label().trim(),
                 now
         );
-        return dataHandler.saveAction(action, auditEntry);
+        return taskBoardDataHandler().saveAction(action, auditEntry);
     }
 
     @Override
@@ -725,7 +726,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
                 "Added " + type + " thread entry",
                 now
         );
-        return dataHandler.saveComment(comment, auditEntry);
+        return taskBoardDataHandler().saveComment(comment, auditEntry);
     }
 
     private List<String> changedFields(
@@ -836,7 +837,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
 
     private TaskBoardTask requireTask(UUID taskId) {
         Objects.requireNonNull(taskId, "taskId");
-        return dataHandler.findTask(taskId)
+        return taskBoardDataHandler().findTask(taskId)
                 .orElseThrow(() -> new IllegalArgumentException("Task Board task not found: " + taskId));
     }
 
@@ -844,7 +845,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
         if (parentCommentId == null) {
             return;
         }
-        boolean belongsToTask = dataHandler.findComments(taskId).stream()
+        boolean belongsToTask = taskBoardDataHandler().findComments(taskId).stream()
                 .anyMatch(comment -> comment.commentId().equals(parentCommentId));
         if (!belongsToTask) {
             throw new IllegalArgumentException("Parent comment does not belong to this Task Board task");
@@ -894,7 +895,7 @@ public final class TaskBoardMutationHandler implements ITaskBoardMutationHandler
     }
 
     private void requireAvailable() {
-        if (!dataHandler.isAvailable()) {
+        if (!taskBoardDataHandler().isAvailable()) {
             throw new TaskBoardStorageUnavailableException("Task Board PostgreSQL storage is unavailable.");
         }
     }
