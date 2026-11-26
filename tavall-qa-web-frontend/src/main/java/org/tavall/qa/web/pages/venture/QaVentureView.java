@@ -90,7 +90,7 @@ public record QaVentureView(
                 .filter(task -> !CLOSED.contains(task.status()))
                 .sorted(Comparator.comparing(TaskBoardTask::updatedAt).reversed())
                 .map(task -> new OpenTask(task.title(), task.status(),
-                        org.tavall.qa.web.routes.QaRoutes.task(TaskBoardProjectKey.ENGINEERING.value(), task.taskId())))
+                        org.tavall.qa.web.routes.QaRoutes.qaTask(TaskBoardProjectKey.ENGINEERING.value(), task.taskId())))
                 .toList();
         return new QaVentureView(venture.slug(), name, venture.purpose(), venture.ownerRepos(),
                 venture.topBlocker(), venture.stage(), links, List.of(), -1, linkedTasks.size(), open);

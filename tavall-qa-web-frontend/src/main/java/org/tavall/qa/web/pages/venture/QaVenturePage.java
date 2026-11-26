@@ -21,12 +21,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/** One venture at {@code qa.tavall.org/ventures/{key}}: purpose, stage, live links, metrics and open tasks. */
+/** One venture at {@code ventures.tavall.org/ventures/{key}}: purpose, stage, live links, metrics and open tasks. */
 public final class QaVenturePage extends AbstractPage<QaVenturePage> {
 
     public static QaVenturePage build(QaVentureView venture) {
         return new QaVenturePage()
-                .title(venture.name() + " | Ventures | Tavall QA")
+                .title(venture.name() + " | Tavall Ventures")
                 .html(document(venture))
                 .animations(QaPageAnimations.build());
     }
@@ -98,7 +98,7 @@ public final class QaVenturePage extends AbstractPage<QaVenturePage> {
         String taskBoardLabel = venture.ownerRepos().isEmpty()
                 ? "Full project board"
                 : "Engineering task board";
-        return Forge.page(QaProduct.product(QaRoutes.VENTURES),
+        return Forge.page(QaProduct.venturesProduct(QaRoutes.VENTURES),
                 Forge.section("venture", "VENTURE", venture.name(), purpose,
                         new ForgeLink("All ventures", QaRoutes.VENTURES), facts),
                 Forge.section("venture-repos", "SYSTEMS", "Owner repositories", "", null, repositories),
@@ -107,6 +107,6 @@ public final class QaVenturePage extends AbstractPage<QaVenturePage> {
                         HTML.p().text(venture.topBlocker().isBlank() ? "No blocker recorded." : venture.topBlocker())),
                 Forge.section("venture-metrics", "METRICS", "Measured so far", "", null, metrics),
                 Forge.section("venture-tasks", "OPEN WORK", "Open tasks", "",
-                        new ForgeLink(taskBoardLabel, QaRoutes.project(taskBoardKey)), tasks));
+                        new ForgeLink(taskBoardLabel, QaRoutes.qaProject(taskBoardKey)), tasks));
     }
 }
