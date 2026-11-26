@@ -21,11 +21,13 @@ import org.tavall.qa.domain.external.TaskBoardExternalReferenceProvider;
 import org.tavall.qa.domain.external.TaskBoardExternalReferenceSourceStatus;
 import org.tavall.qa.handler.ITaskBoardExternalReferenceHandler;
 import org.tavall.qa.persistence.ITaskBoardDataHandler;
+import org.tavall.qa.persistence.ITaskBoardExternalReferenceDataHandler;
 import org.tavall.qa.request.TaskBoardProjectCreateRequest;
 import org.tavall.qa.request.TaskBoardTaskCreateRequest;
 import org.tavall.qa.request.external.TaskBoardExternalReferenceConflictResolutionRequest;
 import org.tavall.qa.request.external.TaskBoardExternalReferenceMutationRequest;
 
+import java.lang.reflect.Proxy;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.time.Clock;
@@ -33,12 +35,16 @@ import java.time.Instant;
 import java.util.HexFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Owner-side reference acceptance through mapped JPA and the isolated native PostgreSQL fixture. */
@@ -198,6 +204,54 @@ class TaskBoardExternalReferencePostgresIntegrationTest {
         assertTrue(result.reference().isEmpty());
         assertEquals(1, references.findReferencesForTask(subjects, task.taskId()).size());
         assertEquals(1, references.findOpenConflicts(subjects, java.util.Optional.of(task.taskId())).size());
+    }
+
+    @Test
+    void dependencyMapSwapVisibilityWithoutReconstructingExternalReferenceHandler() {
+        var subjects = TaskBoardTestSubjects.manager(UUID.randomUUID(), UUID.randomUUID());
+        TaskBoardPostgresComposition composition = composition();
+        var dependencies = composition.dependencies();
+        ITaskBoardMutationHandler mutations = composition.bean(ITaskBoardMutationHandler.class);
+        ITaskBoardExternalReferenceHandler references = composition.bean(ITaskBoardExternalReferenceHandler.class);
+        TaskBoardTask task = createTask(mutations, subjects, "Swap visibility external reference");
+        var initial = observation(task.taskId(), TaskBoardExternalReferenceProvider.GITHUB_ISSUE,
+                "24005", "88005", "acme/board#46", "https://github.com/acme/board/issues/46",
+                TaskBoardExternalReferenceSourceStatus.OPEN, "gh-node-1", "cursor-1", "issue-46", 0);
+        var created = references.registerOrReconcile(subjects, initial);
+        assertEquals(TaskBoardExternalReferenceMutationOutcome.CREATED, created.outcome());
+
+        // The composition boundary registered the handler and its generated access; a swapped
+        // external-reference generation must be visible to the same live handler instance.
+        assertSame(references, dependencies.findInstance(ITaskBoardExternalReferenceHandler.class));
+        assertSame(references, composition.bean(TaskBoardExternalReferenceHandler.class));
+        assertNotNull(dependencies.findInstance(TaskBoardExternalReferenceHandlerDependencyAccess.class));
+        dependencies.replaceInstance(ITaskBoardExternalReferenceDataHandler.class,
+                () -> (ITaskBoardExternalReferenceDataHandler) Proxy.newProxyInstance(
+                        ITaskBoardExternalReferenceDataHandler.class.getClassLoader(),
+                        new Class<?>[]{ITaskBoardExternalReferenceDataHandler.class},
+                        (proxy, method, args) -> switch (method.getName()) {
+                            case "isAvailable" -> true;
+                            case "findReference", "findConflict" -> Optional.empty();
+                            case "findReferencesForTask", "findOpenConflicts" -> List.of();
+                            case "toString" -> "qa25-swapped-external-reference-generation";
+                            case "hashCode" -> System.identityHashCode(proxy);
+                            case "equals" -> proxy == args[0];
+                            default -> null;
+                        }));
+        assertSame(references, composition.bean(ITaskBoardExternalReferenceHandler.class),
+                "Generation replacement must not reconstruct the handler");
+        var swappedConflict = new TaskBoardExternalReferenceConflictResolutionRequest(UUID.randomUUID(),
+                TaskBoardExternalReferenceConflictResolution.KEEP_CURRENT, 0, "Swapped generation has no conflicts");
+        assertThrows(IllegalArgumentException.class, () -> references.resolveConflict(subjects, swappedConflict));
+        assertTrue(references.findReference(subjects, initial.key()).isEmpty());
+
+        // Swapping the real generation back restores reconciliation and exact replay on the same instance.
+        dependencies.replaceInstance(ITaskBoardExternalReferenceDataHandler.class,
+                () -> composition.bean(ITaskBoardExternalReferenceDataHandler.class));
+        var replay = references.registerOrReconcile(subjects, initial);
+        assertEquals(TaskBoardExternalReferenceMutationOutcome.REPLAYED, replay.outcome());
+        assertEquals(created.reference().orElseThrow().referenceId(), replay.reference().orElseThrow().referenceId());
+        assertEquals(1, references.findReferencesForTask(subjects, task.taskId()).size());
     }
 
     private static TaskBoardExternalReferenceMutationResult submit(

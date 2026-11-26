@@ -1,5 +1,7 @@
 package org.tavall.qa.handler;
 
+import org.tavall.dependency.DependencyAccess;
+import org.tavall.dependency.GenerationOwnedDependencyAccess;
 import org.tavall.dependency.annotations.DelegatesTo;
 import org.tavall.qa.domain.TaskBoardAuditEntry;
 import org.tavall.qa.domain.TaskBoardAuditEventType;
@@ -24,19 +26,20 @@ import java.util.UUID;
 
 /** Privileged QA owner boundary for external identities and conflict review. */
 @DelegatesTo(ITaskBoardExternalReferenceHandler.class)
-public final class TaskBoardExternalReferenceHandler implements ITaskBoardExternalReferenceHandler {
-    private final ITaskBoardExternalReferenceDataHandler externalReferences;
-    private final ITaskBoardDataHandler tasks;
-    private final Clock clock;
+public final class TaskBoardExternalReferenceHandler extends GenerationOwnedDependencyAccess
+        implements ITaskBoardExternalReferenceHandler,
+        DependencyAccess<ITaskBoardExternalReferenceDataHandler, ITaskBoardDataHandler, Clock> {
 
-    public TaskBoardExternalReferenceHandler(
-            ITaskBoardExternalReferenceDataHandler externalReferences,
-            ITaskBoardDataHandler tasks,
-            Clock clock
-    ) {
-        this.externalReferences = Objects.requireNonNull(externalReferences, "externalReferences");
-        this.tasks = Objects.requireNonNull(tasks, "tasks");
-        this.clock = Objects.requireNonNull(clock, "clock");
+    private ITaskBoardExternalReferenceDataHandler externalReferences() {
+        return getInstance().taskBoardExternalReferenceDataHandler();
+    }
+
+    private ITaskBoardDataHandler taskBoardDataHandler() {
+        return getInstance().taskBoardDataHandler();
+    }
+
+    private Clock clock() {
+        return getInstance().clock();
     }
 
     @Override
@@ -50,7 +53,7 @@ public final class TaskBoardExternalReferenceHandler implements ITaskBoardExtern
         TaskBoardTask task = requireTask(request.taskId());
         TaskBoardAuditEntry audit = audit(subject, task, TaskBoardAuditEventType.EXTERNAL_REFERENCE_UPSERTED,
                 "Reconcile external reference " + request.key().stableKey());
-        return externalReferences.registerOrReconcile(request, audit);
+        return externalReferences().registerOrReconcile(request, audit);
     }
 
     @Override
@@ -58,7 +61,7 @@ public final class TaskBoardExternalReferenceHandler implements ITaskBoardExtern
         Objects.requireNonNull(key, "key");
         requireOwner(subject);
         requireAvailable();
-        return externalReferences.findReference(key);
+        return externalReferences().findReference(key);
     }
 
     @Override
@@ -67,7 +70,7 @@ public final class TaskBoardExternalReferenceHandler implements ITaskBoardExtern
         requireOwner(subject);
         requireAvailable();
         requireTask(taskId);
-        return externalReferences.findReferencesForTask(taskId);
+        return externalReferences().findReferencesForTask(taskId);
     }
 
     @Override
@@ -76,7 +79,7 @@ public final class TaskBoardExternalReferenceHandler implements ITaskBoardExtern
         requireOwner(subject);
         requireAvailable();
         taskId.ifPresent(this::requireTask);
-        return externalReferences.findOpenConflicts(taskId);
+        return externalReferences().findOpenConflicts(taskId);
     }
 
     @Override
@@ -87,23 +90,24 @@ public final class TaskBoardExternalReferenceHandler implements ITaskBoardExtern
         Objects.requireNonNull(request, "request");
         requireOwner(subject);
         requireAvailable();
-        TaskBoardExternalReferenceConflict conflict = externalReferences.findConflict(request.conflictId())
+        TaskBoardExternalReferenceConflict conflict = externalReferences().findConflict(request.conflictId())
                 .orElseThrow(() -> new IllegalArgumentException("External reference conflict not found: " + request.conflictId()));
         TaskBoardTask task = requireTask(conflict.requestedTaskId());
         TaskBoardAuditEntry audit = audit(subject, task, TaskBoardAuditEventType.EXTERNAL_REFERENCE_RESOLVED,
                 "Resolve external reference conflict " + conflict.conflictId());
-        return externalReferences.resolveConflict(request, subject.accountId().orElseThrow(), audit);
+        return externalReferences().resolveConflict(request, subject.accountId().orElseThrow(), audit);
     }
 
     private TaskBoardTask requireTask(UUID taskId) {
-        return tasks.findTask(taskId).orElseThrow(() -> new IllegalArgumentException("Task Board task not found: " + taskId));
+        return taskBoardDataHandler().findTask(taskId)
+                .orElseThrow(() -> new IllegalArgumentException("Task Board task not found: " + taskId));
     }
 
     private TaskBoardAuditEntry audit(QaSubjectContext subject, TaskBoardTask task,
             TaskBoardAuditEventType type, String summary) {
         return new TaskBoardAuditEntry(UUID.randomUUID(), Optional.of(task.taskId()), task.projectKey(),
                 Optional.of(subject.accountId().orElseThrow()), subject.linkedMinecraftUuid().orElse(null),
-                type, summary, clock.instant());
+                type, summary, clock().instant());
     }
 
     private void requireOwner(QaSubjectContext subject) {
@@ -117,7 +121,7 @@ public final class TaskBoardExternalReferenceHandler implements ITaskBoardExtern
     }
 
     private void requireAvailable() {
-        if (!externalReferences.isAvailable() || !tasks.isAvailable()) {
+        if (!externalReferences().isAvailable() || !taskBoardDataHandler().isAvailable()) {
             throw new TaskBoardStorageUnavailableException("QA Task Board storage is unavailable");
         }
     }

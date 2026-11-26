@@ -46,4 +46,25 @@ final class TavallQaConfigurationTest {
             }
         }
     }
+
+    @Test
+    void unavailableDatabaseRegistersFailClosedHandlersForMutationAndExternalReferences() {
+        Clock clock = Clock.fixed(Instant.parse("2026-10-26T00:00:00Z"), ZoneOffset.UTC);
+        try (var composition = TaskBoardTestComposition.openWithoutTaskDatabase(
+                tempDir.resolve("no-db"), clock)) {
+            var mutationHandler = composition.bean(org.tavall.qa.handler.ITaskBoardMutationHandler.class);
+            var externalRefHandler = composition.bean(org.tavall.qa.handler.ITaskBoardExternalReferenceHandler.class);
+            var actor = TaskBoardTestSubjects.active(UUID.randomUUID(), UUID.randomUUID(),
+                    Set.of(), Optional.empty(), Set.of(QaEnvironmentGrant.DEV),
+                    Set.of(org.tavall.qa.domain.auth.QaCapability.MANAGE_PROJECTS), List.of(), true, true);
+            assertThrows(org.tavall.qa.domain.TaskBoardStorageUnavailableException.class,
+                    () -> mutationHandler.createProject(actor,
+                            new org.tavall.qa.request.TaskBoardProjectCreateRequest(
+                                    "qa-unavailable", "QA Unavailable", "desc",
+                                    org.tavall.qa.domain.TaskBoardProjectStatus.ACTIVE,
+                                    org.tavall.qa.domain.TaskBoardAudience.PUBLIC, 1)));
+            assertThrows(org.tavall.qa.domain.TaskBoardStorageUnavailableException.class,
+                    () -> externalRefHandler.findOpenConflicts(actor, Optional.empty()));
+        }
+    }
 }
