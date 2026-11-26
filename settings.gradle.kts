@@ -169,6 +169,16 @@ includeSourceComposite(
     mapOf("tavall-concurrency" to ":")
 )
 includeSourceComposite(
+    "TAVALL_CACHE_BUILD",
+    "tavall-cache-source",
+    mapOf("abstract-cache-system" to ":abstract-cache-system")
+)
+includeSourceComposite(
+    "TAVALL_REFLECTION_BUILD",
+    "tavall-reflection-source",
+    mapOf("tavall-reflection" to ":")
+)
+includeSourceComposite(
     "TAVALL_WEB_BUILD",
     "tavall-web-source",
     mapOf(
