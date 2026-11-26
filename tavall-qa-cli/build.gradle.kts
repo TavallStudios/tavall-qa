@@ -76,6 +76,13 @@ val mergeAllJarServices = tasks.register("mergeAllJarServices") {
                             )
                         }
                 }
+            } else if (file.isDirectory) {
+                val servicesDir = File(file, "META-INF/services")
+                if (servicesDir.isDirectory) {
+                    servicesDir.walkTopDown().filter { it.isFile }.forEach {
+                        collect(it.name, it.readText())
+                    }
+                }
             }
         }
         serviceProviders.forEach { (serviceName, providerLines) ->

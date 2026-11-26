@@ -32,7 +32,7 @@ checks:
   quality:
     executor: gradle
     tasks:
-      - check
+      - :tavall-qa-cli:check
       - :tavall-qa-cli:allJar
     networkMode: ISOLATED
 dependencies:
