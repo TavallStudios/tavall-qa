@@ -19,12 +19,12 @@ import org.tavall.web.frontend.html.HTML;
 import java.util.List;
 import java.util.Objects;
 
-/** Ventures index at {@code qa.tavall.org/ventures}: one card per venture the viewer may see. */
+/** Ventures index at {@code ventures.tavall.org/ventures}: one card per venture the viewer may see. */
 public final class QaVenturesPage extends AbstractPage<QaVenturesPage> {
 
     public static QaVenturesPage build(List<QaVentureView> ventures, boolean available) {
         return new QaVenturesPage()
-                .title("Ventures | Tavall QA")
+                .title("Tavall Ventures")
                 .html(document(ventures, available))
                 .animations(QaPageAnimations.build());
     }
@@ -55,10 +55,10 @@ public final class QaVenturesPage extends AbstractPage<QaVenturesPage> {
         } else {
             body = Forge.cardGrid(3, ventures.stream().map(QaVenturesPage::card).toList());
         }
-        return Forge.page(QaProduct.product(QaRoutes.VENTURES),
+        return Forge.page(QaProduct.venturesProduct(QaRoutes.VENTURES),
                 Forge.section("ventures", "TAVALL PORTFOLIO", "Ventures",
                         "Every Tavall venture: what it is for, where it stands and the work still open.",
-                        new ForgeLink("All projects", QaRoutes.ROOT), body));
+                        new ForgeLink("All projects", QaRoutes.QA), body));
     }
 
     private static HTMLElement card(QaVentureView venture) {

@@ -20,6 +20,27 @@ final class QaRoutesTest {
         assertEquals("/projects/{projectKey}/tasks/{taskId}", QaRoutes.TASK);
         assertEquals("/workspace/{projectKey}", QaRoutes.WORKSPACE);
         assertEquals("/messages/{key}", QaRoutes.MESSAGES);
+        assertEquals("/ventures", QaRoutes.VENTURES);
+        assertEquals("/ventures/{ventureKey}", QaRoutes.VENTURE);
+    }
+
+    @Test
+    void externalHostsAreStable() {
+        assertEquals("https://qa.tavall.org/", QaRoutes.QA);
+        assertEquals("https://ventures.tavall.org/", QaRoutes.VENTURES_SITE);
+        assertEquals("https://tavall.org/", QaRoutes.COMPANY);
+        assertEquals("https://dashboard.tavall.org/", QaRoutes.DASHBOARD);
+        assertEquals("https://mc.tavall.org/", QaRoutes.MC);
+        assertEquals("https://docs.tavall.org/", QaRoutes.DOCS);
+    }
+
+    @Test
+    void crossHostBuildersLinkFromVenturesBackToTheQaHost() {
+        UUID id = UUID.fromString("11111111-1111-1111-1111-111111111111");
+        assertEquals("https://qa.tavall.org/projects/tavall-pvp", QaRoutes.qaProject("tavall-pvp"));
+        assertEquals("https://qa.tavall.org/projects/tavall-pvp", QaRoutes.qaProject("  tavall-pvp  "));
+        assertEquals("https://qa.tavall.org/projects/tavall-pvp/tasks/" + id,
+                QaRoutes.qaTask("tavall-pvp", id));
     }
 
     @Test
@@ -46,5 +67,7 @@ final class QaRoutesTest {
     void nullKeyRejected() {
         assertThrows(NullPointerException.class, () -> QaRoutes.project(null));
         assertThrows(NullPointerException.class, () -> QaRoutes.legacyTask(null, UUID.randomUUID()));
+        assertThrows(NullPointerException.class, () -> QaRoutes.qaProject(null));
+        assertThrows(NullPointerException.class, () -> QaRoutes.qaTask(null, UUID.randomUUID()));
     }
 }

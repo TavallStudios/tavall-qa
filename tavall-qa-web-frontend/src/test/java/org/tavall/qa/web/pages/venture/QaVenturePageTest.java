@@ -49,7 +49,7 @@ final class QaVenturePageTest {
         assertTrue(html.contains("1,200"));
         assertTrue(html.contains("Ship deals page"));
         assertFalse(html.contains("Old done task"));
-        assertTrue(html.contains("href=\"/projects/tavall-times\""));
+        assertTrue(html.contains("href=\"https://qa.tavall.org/projects/tavall-times\""));
     }
 
     @Test
@@ -65,7 +65,7 @@ final class QaVenturePageTest {
         assertTrue(html.contains("QA authority"));
         assertTrue(html.contains("tavall-web-qa"));
         assertTrue(html.contains("Authenticated Web route adapter remains to be wired"));
-        assertTrue(html.contains("href=\"/projects/tavall-engineering\""));
+        assertTrue(html.contains("href=\"https://qa.tavall.org/projects/tavall-engineering\""));
     }
 
     @Test
@@ -107,7 +107,7 @@ final class QaVenturePageTest {
 
         assertTrue(html.contains("QA authority"));
         assertTrue(html.contains("Add venture query"));
-        assertTrue(html.contains("href=\"/projects/tavall-engineering/tasks/" + taskId + "\""));
+        assertTrue(html.contains("href=\"https://qa.tavall.org/projects/tavall-engineering/tasks/" + taskId + "\""));
     }
 
     private static QaVentureView venture(List<ForgeLink> links, List<QaVentureView.Metric> metrics) {

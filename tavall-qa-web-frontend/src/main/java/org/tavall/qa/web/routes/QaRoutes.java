@@ -50,6 +50,8 @@ public final class QaRoutes {
     public static final String DASHBOARD = "https://dashboard.tavall.org/";
     public static final String MC = "https://mc.tavall.org/";
     public static final String DOCS = "https://docs.tavall.org/";
+    public static final String QA = "https://qa.tavall.org/";
+    public static final String VENTURES_SITE = "https://ventures.tavall.org/";
 
     private QaRoutes() {
     }
@@ -68,6 +70,16 @@ public final class QaRoutes {
     public static String venture(String ventureKey) {
         Objects.requireNonNull(ventureKey, "ventureKey");
         return "/ventures/" + ventureKey.trim();
+    }
+
+    /** Cross-host link from {@code ventures.tavall.org} back to a project board on {@code qa.tavall.org}. */
+    public static String qaProject(String projectKey) {
+        return QA + project(projectKey).substring(1);
+    }
+
+    /** Cross-host link from {@code ventures.tavall.org} back to a task board on {@code qa.tavall.org}. */
+    public static String qaTask(String projectKey, UUID taskId) {
+        return QA + task(projectKey, taskId).substring(1);
     }
 
     public static String workspace(String projectKey) {

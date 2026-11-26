@@ -37,8 +37,10 @@ final class QaVenturesPageTest {
     void indexListsVenturesWithStageProgressAndOpenWork() {
         String html = renderer.render(QaVenturesPage.build(List.of(venture()), true)).body();
 
-        assertTrue(html.contains("Ventures"));
+        assertTrue(html.contains("<title>Tavall Ventures</title>"));
+        assertTrue(html.contains("Tavall Ventures"));
         assertTrue(html.contains("href=\"/ventures\" aria-current=\"page\""));
+        assertTrue(html.contains("href=\"https://qa.tavall.org/\""));
         assertTrue(html.contains("Tavall Times"));
         assertTrue(html.contains("Active"));
         assertTrue(html.contains("2 open tasks"));
@@ -75,6 +77,7 @@ final class QaVenturesPageTest {
         assertTrue(html.contains("Tavall Qa"));
         assertTrue(html.contains("1 open task"));
         assertTrue(html.contains("href=\"/ventures/tavall-qa\""));
+        assertTrue(html.contains("href=\"https://qa.tavall.org/\""));
     }
 
     @Test

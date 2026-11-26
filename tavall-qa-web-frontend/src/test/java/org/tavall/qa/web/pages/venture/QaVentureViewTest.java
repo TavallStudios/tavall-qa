@@ -70,7 +70,7 @@ final class QaVentureViewTest {
         assertEquals("tavall-qa", venture.key());
         assertEquals(List.of("tavall-qa", "tavall-web-qa"), venture.ownerRepos());
         assertEquals("API consumer wiring", venture.topBlocker());
-        assertEquals("/projects/tavall-engineering/tasks/" + taskId,
+        assertEquals("https://qa.tavall.org/projects/tavall-engineering/tasks/" + taskId,
                 venture.openTasks().getFirst().href());
         assertEquals(-1, venture.progressPercent());
     }
