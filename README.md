@@ -19,6 +19,7 @@ Authoritative backend task, progress, and QA verification plane for Tavall.
 - **`tavall-qa-api`**: Typed domain records, enums, request contracts, view projections, and handler interfaces. Primary type `API`; secondary role `LIBRARY`; runtime owner `tavall-web-app`.
 - **`tavall-qa-system`**: Mapped JPA entities, `IPostgresDatabase` integration, mutation/query handlers, action target resolver, and SQL migrations. Primary type `SYSTEM`; secondary role `PROVIDER`; runtime owner `tavall-web-app`.
 - **`tavall-qa-test-suite`**: Unit and integration coverage for queries, mutations, assignments, evidence, verification, invalidation, and authorization. Primary type `TEST_SUITE`; runtime owner `None`.
+- **`tavall-qa-cli`**: Typed Java CLI adapter publishing `qa task upsert`, `qa design register`, `qa design decision`, and `qa github sync` over `tavall-cli-api`. It projects the QA authority and is never a second authority. Primary type `TOOLING`; secondary role `ADAPTER`; runtime owner `tavall-qa-cli`.
 - **`tavall-qa-web-frontend`**: Public and staff QA presentation module (Forge views, Task Board, Focus Workspace, and design review UI). Primary type `FEATURE`; secondary role `PROVIDER`; runtime owner `tavall-web-app`.
 
 ## Principles
@@ -41,6 +42,7 @@ Authoritative backend task, progress, and QA verification plane for Tavall.
 - [API progression](docs/progression/modules/TAVALL_QA_API_PROGRESSION.md)
 - [SYSTEM progression](docs/progression/modules/TAVALL_QA_SYSTEM_PROGRESSION.md)
 - [Test Suite progression](docs/progression/modules/TAVALL_QA_TEST_SUITE_PROGRESSION.md)
+- [CLI usage, `qa github sync`, and GitHub issue mapping](tavall-qa-cli/README.md)
 
 ## Documentation
 
