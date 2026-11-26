@@ -9,10 +9,6 @@ build:
 resources:
   mode: SYSTEM
 
-artifacts:
-  - name: tavall-qa-cli
-    path: tavall-qa-cli/build/libs/tavall-qa-cli-0.1.0-SNAPSHOT.jar
-    channel: SNAPSHOT
 
 modules:
   - tavall-qa-api
