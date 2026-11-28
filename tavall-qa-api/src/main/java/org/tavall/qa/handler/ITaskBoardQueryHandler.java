@@ -14,6 +14,7 @@ import org.tavall.qa.view.TaskBoardQaProgressionView;
 import java.util.Optional;
 import java.util.List;
 import java.util.UUID;
+import java.util.Set;
 
 public interface ITaskBoardQueryHandler {
     Optional<org.tavall.qa.domain.TaskBoardDesignReview> findDesignReview(UUID taskId, QaSubjectContext subject);
@@ -34,6 +35,10 @@ public interface ITaskBoardQueryHandler {
 
     /** One project board as this subject may see it, including audience-restricted projects and tasks. */
     Optional<TaskBoardPublicProjectView> findVisibleProjectView(String projectKey, QaSubjectContext subject);
+
+    /** Applies a task selection after the same request-time board visibility checks. */
+    Optional<TaskBoardPublicProjectView> findVisibleProjectView(
+            String projectKey, QaSubjectContext subject, Set<UUID> taskIds);
 
     Optional<TaskBoardPublicTaskView> findPublicTaskView(UUID taskId);
 

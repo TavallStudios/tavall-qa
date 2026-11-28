@@ -19,13 +19,18 @@ import org.tavall.web.frontend.html.HTML;
 import java.util.List;
 import java.util.Objects;
 
-/** Ventures index at {@code ventures.tavall.org/ventures}: one card per venture the viewer may see. */
+/** Ventures index at {@code qa.tavall.org/ventures}: one card per venture the viewer may see. */
 public final class QaVenturesPage extends AbstractPage<QaVenturesPage> {
 
+    /** Retains the prebuilt portfolio view used by the dedicated Ventures surface. */
     public static QaVenturesPage build(List<QaVentureView> ventures, boolean available) {
+        return page(ventures, available, false);
+    }
+
+    private static QaVenturesPage page(List<QaVentureView> ventures, boolean available, boolean qaDirectory) {
         return new QaVenturesPage()
                 .title("Tavall Ventures")
-                .html(document(ventures, available))
+                .html(document(ventures, available, qaDirectory))
                 .animations(QaPageAnimations.build());
     }
 
@@ -40,20 +45,26 @@ public final class QaVenturesPage extends AbstractPage<QaVenturesPage> {
                     .map(venture -> QaVentureView.fromVenture(
                             venture, ventures.findVentureTasks(venture.slug(), subject)))
                     .toList();
-            return build(models, true);
+            return page(models, true, true);
         } catch (TaskBoardStorageUnavailableException unavailable) {
-            return build(List.of(), false);
+            return page(List.of(), false, true);
         }
     }
 
-    static HTMLDocument document(List<QaVentureView> ventures, boolean available) {
+    private static HTMLDocument document(List<QaVentureView> ventures, boolean available, boolean qaDirectory) {
         HTMLElement body;
         if (!available) {
-            body = Forge.callout("Board unavailable", "Venture data could not be loaded right now. This is not an empty portfolio.");
+            body = Forge.callout("Board unavailable", qaDirectory ? "Venture data could not be loaded right now."
+                    : "Venture data could not be loaded right now. This is not an empty portfolio.");
         } else if (ventures.isEmpty()) {
             body = Forge.callout("No ventures yet", "Ventures appear here once they are recorded on the board.");
         } else {
-            body = Forge.cardGrid(3, ventures.stream().map(QaVenturesPage::card).toList());
+            body = Forge.cardGrid(3, ventures.stream().map(venture -> card(venture, qaDirectory)).toList());
+        }
+        if (qaDirectory) {
+            return Forge.page(QaProduct.product(QaRoutes.VENTURES),
+                    Forge.section("ventures", "", "Ventures", "",
+                            new ForgeLink("All projects", QaRoutes.ROOT), body));
         }
         return Forge.page(QaProduct.venturesProduct(QaRoutes.VENTURES),
                 Forge.section("ventures", "TAVALL PORTFOLIO", "Ventures",
@@ -61,7 +72,7 @@ public final class QaVenturesPage extends AbstractPage<QaVenturesPage> {
                         new ForgeLink("All projects", QaRoutes.QA), body));
     }
 
-    private static HTMLElement card(QaVentureView venture) {
+    private static HTMLElement card(QaVentureView venture, boolean qaDirectory) {
         String copy = venture.purpose().isBlank() ? "Purpose not recorded yet." : venture.purpose();
         List<String> tags = venture.ownerRepos().isEmpty()
                 ? (venture.liveLinks().isEmpty() ? List.of("No live link yet") : List.of("Live"))
@@ -69,7 +80,8 @@ public final class QaVenturesPage extends AbstractPage<QaVenturesPage> {
         return Forge.card(new ForgeCard("◆", venture.name(), stageLabel(venture.stage()), copy,
                 venture.progressPercent() < 0 ? "" : venture.progressPercent() + "%", tags,
                 venture.openTaskCount() + " open " + (venture.openTaskCount() == 1 ? "task" : "tasks"),
-                "View venture", QaRoutes.venture(venture.key())));
+                qaDirectory ? "View tasks" : "View venture",
+                qaDirectory ? QaRoutes.ventureTasks(venture.key()) : QaRoutes.venture(venture.key())));
     }
 
     static String stageLabel(String stage) {

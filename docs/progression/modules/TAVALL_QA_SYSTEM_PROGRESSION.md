@@ -20,9 +20,9 @@
 
 | Area | State | Evidence |
 | --- | --- | --- |
-| Venture directory contract and mapped data | `SOURCE_CANDIDATE` | Typed API record, managed read handlers, migration 042 and current local API/SYSTEM/test/frontend checks are in the issue #38 worktree; exact committed-head gates pending. |
-| Migration 042 PostgreSQL acceptance | `BLOCKED_LOCAL / PENDING_CI` | The burst host lacks `/usr/lib/postgresql/14/bin/initdb` and `pg_ctl`; required integration test fails closed before test bodies. Full migration CI is required. |
-| HTTP route and Account adapter | `BLOCKED_SCOPE` | The shared Web controller remains project-derived; issue #38 makes the Web repository read-only. No duplicate `/api/ventures` route namespace remains in QA source: `QaRoutes` is the single compile-time owner and the QA presentation exposes handler-backed venture page factories. No new runtime route is claimed. |
+| Venture directory contract and mapped data | `LOCAL_VERIFIED` | Issue #38 adds persisted source-card metadata, a QA Forge directory, JSON serialization and a filtered engineering-board projection. |
+| Migration 044 PostgreSQL acceptance | `LOCAL_VERIFIED / PENDING_CI` | A private PostgreSQL 14 cluster verified the 043-to-044 upgrade, rerun, restart, retirement of 040 projects and preservation of task-owned rows. All 261 local Gradle tests passed with the pinned CLI source composite. |
+| HTTP route and Account adapter | `PENDING_WEB_WIRING` | The QA module supplies the renderers and route contract. The shared Web runtime owns the three request bindings described in the technical design. |
 | DEVELOPMENT / PRODUCTION migration | `NOT_APPLIED` | No database dump or migration application performed; service migration path and post-migration count/status checks remain pending. |
 
 ## Current state

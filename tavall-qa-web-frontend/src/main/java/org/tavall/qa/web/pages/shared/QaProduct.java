@@ -25,7 +25,7 @@ public final class QaProduct {
                 "Public development tracker and staff QA workspace.",
                 List.of(
                         new ForgeLink("Projects", QaRoutes.ROOT),
-                        new ForgeLink("Ventures", QaRoutes.VENTURES_SITE),
+                        new ForgeLink("Ventures", QaRoutes.VENTURES),
                         new ForgeLink("Tavall MC", QaRoutes.MC),
                         new ForgeLink("Docs", QaRoutes.DOCS),
                         new ForgeLink("Dashboard", QaRoutes.DASHBOARD)
@@ -33,7 +33,7 @@ public final class QaProduct {
                 List.of(),
                 List.of(
                         new ForgeLink("Projects", QaRoutes.ROOT),
-                        new ForgeLink("Ventures", QaRoutes.VENTURES_SITE),
+                        new ForgeLink("Ventures", QaRoutes.VENTURES),
                         new ForgeLink("Tavall MC", QaRoutes.MC),
                         new ForgeLink("Docs", QaRoutes.DOCS),
                         new ForgeLink("Dashboard", QaRoutes.DASHBOARD)

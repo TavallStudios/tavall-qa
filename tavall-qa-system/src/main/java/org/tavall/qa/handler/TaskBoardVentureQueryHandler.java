@@ -49,6 +49,7 @@ public final class TaskBoardVentureQueryHandler implements ITaskBoardVentureQuer
         TaskBoardVenture venture = findVenture(slug, subject)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown venture: " + slug));
         return taskDataHandler.findTasks(TaskBoardProjectKey.ENGINEERING.value()).stream()
+                .filter(task -> !"venture".equals(task.sourceType()))
                 .filter(task -> TaskBoardRepositoryIdentity.fromSourceReference(task.sourceReference())
                         .map(venture::owns)
                         .orElse(false))

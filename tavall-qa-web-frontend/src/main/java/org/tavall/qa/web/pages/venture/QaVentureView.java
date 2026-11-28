@@ -83,16 +83,13 @@ public record QaVentureView(
         List<ForgeLink> links = venture.liveUrls().stream()
                 .map(url -> new ForgeLink(url, url))
                 .toList();
-        String name = java.util.Arrays.stream(venture.slug().split("-"))
-                .map(part -> part.isEmpty() ? part : Character.toUpperCase(part.charAt(0)) + part.substring(1))
-                .collect(java.util.stream.Collectors.joining(" "));
         List<OpenTask> open = linkedTasks.stream()
                 .filter(task -> !CLOSED.contains(task.status()))
                 .sorted(Comparator.comparing(TaskBoardTask::updatedAt).reversed())
                 .map(task -> new OpenTask(task.title(), task.status(),
                         org.tavall.qa.web.routes.QaRoutes.qaTask(TaskBoardProjectKey.ENGINEERING.value(), task.taskId())))
                 .toList();
-        return new QaVentureView(venture.slug(), name, venture.purpose(), venture.ownerRepos(),
+        return new QaVentureView(venture.slug(), venture.displayName(), venture.purpose(), venture.ownerRepos(),
                 venture.topBlocker(), venture.stage(), links, List.of(), -1, linkedTasks.size(), open);
     }
 
