@@ -7,6 +7,13 @@ import org.springframework.context.annotation.Lazy;
 import org.tavall.database.postgres.IPostgresDatabase;
 import org.tavall.dependency.maps.interfaces.IDependencyMap;
 import org.tavall.dependency.annotations.CompositionBoundary;
+import org.tavall.qa.handler.TaskBoardAgentViewHandler;
+import org.tavall.qa.handler.TaskBoardAgentViewHandlerDependencyAccess;
+import org.tavall.qa.handler.ITaskBoardAgentViewHandler;
+import org.tavall.qa.handler.ITaskBoardNotionSyncHandler;
+import org.tavall.qa.handler.TaskBoardNotionSyncHandler;
+import org.tavall.qa.handler.TaskBoardNotionSyncHandlerDependencyAccess;
+import org.tavall.qa.persistence.ITaskBoardNotionSyncDataHandler;
 import org.tavall.qa.handler.TaskBoardExternalReferenceHandler;
 import org.tavall.qa.handler.TaskBoardExternalReferenceHandlerDependencyAccess;
 import org.tavall.qa.handler.TaskBoardMutationHandler;
@@ -201,23 +208,21 @@ public class TavallQaConfiguration implements DisposableBean {
     }
 
     @Bean
-    public org.tavall.qa.handler.ITaskBoardNotionSyncHandler taskBoardNotionSyncHandler(
-            org.tavall.qa.persistence.ITaskBoardNotionSyncDataHandler syncDataHandler,
-            @Lazy ITaskBoardDataHandler dataHandler,
-            @Lazy org.tavall.qa.handler.ITaskBoardMutationHandler mutationHandler,
-            org.tavall.qa.domain.notion.INotionTaskMappingRegistry mappingRegistry
+    public ITaskBoardNotionSyncHandler taskBoardNotionSyncHandler(
+            ITaskBoardNotionSyncDataHandler syncDataHandler
     ) {
-        java.time.Clock clock = registerClockIfAbsent();
-        return new org.tavall.qa.handler.TaskBoardNotionSyncHandler(syncDataHandler, dataHandler, mutationHandler, mappingRegistry, clock);
+        registerOwned(ITaskBoardNotionSyncDataHandler.class, syncDataHandler);
+        registerOwned(TaskBoardNotionSyncHandlerDependencyAccess.class,
+                new TaskBoardNotionSyncHandlerDependencyAccess(dependencyMap));
+        return registerOwned(ITaskBoardNotionSyncHandler.class,
+                new TaskBoardNotionSyncHandler(registerClockIfAbsent()));
     }
 
     @Bean
-    public org.tavall.qa.handler.ITaskBoardAgentViewHandler taskBoardAgentViewHandler(
-            @Lazy org.tavall.qa.handler.ITaskBoardQueryHandler queryHandler,
-            @Lazy org.tavall.qa.handler.ITaskBoardMutationHandler mutationHandler,
-            @Lazy ITaskBoardDataHandler dataHandler,
-            org.tavall.qa.handler.ITaskBoardNotionSyncHandler syncHandler
-    ) {
-        return new org.tavall.qa.handler.TaskBoardAgentViewHandler(queryHandler, mutationHandler, dataHandler, syncHandler);
+    public ITaskBoardAgentViewHandler taskBoardAgentViewHandler() {
+        registerOwned(TaskBoardAgentViewHandlerDependencyAccess.class,
+                new TaskBoardAgentViewHandlerDependencyAccess(dependencyMap));
+        return registerOwned(ITaskBoardAgentViewHandler.class,
+                new TaskBoardAgentViewHandler());
     }
 }

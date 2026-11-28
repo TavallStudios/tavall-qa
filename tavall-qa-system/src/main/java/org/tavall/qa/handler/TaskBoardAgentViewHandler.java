@@ -1,6 +1,7 @@
 package org.tavall.qa.handler;
 
-import org.springframework.stereotype.Component;
+import org.tavall.dependency.DependencyAccess;
+import org.tavall.dependency.GenerationOwnedDependencyAccess;
 import org.tavall.dependency.annotations.DelegatesTo;
 import org.tavall.qa.domain.TaskBoardAction;
 import org.tavall.qa.domain.TaskBoardAssignment;
@@ -35,25 +36,10 @@ import java.util.UUID;
  * Allows agents to read authorized tasks, obtain bounded task-specific context without a workspace dump,
  * and update execution/evidence through owner APIs.
  */
-@Component
 @DelegatesTo(ITaskBoardAgentViewHandler.class)
-public final class TaskBoardAgentViewHandler implements ITaskBoardAgentViewHandler {
-    private final ITaskBoardQueryHandler queryHandler;
-    private final ITaskBoardMutationHandler mutationHandler;
-    private final ITaskBoardDataHandler dataHandler;
-    private final ITaskBoardNotionSyncHandler syncHandler;
-
-    public TaskBoardAgentViewHandler(
-            ITaskBoardQueryHandler queryHandler,
-            ITaskBoardMutationHandler mutationHandler,
-            ITaskBoardDataHandler dataHandler,
-            ITaskBoardNotionSyncHandler syncHandler
-    ) {
-        this.queryHandler = Objects.requireNonNull(queryHandler, "queryHandler");
-        this.mutationHandler = Objects.requireNonNull(mutationHandler, "mutationHandler");
-        this.dataHandler = Objects.requireNonNull(dataHandler, "dataHandler");
-        this.syncHandler = Objects.requireNonNull(syncHandler, "syncHandler");
-    }
+public final class TaskBoardAgentViewHandler extends GenerationOwnedDependencyAccess
+        implements ITaskBoardAgentViewHandler,
+        DependencyAccess<ITaskBoardMutationHandler, ITaskBoardDataHandler, ITaskBoardNotionSyncHandler> {
 
     @Override
     public List<TaskBoardAgentTaskView> findAuthorizedAgentTasks(QaSubjectContext subject, Optional<String> projectKey) {
@@ -66,15 +52,15 @@ public final class TaskBoardAgentViewHandler implements ITaskBoardAgentViewHandl
 
         List<TaskBoardProject> projects;
         if (projectKey.isPresent()) {
-            Optional<TaskBoardProject> project = dataHandler.findProject(projectKey.get());
+            Optional<TaskBoardProject> project = getInstance().taskBoardDataHandler().findProject(projectKey.get());
             projects = project.map(List::of).orElse(List.of());
         } else {
-            projects = dataHandler.findProjects();
+            projects = getInstance().taskBoardDataHandler().findProjects();
         }
 
         List<TaskBoardAgentTaskView> result = new ArrayList<>();
         for (TaskBoardProject project : projects) {
-            List<TaskBoardTask> tasks = dataHandler.findTasks(project.projectKey());
+            List<TaskBoardTask> tasks = getInstance().taskBoardDataHandler().findTasks(project.projectKey());
             for (TaskBoardTask task : tasks) {
                 boolean authorized = subject.canViewTask(project, task)
                         || subject.isAssignedToTask(task.taskId())
@@ -82,7 +68,7 @@ public final class TaskBoardAgentViewHandler implements ITaskBoardAgentViewHandl
                         || subject.hasCapability(QaCapability.TECHNICAL_DEV_EXECUTION);
 
                 if (authorized) {
-                    Optional<NotionTaskSyncState> syncState = syncHandler.findSyncStateByTaskId(subject, task.taskId());
+                    Optional<NotionTaskSyncState> syncState = getInstance().taskBoardNotionSyncHandler().findSyncStateByTaskId(subject, task.taskId());
                     String notionUrl = syncState.map(NotionTaskSyncState::notionPageUrl).orElse("");
                     long syncRev = syncState.map(NotionTaskSyncState::lastOutboundRevision).orElse(0L);
                     boolean assigned = subject.isAssignedToTask(task.taskId());
@@ -116,12 +102,12 @@ public final class TaskBoardAgentViewHandler implements ITaskBoardAgentViewHandl
             return Optional.empty();
         }
 
-        Optional<TaskBoardTask> taskOpt = dataHandler.findTask(taskId);
+        Optional<TaskBoardTask> taskOpt = getInstance().taskBoardDataHandler().findTask(taskId);
         if (taskOpt.isEmpty()) {
             return Optional.empty();
         }
         TaskBoardTask task = taskOpt.get();
-        Optional<TaskBoardProject> projectOpt = dataHandler.findProject(task.projectKey());
+        Optional<TaskBoardProject> projectOpt = getInstance().taskBoardDataHandler().findProject(task.projectKey());
         if (projectOpt.isEmpty()) {
             return Optional.empty();
         }
@@ -136,11 +122,11 @@ public final class TaskBoardAgentViewHandler implements ITaskBoardAgentViewHandl
             return Optional.empty();
         }
 
-        List<TaskBoardAction> actions = dataHandler.findActions(taskId);
-        List<TaskBoardComment> comments = dataHandler.findComments(taskId);
-        List<TaskBoardEvidence> evidence = dataHandler.findEvidenceForTask(taskId);
-        List<TaskBoardAssignment> assignments = dataHandler.findAssignments(taskId);
-        Optional<NotionTaskSyncState> syncState = syncHandler.findSyncStateByTaskId(subject, taskId);
+        List<TaskBoardAction> actions = getInstance().taskBoardDataHandler().findActions(taskId);
+        List<TaskBoardComment> comments = getInstance().taskBoardDataHandler().findComments(taskId);
+        List<TaskBoardEvidence> evidence = getInstance().taskBoardDataHandler().findEvidenceForTask(taskId);
+        List<TaskBoardAssignment> assignments = getInstance().taskBoardDataHandler().findAssignments(taskId);
+        Optional<NotionTaskSyncState> syncState = getInstance().taskBoardNotionSyncHandler().findSyncStateByTaskId(subject, taskId);
 
         TaskBoardAgentPlanningContext planningContext = new TaskBoardAgentPlanningContext(
                 taskId,
@@ -178,7 +164,7 @@ public final class TaskBoardAgentViewHandler implements ITaskBoardAgentViewHandl
             throw new SecurityException("Unauthorized: caller not authorized to update execution on task " + request.taskId());
         }
 
-        TaskBoardTask current = dataHandler.findTask(request.taskId())
+        TaskBoardTask current = getInstance().taskBoardDataHandler().findTask(request.taskId())
                 .orElseThrow(() -> new IllegalArgumentException("Task not found: " + request.taskId()));
 
         TaskBoardTaskStatus targetStatus = request.targetStatus() != null ? request.targetStatus() : current.status();
@@ -189,7 +175,7 @@ public final class TaskBoardAgentViewHandler implements ITaskBoardAgentViewHandl
         TaskBoardTask updated = current;
         if (targetStatus != current.status()) {
             if (subject.canManageTasks()) {
-                updated = mutationHandler.updateTask(subject, new TaskBoardTaskUpdateRequest(
+                updated = getInstance().taskBoardMutationHandler().updateTask(subject, new TaskBoardTaskUpdateRequest(
                         current.taskId(),
                         null,
                         null,
@@ -247,7 +233,7 @@ public final class TaskBoardAgentViewHandler implements ITaskBoardAgentViewHandl
                         "Agent execution updated status to " + targetStatus,
                         now
                 );
-                dataHandler.saveTask(updated, Optional.of(current.updatedAt()), audit);
+                getInstance().taskBoardDataHandler().saveTask(updated, Optional.of(current.updatedAt()), audit);
             }
         }
 
@@ -274,10 +260,10 @@ public final class TaskBoardAgentViewHandler implements ITaskBoardAgentViewHandl
                     "Agent added execution note",
                     now
             );
-            dataHandler.saveComment(comment, audit);
+            getInstance().taskBoardDataHandler().saveComment(comment, audit);
         }
 
-        if (syncHandler instanceof TaskBoardNotionSyncHandler notionHandler) {
+        if (getInstance().taskBoardNotionSyncHandler() instanceof TaskBoardNotionSyncHandler notionHandler) {
             notionHandler.advanceOutboundRevision(request.taskId());
         }
 
