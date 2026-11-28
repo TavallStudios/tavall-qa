@@ -125,7 +125,11 @@ public final class QaGithubSyncMapping {
         if (text.length() <= DESCRIPTION_LIMIT) {
             return text;
         }
-        return text.substring(0, DESCRIPTION_LIMIT).stripTrailing() + TRUNCATION_SUFFIX;
+        int end = DESCRIPTION_LIMIT - TRUNCATION_SUFFIX.length();
+        if (Character.isHighSurrogate(text.charAt(end - 1))) {
+            end--;
+        }
+        return text.substring(0, end).stripTrailing() + TRUNCATION_SUFFIX;
     }
 
     private static TaskBoardTaskPriority stronger(TaskBoardTaskPriority current, TaskBoardTaskPriority candidate) {

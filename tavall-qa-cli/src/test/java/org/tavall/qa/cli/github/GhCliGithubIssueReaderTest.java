@@ -1,8 +1,13 @@
 package org.tavall.qa.cli.github;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -76,6 +81,26 @@ final class GhCliGithubIssueReaderTest {
                         "{\"message\":\"Not Found\"}"));
         assertThrows(QaGithubReaderException.class,
                 () -> GhCliGithubIssueReader.parseIssues("TavallStudios", "tavall-ai", ""));
+    }
+
+    @Test
+    void fullPageOfPullRequestsDoesNotHideIssuesOnNextPage(@TempDir Path directory) throws IOException {
+        String pullRequest = "{\"number\":1,\"pull_request\":{}}";
+        String firstPage = "[" + String.join(",", Collections.nCopies(100, pullRequest)) + "]";
+        Path executable = Files.writeString(directory.resolve("fake-gh"), """
+                #!/bin/sh
+                case "$4" in
+                  *'&page=1') printf '%%s' '%s' ;;
+                  *'&page=2') printf '%%s' '[{"number":101,"state":"open"}]' ;;
+                  *) exit 1 ;;
+                esac
+                """.formatted(firstPage));
+        assertTrue(executable.toFile().setExecutable(true));
+        GhCliGithubIssueReader reader = new GhCliGithubIssueReader(executable.toString(), Duration.ofSeconds(5));
+
+        List<QaGithubIssue> issues = reader.readIssues(new QaGithubIssueQuery("TavallStudios", "tavall-ai", "open", 100));
+
+        assertEquals(List.of(101), issues.stream().map(QaGithubIssue::number).toList());
     }
 
     @Test

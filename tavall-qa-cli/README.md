@@ -16,6 +16,7 @@ self-contained artifact (`build/libs/tavall-qa-cli-<version>.jar`) and from the 
 | `qa task upsert` | Idempotent task upsert by external key. |
 | `qa design register` | Register 2–4 live design candidates on a task. |
 | `qa design decision` | Read the design review decision attached to a task. |
+| `qa design ai-review` | Record a provisional AI design review. |
 | `qa github sync` | Read GitHub issues and upsert one QA task per issue. |
 
 ## `qa github sync`
@@ -67,6 +68,36 @@ client failure is recorded in `errors` and counted in `failed` without aborting 
 repositories; such a batch exits `1` with failure reason `GITHUB_SYNC_INCOMPLETE`. GitHub reader
 failures exit `1` with `GITHUB_READER_ERROR`, and invalid arguments exit `2` with
 `INVALID_ARGUMENT`.
+
+### Scheduled sync
+
+Run the command from the scheduler account with authenticated `gh` access to the selected
+repositories and a QA agent credential authorized to upsert tasks in the target project. Try the
+same command with `--dry-run` first to check the selected issue keys.
+
+For a systemd user timer, create `~/.config/systemd/user/tavall-qa-github-sync.service`:
+
+```ini
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/tavall-qa qa github sync --repos tavall-ai,tavall-docs --state all --limit 1000
+```
+
+Create `~/.config/systemd/user/tavall-qa-github-sync.timer` alongside it:
+
+```ini
+[Timer]
+OnCalendar=hourly
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+Run `systemctl --user daemon-reload` and `systemctl --user enable --now tavall-qa-github-sync.timer`.
+Review runs with `journalctl --user -u tavall-qa-github-sync.service`. Use `--state all` to
+include closures and reopened issues within the scan window. The per-repository limit is capped
+at 1000, so the timer only reconciles issues returned within that window.
 
 ## Build and test
 

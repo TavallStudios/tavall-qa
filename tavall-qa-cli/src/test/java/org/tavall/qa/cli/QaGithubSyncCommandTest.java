@@ -295,7 +295,7 @@ final class QaGithubSyncCommandTest {
 
         String description = QaGithubSyncMapping.description(longIssue);
 
-        assertTrue(description.length() <= QaGithubSyncMapping.DESCRIPTION_LIMIT + 3,
+        assertTrue(description.length() <= QaGithubSyncMapping.DESCRIPTION_LIMIT,
                 "description length was " + description.length());
         assertTrue(description.endsWith("..."), description.substring(description.length() - 20));
         assertFalse(description.contains("\u0000"));
