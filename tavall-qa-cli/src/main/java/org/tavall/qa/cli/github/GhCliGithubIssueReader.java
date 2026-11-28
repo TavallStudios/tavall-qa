@@ -51,15 +51,14 @@ public final class GhCliGithubIssueReader implements IGithubIssueReader {
         Objects.requireNonNull(query, "query");
         List<QaGithubIssue> issues = new ArrayList<>();
         for (int page = 1; issues.size() < query.limit(); page++) {
-            List<QaGithubIssue> pageIssues = parseIssues(
-                    query.owner(), query.repository(), execute(query.restPath(page)));
-            for (QaGithubIssue issue : pageIssues) {
+            JsonNode payload = parsePage(execute(query.restPath(page)));
+            for (QaGithubIssue issue : parseIssues(query.owner(), query.repository(), payload)) {
                 if (issues.size() >= query.limit()) {
                     break;
                 }
                 issues.add(issue);
             }
-            if (pageIssues.size() < QaGithubIssueQuery.PAGE_SIZE) {
+            if (payload.size() < QaGithubIssueQuery.PAGE_SIZE) {
                 break;
             }
         }
@@ -75,6 +74,10 @@ public final class GhCliGithubIssueReader implements IGithubIssueReader {
      * @return immutable issues in payload order
      */
     public static List<QaGithubIssue> parseIssues(String owner, String repository, String json) {
+        return parseIssues(owner, repository, parsePage(json));
+    }
+
+    private static JsonNode parsePage(String json) {
         JsonNode root;
         try {
             root = MAPPER.readTree(json == null ? "" : json);
@@ -84,6 +87,10 @@ public final class GhCliGithubIssueReader implements IGithubIssueReader {
         if (root == null || !root.isArray()) {
             throw new QaGithubReaderException("GitHub CLI issues response was not a JSON array");
         }
+        return root;
+    }
+
+    private static List<QaGithubIssue> parseIssues(String owner, String repository, JsonNode root) {
         List<QaGithubIssue> issues = new ArrayList<>();
         for (JsonNode node : root) {
             if (!node.isObject() || node.has("pull_request")) {
