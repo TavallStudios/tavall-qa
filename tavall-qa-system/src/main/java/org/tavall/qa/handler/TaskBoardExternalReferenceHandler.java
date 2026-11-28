@@ -10,6 +10,7 @@ import org.tavall.qa.domain.TaskBoardTask;
 import org.tavall.qa.domain.auth.QaSubjectContext;
 import org.tavall.qa.domain.external.TaskBoardExternalReference;
 import org.tavall.qa.domain.external.TaskBoardExternalReferenceConflict;
+import org.tavall.qa.domain.external.TaskBoardExternalReferenceIngestResult;
 import org.tavall.qa.domain.external.TaskBoardExternalReferenceKey;
 import org.tavall.qa.domain.external.TaskBoardExternalReferenceMutationResult;
 import org.tavall.qa.handler.ITaskBoardExternalReferenceHandler;
@@ -17,6 +18,7 @@ import org.tavall.qa.persistence.ITaskBoardDataHandler;
 import org.tavall.qa.persistence.ITaskBoardExternalReferenceDataHandler;
 import org.tavall.qa.request.external.TaskBoardExternalReferenceConflictResolutionRequest;
 import org.tavall.qa.request.external.TaskBoardExternalReferenceMutationRequest;
+import org.tavall.qa.request.external.TaskBoardExternalReferenceIngestRequest;
 
 import java.time.Clock;
 import java.util.List;
@@ -40,6 +42,41 @@ public final class TaskBoardExternalReferenceHandler extends GenerationOwnedDepe
 
     private Clock clock() {
         return getInstance().clock();
+    }
+
+    @Override
+    public TaskBoardExternalReferenceIngestResult ingest(
+            QaSubjectContext subject, TaskBoardExternalReferenceIngestRequest request) {
+        requireOwner(subject);
+        requireAvailable();
+        Objects.requireNonNull(request, "request");
+        taskBoardDataHandler().findProject(request.projectKey())
+                .orElseThrow(() -> new IllegalArgumentException("Task Board project not found: " + request.projectKey()));
+        return externalReferences().ingest(request, new TaskBoardAuditEntry(UUID.randomUUID(), Optional.empty(),
+                request.projectKey(), subject.accountId(), subject.linkedMinecraftUuid().orElse(null),
+                TaskBoardAuditEventType.EXTERNAL_REFERENCE_UPSERTED, "Ingest owner references", clock().instant()));
+    }
+
+    @Override
+    public Optional<TaskBoardExternalReference> findGitHubReference(QaSubjectContext subject, String alias) {
+        requireOwner(subject);
+        requireAvailable();
+        return externalReferences().findGitHubReference(alias);
+    }
+
+    @Override
+    public List<String> findGitHubAliases(QaSubjectContext subject, TaskBoardExternalReferenceKey key) {
+        requireOwner(subject);
+        requireAvailable();
+        return externalReferences().findGitHubAliases(key);
+    }
+
+    @Override
+    public List<TaskBoardExternalReferenceConflict> findConflictHistory(QaSubjectContext subject, UUID taskId) {
+        requireOwner(subject);
+        requireAvailable();
+        requireTask(taskId);
+        return externalReferences().findConflictHistory(taskId);
     }
 
     @Override

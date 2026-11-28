@@ -31,7 +31,12 @@ import java.util.UUID;
         name = TaskBoardTaskEntity.FIND_BY_EXTERNAL_KEY,
         query = "SELECT entity FROM TaskBoardTaskEntity entity WHERE entity.externalKey = :externalKey"
 )
+@NamedQuery(
+        name = TaskBoardTaskEntity.FIND_BY_GITHUB_ALIAS,
+        query = "SELECT entity FROM TaskBoardTaskEntity entity WHERE lower(entity.externalKey) = :alias"
+)
 public class TaskBoardTaskEntity {
+    public static final String FIND_BY_GITHUB_ALIAS = "TaskBoardTaskEntity.findByGitHubAlias";
     public static final String FIND_BY_PROJECT =
             "TaskBoardTaskEntity.findByProject";
     public static final String FIND_BY_EXTERNAL_KEY = "TaskBoardTaskEntity.findByExternalKey";

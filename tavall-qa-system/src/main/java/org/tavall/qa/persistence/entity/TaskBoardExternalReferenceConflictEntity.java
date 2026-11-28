@@ -66,7 +66,14 @@ import java.util.UUID;
                 ORDER BY entity.createdAt
                 """
 )
+@NamedQuery(name = TaskBoardExternalReferenceConflictEntity.FIND_HISTORY_FOR_TASK,
+        query = """
+                SELECT entity FROM TaskBoardExternalReferenceConflictEntity entity
+                WHERE entity.requestedTaskId = :taskId OR entity.existingTaskId = :taskId
+                ORDER BY entity.createdAt, entity.conflictId
+                """)
 public class TaskBoardExternalReferenceConflictEntity {
+    public static final String FIND_HISTORY_FOR_TASK = "TaskBoardExternalReferenceConflictEntity.findHistoryForTask";
     public static final String FIND_BY_ID = "TaskBoardExternalReferenceConflictEntity.findById";
     public static final String FIND_OPEN = "TaskBoardExternalReferenceConflictEntity.findOpen";
     public static final String FIND_OPEN_FOR_TASK = "TaskBoardExternalReferenceConflictEntity.findOpenForTask";

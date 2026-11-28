@@ -3,10 +3,12 @@ package org.tavall.qa.persistence;
 import org.tavall.qa.domain.TaskBoardAuditEntry;
 import org.tavall.qa.domain.external.TaskBoardExternalReference;
 import org.tavall.qa.domain.external.TaskBoardExternalReferenceConflict;
+import org.tavall.qa.domain.external.TaskBoardExternalReferenceIngestResult;
 import org.tavall.qa.domain.external.TaskBoardExternalReferenceKey;
 import org.tavall.qa.domain.external.TaskBoardExternalReferenceMutationResult;
 import org.tavall.qa.request.external.TaskBoardExternalReferenceConflictResolutionRequest;
 import org.tavall.qa.request.external.TaskBoardExternalReferenceMutationRequest;
+import org.tavall.qa.request.external.TaskBoardExternalReferenceIngestRequest;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,6 +25,14 @@ public interface ITaskBoardExternalReferenceDataHandler {
     List<TaskBoardExternalReferenceConflict> findOpenConflicts(Optional<UUID> taskId);
 
     Optional<TaskBoardExternalReferenceConflict> findConflict(UUID conflictId);
+
+    TaskBoardExternalReferenceIngestResult ingest(TaskBoardExternalReferenceIngestRequest request, TaskBoardAuditEntry auditEntry);
+
+    Optional<TaskBoardExternalReference> findGitHubReference(String alias);
+
+    List<String> findGitHubAliases(TaskBoardExternalReferenceKey key);
+
+    List<TaskBoardExternalReferenceConflict> findConflictHistory(UUID taskId);
 
     TaskBoardExternalReferenceMutationResult registerOrReconcile(
             TaskBoardExternalReferenceMutationRequest request,

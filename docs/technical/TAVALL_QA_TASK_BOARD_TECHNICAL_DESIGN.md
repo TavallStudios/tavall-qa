@@ -82,6 +82,12 @@ Migration `037_task_board_external_key_upsert.sql` adds a nullable unique constr
 
 `TaskBoardExternalKeyUpsertPostgresIntegrationTest` shares the required native PostgreSQL fixture with execution-checkpoint acceptance. It covers concurrent insertion, exact replay, changed snapshots, preservation of the external key through normal task updates, and linking a pre-existing QA task ID without creating another row. `TavallAIQaExecutionHttpClient.upsertTask` is the typed authenticated transport; credentials stay in the existing authorization boundary.
 
+## Owner GitHub and Linear reference reconciliation
+
+Authorized server-side consumers call `ITaskBoardExternalReferenceHandler.ingest` with a request-scoped Tavall Account subject, a numeric GitHub repository ID and issue number, and an optional Linear workspace and issue UUID. A consumer with an already linked Notion task can supply its QA task ID from `ITaskBoardNotionSyncHandler`. The QA owner checks the requested project and reconciles exact identities in one PostgreSQL transaction. A new task starts in staff-only backlog. Existing tasks retain their QA-owned fields and revisions.
+
+Migration `045_task_board_external_reference_aliases.sql` preserves known GitHub URLs as normalized aliases. GitHub repository renames update the accepted URL under the same identity and retain prior aliases for lookup. Independent task matches are queued for review. The typed API exposes the accepted source projections, per-source observation cursors and conflict history to task managers. Legacy GitHub upserts return mapped tasks without applying their snapshots. The shared runtime's database owner must apply migration 045 before consuming these mappings.
+
 ## Durable execution leases and provider-neutral checkpoints
 
 The implementation candidate in [QA #3](https://github.com/TavallStudios/tavall-qa/pull/3) keeps execution continuation under the existing task authority. [`TaskBoardExecutionCheckpointHandler`](../../tavall-qa-system/src/main/java/org/tavall/qa/handler/TaskBoardExecutionCheckpointHandler.java) implements its typed API with `@DelegatesTo`, generated `DependencyAccess` and the owning dependency generation. Each private read and mutation checks current Account/service context, DEV qualification/assignment or Account-global QA authority, and task/project visibility. A browser or provider must receive its subject context from the existing server-side Account resolver.

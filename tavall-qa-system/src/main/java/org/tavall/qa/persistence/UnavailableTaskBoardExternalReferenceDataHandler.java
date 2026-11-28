@@ -4,10 +4,12 @@ import org.tavall.qa.domain.TaskBoardAuditEntry;
 import org.tavall.qa.domain.TaskBoardStorageUnavailableException;
 import org.tavall.qa.domain.external.TaskBoardExternalReference;
 import org.tavall.qa.domain.external.TaskBoardExternalReferenceConflict;
+import org.tavall.qa.domain.external.TaskBoardExternalReferenceIngestResult;
 import org.tavall.qa.domain.external.TaskBoardExternalReferenceKey;
 import org.tavall.qa.domain.external.TaskBoardExternalReferenceMutationResult;
 import org.tavall.qa.request.external.TaskBoardExternalReferenceConflictResolutionRequest;
 import org.tavall.qa.request.external.TaskBoardExternalReferenceMutationRequest;
+import org.tavall.qa.request.external.TaskBoardExternalReferenceIngestRequest;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,6 +17,27 @@ import java.util.UUID;
 
 /** Typed unavailable-state implementation used when mapped QA storage is not ready. */
 public final class UnavailableTaskBoardExternalReferenceDataHandler implements ITaskBoardExternalReferenceDataHandler {
+    @Override
+    public TaskBoardExternalReferenceIngestResult ingest(
+            TaskBoardExternalReferenceIngestRequest request, TaskBoardAuditEntry auditEntry) {
+        throw unavailable();
+    }
+
+    @Override
+    public Optional<TaskBoardExternalReference> findGitHubReference(String alias) {
+        return Optional.empty();
+    }
+
+    @Override
+    public List<String> findGitHubAliases(TaskBoardExternalReferenceKey key) {
+        return List.of();
+    }
+
+    @Override
+    public List<TaskBoardExternalReferenceConflict> findConflictHistory(UUID taskId) {
+        return List.of();
+    }
+
     @Override
     public boolean isAvailable() {
         return false;

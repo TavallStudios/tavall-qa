@@ -24,6 +24,7 @@ val executionCheckpointIntegrationTest by tasks.registering(Test::class) {
     filter {
         includeTestsMatching("*TaskBoardExecutionPostgresIntegrationTest")
         includeTestsMatching("*TaskBoardExternalKeyUpsertPostgresIntegrationTest")
+        includeTestsMatching("*TaskBoardExternalReferencePostgresIntegrationTest")
         includeTestsMatching("*TaskBoardMigrationsPostgresIntegrationTest")
         includeTestsMatching("*VentureMigrationPostgresIntegrationTest")
     }

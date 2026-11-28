@@ -26,6 +26,8 @@ import org.tavall.qa.persistence.entity.TaskBoardAssignmentEntity;
 import org.tavall.qa.persistence.entity.TaskBoardAuditEntryEntity;
 import org.tavall.qa.persistence.entity.TaskBoardCommentEntity;
 import org.tavall.qa.persistence.entity.TaskBoardEvidenceEntity;
+import org.tavall.qa.persistence.entity.TaskBoardExternalReferenceAliasEntity;
+import org.tavall.qa.persistence.entity.TaskBoardExternalReferenceEntity;
 import org.tavall.qa.persistence.entity.TaskBoardProjectEntity;
 import org.tavall.qa.persistence.entity.TaskBoardTaskEntity;
 import org.tavall.qa.persistence.entity.TaskBoardVqcContributionEntity;
@@ -191,6 +193,19 @@ public final class TaskBoardDataHandler implements ITaskBoardDataHandler {
         }
         requireAudit(auditEntry, Optional.of(task.taskId()), task.projectKey());
         return database.entities().executeAtomic(context -> {
+            Optional<String> githubAlias = TaskBoardExternalReferenceAliasEntity.githubAlias(key);
+            if (githubAlias.isPresent()) {
+                context.acquireAdvisoryTransactionLock(TaskBoardExternalReferenceAliasEntity.WRITE_LOCK);
+                Optional<TaskBoardTask> mapped = mappedGitHubTask(context, githubAlias.orElseThrow());
+                if (mapped.isPresent()) {
+                    TaskBoardTask current = mapped.orElseThrow();
+                    if (!current.projectKey().equals(task.projectKey())
+                            || existingTaskId.filter(id -> !id.equals(current.taskId())).isPresent()) {
+                        throw new IllegalStateException("GitHub alias is mapped to a different QA task or project");
+                    }
+                    return new TaskBoardTaskUpsertResult(current, false, false);
+                }
+            }
             context.acquireAdvisoryTransactionLock("tavall-qa:task-external:" + key);
             Optional<TaskBoardTaskEntity> existing = context.findOneNamed(
                     TaskBoardTaskEntity.class,
@@ -241,6 +256,27 @@ public final class TaskBoardDataHandler implements ITaskBoardDataHandler {
             context.save(TaskBoardAuditEntryEntity.fromDomain(auditForTask(auditEntry, current.taskId())));
             return new TaskBoardTaskUpsertResult(saved.toDomain(), false, true);
         });
+    }
+
+    private static Optional<TaskBoardTask> mappedGitHubTask(IPostgresEntityOperationContext context, String alias) {
+        Optional<TaskBoardExternalReferenceAliasEntity> mapping =
+                context.find(TaskBoardExternalReferenceAliasEntity.class, alias);
+        if (mapping.isPresent()) {
+            var reference = context.find(TaskBoardExternalReferenceEntity.class, mapping.orElseThrow().referenceId())
+                    .orElseThrow();
+            return context.find(TaskBoardTaskEntity.class, reference.getTaskId(), LockModeType.PESSIMISTIC_READ)
+                    .map(TaskBoardTaskEntity::toDomain);
+        }
+        var legacy = context.findNamed(TaskBoardTaskEntity.class, TaskBoardTaskEntity.FIND_BY_GITHUB_ALIAS,
+                Map.of("alias", alias), 0);
+        if (legacy.size() > 1) {
+            throw new IllegalStateException("GitHub alias matches multiple legacy QA tasks");
+        }
+        if (legacy.isEmpty()) return Optional.empty();
+        var task = legacy.getFirst().toDomain();
+        var references = context.findNamed(TaskBoardExternalReferenceEntity.class,
+                TaskBoardExternalReferenceEntity.FIND_BY_TASK, Map.of("taskId", task.taskId().toString()), 1);
+        return references.isEmpty() ? Optional.empty() : Optional.of(task);
     }
 
     private static TaskBoardAuditEntry auditForTask(TaskBoardAuditEntry auditEntry, UUID taskId) {
