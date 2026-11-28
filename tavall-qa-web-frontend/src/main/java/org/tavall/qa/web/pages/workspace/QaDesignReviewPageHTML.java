@@ -62,6 +62,38 @@ final class QaDesignReviewPageHTML {
                 options.computeIfAbsent(key, ignored -> new java.util.TreeSet<>()).addAll(values)));
         options.forEach((key, values) -> controls.child(select(key, key, List.copyOf(values))));
         shell.child(controls);
+
+        HTMLElement status = HTML.section().classes(QaCSS.PUBLIC_SECTION_CARD);
+        status.child(HTML.h2().text("Review status"));
+        if (review.decided()) {
+            status.child(HTML.p().text("Decided by human: " + review.winnerKey()));
+            status.child(HTML.p().text("Deployable: Yes"));
+        } else if (review.aiReviewed()) {
+            status.child(HTML.p().text("AI reviewed (" + review.aiCandidateKey() + ", " + review.aiReviewerModel()
+                    + ") · Pending human · Deployable"));
+        } else {
+            status.child(HTML.p().text("Awaiting review"));
+            status.child(HTML.p().text("Deployable: No"));
+        }
+        if (review.aiReviewed()) {
+            status.child(HTML.p().text("AI candidate: " + review.aiCandidateKey()));
+            status.child(HTML.p().text("AI rationale: " + review.aiRationale()));
+            status.child(HTML.p().text("AI reviewer agent: " + review.aiReviewerAgentIdentity()));
+            if (review.aiReviewedAt() != null) {
+                status.child(HTML.p().text("AI reviewed at: " + review.aiReviewedAt()));
+            }
+            if (!review.aiEvidenceRefs().isEmpty()) {
+                status.child(HTML.p().text("Evidence refs: " + String.join(", ", review.aiEvidenceRefs())));
+            }
+            if (!review.aiArtifactRefs().isEmpty()) {
+                status.child(HTML.p().text("Artifact refs: " + String.join(", ", review.aiArtifactRefs())));
+            }
+            if (review.aiScreenshotArtifactRef() != null && !review.aiScreenshotArtifactRef().isBlank()) {
+                status.child(HTML.p().text("Screenshot artifact: " + review.aiScreenshotArtifactRef()));
+            }
+        }
+        shell.child(status);
+
         HTMLElement frames = HTML.div().classes(QaCSS.QA_DESIGN_FRAMES);
         for (TaskBoardDesignCandidate candidate : review.candidates()) {
             HTMLElement card = HTML.section().classes(QaCSS.QA_DESIGN_CARD)

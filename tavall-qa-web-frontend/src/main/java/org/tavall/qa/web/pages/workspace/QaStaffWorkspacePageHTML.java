@@ -71,8 +71,7 @@ public final class QaStaffWorkspacePageHTML {
             String reviewUrl = QaRoutes.designReview(task.projectKey(), task.taskId());
             if (context.organizationId().isPresent()) reviewUrl += "?organizationId=" + context.organizationId().get();
             shell.child(HTML.section().classes(QaCSS.PUBLIC_BOARD_SHELL).child(HTML.a()
-                    .attribute(HTMLAttribute.HREF, reviewUrl).text(taskView.designReview().decided()
-                            ? "View selected design " + taskView.designReview().winnerKey() : "Compare designs and select winner")));
+                    .attribute(HTMLAttribute.HREF, reviewUrl).text(designReviewStatus(taskView.designReview()))));
         }
 
 
@@ -552,5 +551,16 @@ public final class QaStaffWorkspacePageHTML {
         shell.child(HTML.div().classes(QaCSS.PUBLIC_BOARD_SHELL, QaCSS.PUBLIC_BOARD_NOTICE)
                 .text("Task not found or unavailable."));
         return Forge.page(QaProduct.product(QaRoutes.ROOT), shell);
+    }
+
+    private static String designReviewStatus(org.tavall.qa.domain.TaskBoardDesignReview designReview) {
+        if (designReview.decided()) {
+            return "View selected design " + designReview.winnerKey();
+        }
+        if (designReview.aiReviewed()) {
+            return "AI reviewed (" + designReview.aiCandidateKey() + ", " + designReview.aiReviewerModel()
+                    + ") · Pending human · Deployable";
+        }
+        return "Compare designs and select winner";
     }
 }

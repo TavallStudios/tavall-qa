@@ -43,8 +43,9 @@ final class QaCLIBootstrapTest {
         assertCommandRegistered(registry, "qa task upsert");
         assertCommandRegistered(registry, "qa design register");
         assertCommandRegistered(registry, "qa design decision");
+        assertCommandRegistered(registry, "qa design ai-review");
         assertCommandRegistered(registry, "qa github sync");
-        assertEquals(4, registry.listCommands().size());
+        assertEquals(5, registry.listCommands().size());
         assertTrue(map.isInstanceRegistered(IQaExecutionApiClient.class),
                 "the typed QA execution client must be DI-registered before commands run");
         assertTrue(map.isInstanceRegistered(IGithubIssueReader.class),
@@ -60,7 +61,7 @@ final class QaCLIBootstrapTest {
                 .map(command -> command.path().asString())
                 .sorted()
                 .collect(Collectors.toList());
-        assertEquals(List.of("qa design decision", "qa design register", "qa github sync", "qa task upsert"), paths);
+        assertEquals(List.of("qa design ai-review", "qa design decision", "qa design register", "qa github sync", "qa task upsert"), paths);
     }
 
     @Test

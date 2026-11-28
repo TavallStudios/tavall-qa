@@ -46,6 +46,12 @@ public final class QaDesignDecisionCommand extends CLICommand<QaCliDesignReviewS
         Map<String, String> data = new LinkedHashMap<>();
         data.put("taskId", review.taskId().toString());
         data.put("decided", Boolean.toString(review.decided()));
+        data.put("aiReviewed", Boolean.toString(review.aiReviewed()));
+        data.put("deployable", Boolean.toString(review.deployable()));
+        if (review.aiReviewed()) {
+            data.put("aiCandidateKey", review.aiCandidateKey());
+            data.put("aiReviewerModel", review.aiReviewerModel());
+        }
         if (review.winnerKey() != null) {
             data.put("winnerKey", review.winnerKey());
         }

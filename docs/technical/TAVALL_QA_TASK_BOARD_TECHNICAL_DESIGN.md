@@ -168,3 +168,9 @@ The task-keyed aggregate is persisted by `tavall-qa-system` in `task_board_desig
 `ITaskBoardQueryHandler.findOpenDesignReviews` supplies the role-filtered open review list for the QA review page. The Forge page renders live sandboxed preview frames, builds option controls from candidate metadata, supports single/compare and desktop/tablet/phone widths, and posts winner choices through the existing CSRF-protected Account boundary. The agent ledger client registers candidates with a surface and reads the persisted winner; it never selects a winner.
 
 As of this source update, focused local API/handler, persistence simulation, QA web page, host controller, browser, composed staging and deployment validation are still pending. No runtime or public UI acceptance is inferred from source. Notion synchronization is unavailable in this provider harness (`notion.fetch` returned Unknown tool); the GitHub issue remains the work authority.
+
+### Provisional AI review — November 28, 2026
+
+Migration `043_task_board_design_review_ai_review.sql` adds reviewer attribution, candidate, rationale and evidence references to the existing table. An authorized reviewer can record a provisional recommendation from Claude Opus or Gemini 4 Neon against the current review revision. QA derives the reviewer Account ID from the request-time subject and records the change through the existing transaction and audit path.
+
+Registration alone leaves the review undecided and undeployable. An approved AI recommendation makes the review deployable while it remains open for a human decision. The human winner is authoritative, and the AI attribution remains in the review record. All three QA page surfaces show provisional status. The shared Tavall Web runtime owns the authenticated HTTP adapter for the CLI's `qa design ai-review` command.

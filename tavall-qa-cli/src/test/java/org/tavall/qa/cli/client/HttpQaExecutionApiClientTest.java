@@ -183,6 +183,27 @@ final class HttpQaExecutionApiClientTest {
     }
 
     @Test
+    void aiReviewPostsProvisionalAttributionAndUsesTheCurrentRevision() throws Exception {
+        var result = client.recordDesignAiReview(new QaCliDesignAiReviewRequest(TASK_ID, "A", "Hierarchy",
+                List.of("evidence/1"), List.of("artifact/1"), "screenshot/1",
+                "gemini-4-neon-medium", "neon-reviewer", null, credentialFile));
+
+        var sent = request("/api/execution/tasks/" + TASK_ID + "/design-review/ai-review");
+        assertEquals("POST", sent.method());
+        JsonNode body = mapper.readTree(sent.body());
+        assertEquals(3, body.path("expectedRevision").asInt());
+        assertEquals("gemini-4-neon-medium", body.path("reviewerModel").asText());
+        assertEquals("neon-reviewer", body.path("reviewerAgentIdentity").asText());
+        assertEquals("evidence/1", body.path("evidenceRefs").get(0).asText());
+        assertEquals("artifact/1", body.path("artifactRefs").get(0).asText());
+        assertEquals("screenshot/1", body.path("screenshotArtifactRef").asText());
+        assertFalse(result.decided());
+        assertTrue(result.deployable());
+        assertEquals("A", result.aiCandidateKey());
+        assertEquals(4, result.revision());
+    }
+
+    @Test
     void designReviewParsesDecidedSnapshot() {
         reviewBody = decidedReviewJson(3);
 
@@ -403,6 +424,11 @@ final class HttpQaExecutionApiClientTest {
         String path = exchange.getRequestURI().getRawPath();
         if (path.endsWith("/design-review/candidates")) {
             respond(exchange, candidatesStatus, candidatesBody);
+        } else if (path.endsWith("/design-review/ai-review")) {
+            respond(exchange, 200, """
+                    {"taskId":"%s","revision":4,"aiReviewerModel":"gemini-4-neon-medium",
+                     "aiCandidateKey":"A","winnerKey":null}
+                    """.formatted(TASK_ID));
         } else if (path.endsWith("/design-review")) {
             respond(exchange, reviewStatus, reviewBody);
         } else {

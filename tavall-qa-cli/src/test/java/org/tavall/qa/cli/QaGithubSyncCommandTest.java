@@ -377,6 +377,12 @@ final class QaGithubSyncCommandTest {
 
     /** Deterministic QA execution client stub: no QA API, no credential file, no network. */
     private static final class RecordingQaExecutionApiClient implements IQaExecutionApiClient {
+        @Override
+        public org.tavall.qa.cli.client.QaCliDesignAiReviewResult recordDesignAiReview(
+                org.tavall.qa.cli.client.QaCliDesignAiReviewRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
         final List<QaCliTaskUpsertRequest> upserts = new ArrayList<>();
         final Set<String> existingKeys = new LinkedHashSet<>();
         final Set<String> failingKeys = new LinkedHashSet<>();

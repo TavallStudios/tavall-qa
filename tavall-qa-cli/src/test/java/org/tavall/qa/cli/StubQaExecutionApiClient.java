@@ -1,6 +1,8 @@
 package org.tavall.qa.cli;
 
 import org.tavall.qa.cli.client.IQaExecutionApiClient;
+import org.tavall.qa.cli.client.QaCliDesignAiReviewRequest;
+import org.tavall.qa.cli.client.QaCliDesignAiReviewResult;
 import org.tavall.qa.cli.client.QaCliApiClientException;
 import org.tavall.qa.cli.client.QaCliDesignRegisterRequest;
 import org.tavall.qa.cli.client.QaCliDesignRegisterResult;
@@ -15,6 +17,16 @@ import java.util.UUID;
 
 /** Deterministic in-memory QA execution client for command handler tests. */
 final class StubQaExecutionApiClient implements IQaExecutionApiClient {
+    QaCliDesignAiReviewRequest lastAiReviewRequest;
+    QaCliDesignAiReviewResult nextAiReviewResult;
+
+    @Override
+    public QaCliDesignAiReviewResult recordDesignAiReview(QaCliDesignAiReviewRequest request) {
+        lastAiReviewRequest = request;
+        if (nextFailure != null) throw nextFailure;
+        return nextAiReviewResult;
+    }
+
     QaCliTaskUpsertRequest lastUpsertRequest;
     QaCliTaskUpsertResult nextUpsertResult;
     UUID lastDesignReviewTaskId;

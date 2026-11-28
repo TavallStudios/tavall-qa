@@ -49,7 +49,28 @@ final class QaDesignReviewPageTest {
         assertTrue(viewer.contains("<iframe"));
     }
 
+    @Test
+    void provisionalBadgeAppearsOnAllSurfacesAndHumanSelectionStaysOpen() {
+        TaskBoardTaskView provisional = view(false, true);
+        String badge = "AI reviewed (A, claude-opus-5-5) · Pending human · Deployable";
+        String comparison = renderer.render(QaDesignReviewPage.build(provisional, context(), true, List.of())).body();
+        assertTrue(comparison.contains(badge));
+        assertTrue(comparison.contains("Select B as winner"));
+        assertTrue(comparison.contains("Rendered evidence"));
+        assertTrue(renderer.render(QaStaffWorkspacePage.build(provisional, context())).body().contains(badge));
+        assertTrue(renderer.render(org.tavall.qa.web.pages.task.QaTaskDetailPage.build(provisional, true, false))
+                .body().contains(badge));
+        assertFalse(renderer.render(QaDesignReviewPage.build(provisional, context(), false, List.of()))
+                .body().contains("as winner"));
+        assertFalse(renderer.render(QaDesignReviewPage.build(view(true, true), context(), true, List.of()))
+                .body().contains("Pending human"));
+    }
+
     private static TaskBoardTaskView view(boolean decided) {
+        return view(decided, false);
+    }
+
+    private static TaskBoardTaskView view(boolean decided, boolean aiReviewed) {
         Instant now = Instant.parse("2026-11-12T00:00:00Z");
         UUID taskId = UUID.randomUUID();
         UUID actor = UUID.randomUUID();
@@ -64,6 +85,8 @@ final class QaDesignReviewPageTest {
                 new TaskBoardDesignCandidate("A", "Ledger", "https://dashboard.tavall.org/__preview/design-review?direction=a", "Editorial <script>"),
                 new TaskBoardDesignCandidate("B", "Console", "https://dashboard.tavall.org/__preview/design-review?direction=b", "Operational",
                         java.util.Map.of("state", List.of("loaded", "empty", "error")))), 1, actor, now);
+        if (aiReviewed) review = review.withAiReview("claude-opus-5-5", actor, "reviewer", now,
+                "A", "Rendered evidence", List.of("evidence/1"), List.of(), null);
         if (decided) review = review.select("B", actor, "Accepted hierarchy", now);
         return new TaskBoardTaskView(project, task, List.of(), List.of(), List.of(), List.of(), List.of(), review);
     }

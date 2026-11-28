@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.tavall.qa.domain.TaskBoardAudience;
 import org.tavall.qa.domain.TaskBoardDesignCandidate;
+import org.tavall.qa.domain.TaskBoardDesignReview;
 import org.tavall.qa.domain.TaskBoardTaskStatus;
 
 import java.io.IOException;
@@ -151,6 +152,53 @@ public final class HttpQaExecutionApiClient implements IQaExecutionApiClient {
         return parseRegisterResult(response.body(), request.taskId(), expectedRevision);
     }
 
+    @Override
+    public QaCliDesignAiReviewResult recordDesignAiReview(QaCliDesignAiReviewRequest request) {
+        Objects.requireNonNull(request, "request");
+        QaCliAgentCredential credential = QaCliCredentialReader.load(request.credentialFile());
+        String accessToken = accessToken(credential);
+        int expectedRevision = request.expectedRevision() != null ? request.expectedRevision()
+                : currentRevision(request.taskId(), accessToken, credential);
+        ObjectNode body = objectMapper.createObjectNode();
+        body.put("taskId", request.taskId().toString());
+        body.put("candidateKey", request.candidateKey());
+        body.put("rationale", request.rationale());
+        body.put("reviewerModel", request.reviewerModel());
+        body.put("reviewerAgentIdentity", request.reviewerAgentIdentity());
+        body.put("expectedRevision", expectedRevision);
+        if (request.screenshotArtifactRef() != null && !request.screenshotArtifactRef().isBlank()) {
+            body.put("screenshotArtifactRef", request.screenshotArtifactRef());
+        }
+        ArrayNode evidenceRefs = body.putArray("evidenceRefs");
+        request.evidenceRefs().forEach(evidenceRefs::add);
+        ArrayNode artifactRefs = body.putArray("artifactRefs");
+        request.artifactRefs().forEach(artifactRefs::add);
+        HttpResponse<String> response = post(requestBodyUrl("/api/execution/tasks/" + request.taskId()
+                + "/design-review/ai-review"), accessToken, credential, body.toString());
+        if (response.statusCode() != 200) {
+            throw apiFailure("AI design review failed", response, accessToken, credential);
+        }
+        return parseAiReviewResult(response.body(), request.taskId());
+    }
+
+    private QaCliDesignAiReviewResult parseAiReviewResult(String body, UUID expectedTaskId) {
+        try {
+            JsonNode root = objectMapper.readTree(body);
+            UUID taskId = UUID.fromString(root.required("taskId").asText());
+            String model = root.required("aiReviewerModel").asText();
+            String candidate = root.required("aiCandidateKey").asText();
+            int revision = root.required("revision").asInt();
+            if (!expectedTaskId.equals(taskId) || !TaskBoardDesignReview.isApprovedAiReviewerModel(model)
+                    || !candidate.matches("[A-D]") || revision < 1) {
+                throw new IllegalArgumentException("Invalid AI design review response");
+            }
+            boolean decided = root.hasNonNull("winnerKey") || root.path("decided").asBoolean();
+            return new QaCliDesignAiReviewResult(taskId, revision, model, candidate, decided, true);
+        } catch (JsonProcessingException | IllegalArgumentException e) {
+            throw new QaCliApiClientException("Could not parse AI design review response", 200);
+        }
+    }
+
     private int currentRevision(UUID taskId, String accessToken, QaCliAgentCredential credential) {
         QaCliDesignReviewSnapshot current = readDesignReview(taskId, accessToken, credential);
         return current == null ? 0 : current.revision();
@@ -230,7 +278,16 @@ public final class HttpQaExecutionApiClient implements IQaExecutionApiClient {
                 root.hasNonNull("winnerKey") ? root.get("winnerKey").asText() : null,
                 root.hasNonNull("decidedByAccountId") ? root.get("decidedByAccountId").asText() : null,
                 root.hasNonNull("decidedAt") ? root.get("decidedAt").asText() : null,
-                root.path("note").asText(""));
+                root.path("note").asText(""),
+                root.hasNonNull("aiReviewerModel") ? root.get("aiReviewerModel").asText() : null,
+                root.hasNonNull("aiReviewerAccountId") ? root.get("aiReviewerAccountId").asText() : null,
+                root.hasNonNull("aiReviewerAgentIdentity") ? root.get("aiReviewerAgentIdentity").asText() : null,
+                root.hasNonNull("aiReviewedAt") ? root.get("aiReviewedAt").asText() : null,
+                root.hasNonNull("aiCandidateKey") ? root.get("aiCandidateKey").asText() : null,
+                root.hasNonNull("aiRationale") ? root.get("aiRationale").asText() : null,
+                readStringList(root.path("aiEvidenceRefs")),
+                readStringList(root.path("aiArtifactRefs")),
+                root.hasNonNull("aiScreenshotArtifactRef") ? root.get("aiScreenshotArtifactRef").asText() : null);
     }
 
     private TaskBoardDesignCandidate parseCandidate(JsonNode node) {
@@ -326,6 +383,19 @@ public final class HttpQaExecutionApiClient implements IQaExecutionApiClient {
         return request.sourceReference() == null || request.sourceReference().isBlank()
                 ? request.externalKey()
                 : request.sourceReference();
+    }
+
+    private static List<String> readStringList(JsonNode node) {
+        if (node == null || !node.isArray()) {
+            return List.of();
+        }
+        List<String> values = new ArrayList<>();
+        for (JsonNode value : node) {
+            if (value != null && !value.isNull()) {
+                values.add(value.asText());
+            }
+        }
+        return values;
     }
 
     private static String truncate(String text) {

@@ -21,6 +21,7 @@ import org.tavall.qa.domain.TaskBoardActionType;
 import org.tavall.qa.persistence.ITaskBoardDataHandler;
 import org.tavall.qa.request.TaskBoardActionCreateRequest;
 import org.tavall.qa.request.TaskBoardAssignmentCreateRequest;
+import org.tavall.qa.request.TaskBoardDesignReviewAiReviewRequest;
 import org.tavall.qa.request.TaskBoardDesignReviewDecisionRequest;
 import org.tavall.qa.request.TaskBoardDesignReviewRegisterRequest;
 import org.tavall.qa.request.TaskBoardEvidenceReviewRequest;
@@ -47,6 +48,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -57,7 +60,7 @@ final class TaskBoardMutationHandlerSimulationTest {
     @TempDir Path directory;
 
     @Test
-    void liveReviewDecisionSurvivesCompositionRestartAndCannotBeOverwritten() throws Exception {
+    void provisionalReviewSurvivesRestartAndHumanCanOverrideIt() throws Exception {
         try (var postgres = new TaskBoardPostgresFixture(directory)) {
             UUID taskId;
             UUID actor = UUID.randomUUID();
@@ -73,16 +76,47 @@ final class TaskBoardMutationHandlerSimulationTest {
                 var review = mutations.registerDesignReview(owner, new TaskBoardDesignReviewRegisterRequest(taskId,
                         List.of(new TaskBoardDesignCandidate("A", "Ledger", "https://dashboard.tavall.org/__preview/design-review?direction=a", "Editorial"),
                                 new TaskBoardDesignCandidate("B", "Console", "https://dashboard.tavall.org/__preview/design-review?direction=b", "Operational")), 0));
-                mutations.selectDesignReviewWinner(owner, new TaskBoardDesignReviewDecisionRequest(taskId, "B", "Selected in review", review.revision()));
+                assertFalse(review.deployable());
+                var request = new TaskBoardDesignReviewAiReviewRequest(taskId, "A", "Better hierarchy",
+                        List.of("evidence/1"), List.of("artifact/1"), "screenshots/1",
+                        "gemini-4-neon-high", "design-reviewer", review.revision());
+                var unprivileged = TaskBoardTestSubjects.active(UUID.randomUUID(), UUID.randomUUID(),
+                        java.util.Set.of(), Optional.empty(), java.util.Set.of(), java.util.Set.of(),
+                        List.of(), false, false);
+                assertThrows(SecurityException.class, () -> mutations.recordDesignAiReview(unprivileged, request));
+                var provisional = mutations.recordDesignAiReview(owner, request);
+                assertEquals(2, provisional.revision());
+                assertThrows(org.tavall.qa.domain.TaskBoardConcurrentModificationException.class,
+                        () -> mutations.recordDesignAiReview(owner, request));
             }
+            postgres.restart();
             try (var composition = new TaskBoardPostgresComposition(postgres.database(), Clock.systemUTC())) {
                 var tasks = composition.bean(ITaskBoardDataHandler.class);
-                var review = tasks.findDesignReview(taskId).orElseThrow();
+                var provisional = tasks.findDesignReview(taskId).orElseThrow();
+                assertFalse(provisional.decided());
+                assertNull(provisional.winnerKey());
+                assertTrue(provisional.aiReviewed());
+                assertTrue(provisional.deployable());
+                assertEquals("A", provisional.aiCandidateKey());
+                assertEquals("gemini-4-neon-high", provisional.aiReviewerModel());
+                assertEquals(actor, provisional.aiReviewerAccountId());
+                assertEquals("design-reviewer", provisional.aiReviewerAgentIdentity());
+                assertNotNull(provisional.aiReviewedAt());
+                assertEquals("Better hierarchy", provisional.aiRationale());
+                assertEquals(List.of("evidence/1"), provisional.aiEvidenceRefs());
+                assertEquals(List.of("artifact/1"), provisional.aiArtifactRefs());
+                assertEquals("screenshots/1", provisional.aiScreenshotArtifactRef());
+                assertEquals(TaskBoardTaskStatus.REVIEW, tasks.findTask(taskId).orElseThrow().status());
+                var review = composition.bean(ITaskBoardMutationHandler.class).selectDesignReviewWinner(owner,
+                        new TaskBoardDesignReviewDecisionRequest(taskId, "B", "Selected in review", provisional.revision()));
+                assertTrue(review.decided());
+                assertTrue(review.deployable());
+                assertEquals("A", review.aiCandidateKey());
                 assertEquals("B", review.winnerKey());
                 assertEquals(actor, review.decidedByAccountId());
                 assertNotNull(review.decidedAt());
                 assertEquals("Selected in review", review.note());
-                assertEquals(2, review.revision());
+                assertEquals(3, review.revision());
                 assertEquals(TaskBoardTaskStatus.READY, tasks.findTask(taskId).orElseThrow().status());
                 assertThrows(IllegalStateException.class, () -> composition.bean(ITaskBoardMutationHandler.class)
                         .selectDesignReviewWinner(owner, new TaskBoardDesignReviewDecisionRequest(taskId, "A", "", review.revision())));

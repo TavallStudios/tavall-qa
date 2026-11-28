@@ -275,7 +275,7 @@ public final class QaTaskDetailPageHTML {
             HTMLElement reviewLink = HTML.section().classes(QaCSS.PUBLIC_BOARD_SHELL);
             reviewLink.child(HTML.a().classes(QaCSS.GHOST_BUTTON)
                     .attribute(HTMLAttribute.HREF, organizationHref(QaRoutes.designReview(projectKey, UUID.fromString(taskIdStr)), pageContext))
-                    .text(designReview.decided() ? "Design selected: " + designReview.winnerKey() + " · View review" : "Compare designs and select winner"));
+                    .text(designReviewStatus(designReview)));
             shell.child(reviewLink);
         }
 
@@ -849,5 +849,16 @@ public final class QaTaskDetailPageHTML {
             return path;
         }
         return context.organizationId().map(id -> path + "?organizationId=" + id).orElse(path);
+    }
+
+    private static String designReviewStatus(org.tavall.qa.domain.TaskBoardDesignReview designReview) {
+        if (designReview.decided()) {
+            return "Design selected: " + designReview.winnerKey() + " · View review";
+        }
+        if (designReview.aiReviewed()) {
+            return "AI reviewed (" + designReview.aiCandidateKey() + ", " + designReview.aiReviewerModel()
+                    + ") · Pending human · Deployable";
+        }
+        return "Compare designs and select winner";
     }
 }
