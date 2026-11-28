@@ -5,6 +5,7 @@ import org.tavall.qa.domain.external.TaskBoardExternalReferenceSourceStatus;
 
 import java.net.URI;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.Locale;
 import java.util.UUID;
@@ -37,7 +38,7 @@ public record TaskBoardExternalReferenceMutationRequest(
         if (!SHA256.matcher(sourceFingerprint).matches()) {
             throw new IllegalArgumentException("sourceFingerprint must be a SHA-256 hex digest");
         }
-        Objects.requireNonNull(observedAt, "observedAt");
+        observedAt = Objects.requireNonNull(observedAt, "observedAt").truncatedTo(ChronoUnit.MICROS);
         if (expectedSyncRevision < 0) throw new IllegalArgumentException("expectedSyncRevision must not be negative");
     }
 

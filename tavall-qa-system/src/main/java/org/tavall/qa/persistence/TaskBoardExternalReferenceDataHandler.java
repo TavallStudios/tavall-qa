@@ -2,15 +2,22 @@ package org.tavall.qa.persistence;
 
 import jakarta.persistence.LockModeType;
 import org.tavall.database.postgres.IPostgresDatabase;
+import org.tavall.database.postgres.entity.IPostgresEntityOperationContext;
 import org.tavall.dependency.annotations.DelegatesTo;
+import org.tavall.qa.domain.TaskBoardAudience;
 import org.tavall.qa.domain.TaskBoardAuditEntry;
 import org.tavall.qa.domain.TaskBoardAuditEventType;
 import org.tavall.qa.domain.TaskBoardConcurrentModificationException;
 import org.tavall.qa.domain.TaskBoardStorageUnavailableException;
+import org.tavall.qa.domain.TaskBoardQaStatus;
+import org.tavall.qa.domain.TaskBoardTask;
+import org.tavall.qa.domain.TaskBoardTaskPriority;
+import org.tavall.qa.domain.TaskBoardTaskStatus;
 import org.tavall.qa.domain.external.TaskBoardExternalReference;
 import org.tavall.qa.domain.external.TaskBoardExternalReferenceConflict;
 import org.tavall.qa.domain.external.TaskBoardExternalReferenceConflictResolution;
 import org.tavall.qa.domain.external.TaskBoardExternalReferenceConflictStatus;
+import org.tavall.qa.domain.external.TaskBoardExternalReferenceIngestResult;
 import org.tavall.qa.domain.external.TaskBoardExternalReferenceKey;
 import org.tavall.qa.domain.external.TaskBoardExternalReferenceMutationOutcome;
 import org.tavall.qa.domain.external.TaskBoardExternalReferenceMutationResult;
@@ -19,16 +26,19 @@ import org.tavall.qa.domain.external.TaskBoardExternalReferenceSourceStatus;
 import org.tavall.qa.domain.external.TaskBoardExternalReferenceSyncState;
 import org.tavall.qa.persistence.entity.TaskBoardAuditEntryEntity;
 import org.tavall.qa.persistence.entity.TaskBoardExternalReferenceConflictEntity;
+import org.tavall.qa.persistence.entity.TaskBoardExternalReferenceAliasEntity;
 import org.tavall.qa.persistence.entity.TaskBoardExternalReferenceEntity;
 import org.tavall.qa.persistence.entity.TaskBoardTaskEntity;
 import org.tavall.qa.request.external.TaskBoardExternalReferenceConflictResolutionRequest;
 import org.tavall.qa.request.external.TaskBoardExternalReferenceMutationRequest;
+import org.tavall.qa.request.external.TaskBoardExternalReferenceIngestRequest;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Comparator;
-import java.util.HashSet;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -39,7 +49,7 @@ import java.util.UUID;
 /** Mapped-JPA authority for QA-owned links to externally owned work items. */
 @DelegatesTo(ITaskBoardExternalReferenceDataHandler.class)
 public final class TaskBoardExternalReferenceDataHandler implements ITaskBoardExternalReferenceDataHandler {
-    private static final String TASK_REFERENCE_LOCK_PREFIX = "tavall-qa:external-references:task:";
+    private static final String IDENTITY_CONFLICT = "Ambiguous external identity: ";
     private static final String OPEN_STATUS_PARAMETER = "status";
 
     private final IPostgresDatabase database;
@@ -100,6 +110,127 @@ public final class TaskBoardExternalReferenceDataHandler implements ITaskBoardEx
     }
 
     @Override
+    public Optional<TaskBoardExternalReference> findGitHubReference(String alias) {
+        requireAvailable();
+        String key = requireGitHubAlias(alias);
+        return database.entities().find(TaskBoardExternalReferenceAliasEntity.class, key)
+                .flatMap(row -> database.entities().find(TaskBoardExternalReferenceEntity.class, row.referenceId()))
+                .map(TaskBoardExternalReferenceEntity::toDomain);
+    }
+
+    @Override
+    public List<String> findGitHubAliases(TaskBoardExternalReferenceKey key) {
+        return findReference(key).map(reference -> database.entities().findNamed(
+                        TaskBoardExternalReferenceAliasEntity.class, TaskBoardExternalReferenceAliasEntity.FIND_BY_REFERENCE,
+                        Map.of("referenceId", reference.referenceId().toString()), 0)
+                .stream().map(TaskBoardExternalReferenceAliasEntity::aliasKey).toList()).orElseGet(List::of);
+    }
+
+    @Override
+    public List<TaskBoardExternalReferenceConflict> findConflictHistory(UUID taskId) {
+        requireAvailable();
+        return database.entities().findNamed(TaskBoardExternalReferenceConflictEntity.class,
+                        TaskBoardExternalReferenceConflictEntity.FIND_HISTORY_FOR_TASK,
+                        Map.of("taskId", taskId.toString()), 0)
+                .stream().map(TaskBoardExternalReferenceConflictEntity::toDomain).toList();
+    }
+
+    @Override
+    public TaskBoardExternalReferenceIngestResult ingest(
+            TaskBoardExternalReferenceIngestRequest request, TaskBoardAuditEntry actor) {
+        requireAvailable();
+        String alias = requireGitHubAlias(request.github().sourceUrl());
+        if (!alias.endsWith("/" + request.github().key().sourceId())
+                || "0".equals(request.github().key().sourceNamespaceId())) {
+            throw new IllegalArgumentException("The GitHub URL must match a positive repository ID and issue number");
+        }
+        return database.entities().executeAtomic(context -> {
+            context.acquireAdvisoryTransactionLock(TaskBoardExternalReferenceAliasEntity.WRITE_LOCK);
+            Set<UUID> candidates = new LinkedHashSet<>();
+            Optional<TaskBoardExternalReferenceEntity> github = findByKey(context, request.github().key());
+            github.map(row -> UUID.fromString(row.getTaskId())).ifPresent(candidates::add);
+            var linearReference = request.linear().flatMap(value -> findByKey(context, value.key()));
+            linearReference.map(row -> UUID.fromString(row.getTaskId())).ifPresent(candidates::add);
+            Optional<TaskBoardExternalReferenceEntity> aliasReference = findByAlias(context, alias);
+            aliasReference.map(row -> UUID.fromString(row.getTaskId())).ifPresent(candidates::add);
+            context.findNamed(TaskBoardTaskEntity.class, TaskBoardTaskEntity.FIND_BY_GITHUB_ALIAS,
+                    Map.of("alias", alias), 0).forEach(row -> candidates.add(row.toDomain().taskId()));
+            request.existingTaskId().ifPresent(candidates::add);
+
+            boolean created = candidates.isEmpty();
+            UUID taskId = created ? UUID.randomUUID() : candidates.iterator().next();
+            var githubObservation = request.github().forTask(taskId);
+            var linearObservation = request.linear().map(value -> value.forTask(taskId));
+            TaskBoardTask task;
+            if (created) {
+                if (githubObservation.expectedSyncRevision() != 0
+                        || linearObservation.filter(value -> value.expectedSyncRevision() != 0).isPresent()) {
+                    throw new TaskBoardConcurrentModificationException("A new source map requires revision zero");
+                }
+                Instant now = clock.instant().truncatedTo(ChronoUnit.MICROS);
+                task = new TaskBoardTask(taskId, request.projectKey(), request.sectionKey(), request.initialTitle(),
+                        "", "", "", TaskBoardTaskStatus.BACKLOG, TaskBoardTaskPriority.NORMAL, TaskBoardQaStatus.NHV,
+                        TaskBoardAudience.STAFF, 1, false, "", "", false,
+                        actor.actorAccountId().orElseThrow(), actor.actorMinecraftUuid(), null, null, null, null, 0, now, now);
+                context.save(TaskBoardTaskEntity.fromDomain(task, alias));
+                context.save(TaskBoardAuditEntryEntity.fromDomain(taskAudit(actor, task, TaskBoardAuditEventType.TASK_CREATED)));
+            } else {
+                task = requireLockedTask(context, taskId);
+                boolean aliasMismatch = aliasReference.map(TaskBoardExternalReferenceEntity::toDomain)
+                        .filter(reference -> !reference.key().equals(request.github().key())).isPresent();
+                boolean linearMismatch = linearObservation.filter(value -> hasDifferentProviderReference(context, value)).isPresent()
+                        || linearReference.filter(row -> !row.getTaskId().equals(taskId.toString())).isPresent();
+                boolean occupiedSlot = hasDifferentProviderReference(context, githubObservation) || linearMismatch;
+                if (candidates.size() > 1 || aliasMismatch || occupiedSlot
+                        || !task.projectKey().equals(request.projectKey())) {
+                    Optional<UUID> other = candidates.stream().filter(id -> !id.equals(taskId)).findFirst();
+                    var disputedObservation = linearMismatch ? linearObservation.orElseThrow() : githubObservation;
+                    var result = conflict(context, disputedObservation,
+                            taskAudit(actor, task, TaskBoardAuditEventType.EXTERNAL_REFERENCE_CONFLICTED),
+                            Optional.empty(), other.or(() -> Optional.of(taskId)),
+                            IDENTITY_CONFLICT + "the submitted source identities or QA scope disagree");
+                    return new TaskBoardExternalReferenceIngestResult(Optional.empty(), false, List.of(result));
+                }
+            }
+
+            var observations = new ArrayList<TaskBoardExternalReferenceMutationResult>();
+            observations.add(reconcile(context, githubObservation,
+                    taskAudit(actor, task, TaskBoardAuditEventType.EXTERNAL_REFERENCE_UPSERTED), true));
+            linearObservation.ifPresent(value -> observations.add(reconcile(context, value,
+                    taskAudit(actor, task, TaskBoardAuditEventType.EXTERNAL_REFERENCE_UPSERTED), true)));
+            return new TaskBoardExternalReferenceIngestResult(Optional.of(taskId), created, observations);
+        });
+    }
+
+    private TaskBoardAuditEntry taskAudit(TaskBoardAuditEntry actor, TaskBoardTask task, TaskBoardAuditEventType type) {
+        return new TaskBoardAuditEntry(UUID.randomUUID(), Optional.of(task.taskId()), task.projectKey(),
+                actor.actorAccountId(), actor.actorMinecraftUuid(), type, actor.summary(), clock.instant());
+    }
+
+    private static boolean hasDifferentProviderReference(
+            IPostgresEntityOperationContext context, TaskBoardExternalReferenceMutationRequest request) {
+        return findTaskProvider(context, request.taskId(), request.key().provider())
+                .map(TaskBoardExternalReferenceEntity::toDomain)
+                .filter(reference -> !reference.key().equals(request.key())).isPresent();
+    }
+
+    private static String requireGitHubAlias(String value) {
+        return TaskBoardExternalReferenceAliasEntity.githubAlias(value)
+                .orElseThrow(() -> new IllegalArgumentException("An exact GitHub issue URL or key is required"));
+    }
+
+    private static Optional<TaskBoardExternalReferenceEntity> findByAlias(
+            IPostgresEntityOperationContext context, String alias) {
+        return context.find(TaskBoardExternalReferenceAliasEntity.class, alias)
+                .flatMap(row -> context.find(TaskBoardExternalReferenceEntity.class, row.referenceId()));
+    }
+
+    private static TaskBoardTask requireLockedTask(IPostgresEntityOperationContext context, UUID taskId) {
+        return context.find(TaskBoardTaskEntity.class, taskId.toString(), LockModeType.PESSIMISTIC_READ)
+                .orElseThrow(() -> new IllegalArgumentException("Task Board task not found: " + taskId)).toDomain();
+    }
+
+    @Override
     public TaskBoardExternalReferenceMutationResult registerOrReconcile(
             TaskBoardExternalReferenceMutationRequest request,
             TaskBoardAuditEntry auditEntry
@@ -108,96 +239,128 @@ public final class TaskBoardExternalReferenceDataHandler implements ITaskBoardEx
         Objects.requireNonNull(request, "request");
         requireAudit(auditEntry, request.taskId());
         return database.entities().executeAtomic(context -> {
-            context.acquireAdvisoryTransactionLock(request.key().advisoryLockKey());
-            Optional<TaskBoardExternalReferenceEntity> existingRow = findByKey(context, request.key());
-            Set<UUID> lockedTasks = new HashSet<>();
-            lockedTasks.add(request.taskId());
-            existingRow.map(row -> UUID.fromString(row.getTaskId())).ifPresent(lockedTasks::add);
-            acquireTaskReferenceLocks(context, lockedTasks);
-
-            TaskBoardTaskEntity task = context.find(TaskBoardTaskEntity.class, request.taskId().toString(),
-                            LockModeType.PESSIMISTIC_READ)
-                    .orElseThrow(() -> new IllegalArgumentException("Task Board task not found: " + request.taskId()));
-            if (!task.toDomain().projectKey().equals(auditEntry.projectKey())) {
-                throw new IllegalArgumentException("Audit project must match the referenced Task Board task");
-            }
-
-            Optional<TaskBoardExternalReferenceEntity> latest = findByKey(context, request.key());
-            if (latest.isPresent() && !latest.orElseThrow().getTaskId().equals(request.taskId().toString())) {
-                return conflict(context, request, auditEntry, latest, Optional.of(UUID.fromString(latest.orElseThrow().getTaskId())),
-                        "External identity is already linked to another QA task");
-            }
-
-            Optional<TaskBoardExternalReferenceEntity> current = latest;
-            if (current.isPresent() && isExactReplay(current.orElseThrow().toDomain(), request)) {
-                return new TaskBoardExternalReferenceMutationResult(
-                        Optional.of(current.orElseThrow().toDomain()), Optional.empty(), TaskBoardExternalReferenceMutationOutcome.REPLAYED);
-            }
-
-            if (current.map(TaskBoardExternalReferenceEntity::toDomain)
-                    .map(reference -> reference.syncRevision() != request.expectedSyncRevision())
-                    .orElse(request.expectedSyncRevision() != 0)) {
-                return conflict(context, request, auditEntry, current, Optional.of(request.taskId()),
-                        "Expected sync revision does not match the current reference revision");
-            }
-
-            if (current.isEmpty()) {
-                Optional<TaskBoardExternalReferenceEntity> occupiedProviderSlot =
-                        findTaskProvider(context, request.taskId(), request.key().provider());
-                if (occupiedProviderSlot.isPresent()
-                        && !occupiedProviderSlot.orElseThrow().toDomain().key().equals(request.key())) {
-                    return conflict(context, request, auditEntry, Optional.empty(), Optional.of(request.taskId()),
-                            "QA task already has a different external reference for this provider");
-                }
-            }
-
-            if (current.isPresent()) {
-                TaskBoardExternalReference accepted = current.orElseThrow().toDomain();
-                if (accepted.lastAppliedRevision().equals(request.sourceRevision())
-                        && !accepted.sourceFingerprint().equalsIgnoreCase(request.sourceFingerprint())) {
-                    return conflict(context, request, auditEntry, current, Optional.of(request.taskId()),
-                            "Source revision was replayed with a different content fingerprint");
-                }
-                if (request.observedAt().isBefore(accepted.lastObservedAt())) {
-                    return conflict(context, request, auditEntry, current, Optional.of(request.taskId()),
-                            "Source observation timestamp moved backwards");
-                }
-                if (accepted.syncState() == TaskBoardExternalReferenceSyncState.CONFLICT) {
-                    return conflict(context, request, auditEntry, current, Optional.of(request.taskId()),
-                            "External reference has unresolved conflicts");
-                }
-            }
-
-            Optional<TaskBoardExternalReferenceEntity> otherProvider = findTaskProvider(context, request.taskId(), otherProvider(request.key().provider()));
-            if (otherProvider.isPresent()
-                    && contradictory(otherProvider.orElseThrow().toDomain().sourceStatus(), request.sourceStatus())) {
-                return conflict(context, request, auditEntry, current, Optional.of(request.taskId()),
-                        "Provider source statuses disagree between active work and terminal work");
-            }
-
-            Instant now = clock.instant();
-            TaskBoardExternalReference saved;
-            TaskBoardExternalReferenceMutationOutcome outcome;
-            if (current.isEmpty()) {
-                saved = new TaskBoardExternalReference(UUID.randomUUID(), request.taskId(), request.key(),
-                        request.displayKey(), request.sourceUrl(), request.sourceStatus(), request.sourceRevision(),
-                        request.sourceRevision(), request.sourceCursor(), request.sourceFingerprint(),
-                        TaskBoardExternalReferenceSyncState.CONNECTED, 1, request.observedAt(), request.observedAt(), now, now);
-                outcome = TaskBoardExternalReferenceMutationOutcome.CREATED;
-            } else {
-                TaskBoardExternalReference previous = current.orElseThrow().toDomain();
-                saved = copyReference(previous, request.displayKey(), request.sourceUrl(), request.sourceStatus(),
-                        request.sourceRevision(), request.sourceRevision(), request.sourceCursor(), request.sourceFingerprint(),
-                        TaskBoardExternalReferenceSyncState.CONNECTED, previous.syncRevision() + 1,
-                        request.observedAt(), request.observedAt(), now);
-                outcome = TaskBoardExternalReferenceMutationOutcome.UPDATED;
-            }
-            context.save(TaskBoardExternalReferenceEntity.fromDomain(saved));
-            context.save(TaskBoardAuditEntryEntity.fromDomain(auditFor(auditEntry,
-                    TaskBoardAuditEventType.EXTERNAL_REFERENCE_UPSERTED,
-                    "Registered or reconciled " + request.key().provider() + " external reference " + request.key().stableKey())));
-            return new TaskBoardExternalReferenceMutationResult(Optional.of(saved), Optional.empty(), outcome);
+            context.acquireAdvisoryTransactionLock(TaskBoardExternalReferenceAliasEntity.WRITE_LOCK);
+            return reconcile(context, request, auditEntry, false);
         });
+    }
+
+    private TaskBoardExternalReferenceMutationResult reconcile(IPostgresEntityOperationContext context,
+            TaskBoardExternalReferenceMutationRequest request, TaskBoardAuditEntry auditEntry, boolean ingest) {
+        TaskBoardTask task = requireLockedTask(context, request.taskId());
+        if (!task.projectKey().equals(auditEntry.projectKey())) {
+            throw new IllegalArgumentException("Audit project must match the referenced Task Board task");
+        }
+
+        Optional<TaskBoardExternalReferenceEntity> latest = findByKey(context, request.key());
+        Optional<String> alias = request.key().provider() == TaskBoardExternalReferenceProvider.GITHUB_ISSUE
+                ? TaskBoardExternalReferenceAliasEntity.githubAlias(request.sourceUrl()) : Optional.empty();
+        Optional<TaskBoardExternalReferenceEntity> aliasReference = alias.flatMap(value -> findByAlias(context, value));
+        if (aliasReference.map(TaskBoardExternalReferenceEntity::toDomain)
+                .filter(reference -> !reference.key().equals(request.key())).isPresent()) {
+            return conflict(context, request, auditEntry, Optional.empty(),
+                    aliasReference.map(row -> UUID.fromString(row.getTaskId())), IDENTITY_CONFLICT + "GitHub alias is already linked");
+        }
+        if (latest.isPresent() && !latest.orElseThrow().getTaskId().equals(request.taskId().toString())) {
+            return conflict(context, request, auditEntry, latest, Optional.of(UUID.fromString(latest.orElseThrow().getTaskId())),
+                    "External identity is already linked to another QA task");
+        }
+
+        Optional<TaskBoardExternalReferenceEntity> current = latest;
+        if (ingest) {
+            current.map(TaskBoardExternalReferenceEntity::toDomain)
+                    .ifPresent(reference -> rememberAlias(context, alias, reference));
+        }
+        if (current.isPresent() && isExactReplay(current.orElseThrow().toDomain(), request)) {
+            rememberAlias(context, alias, current.orElseThrow().toDomain());
+            return new TaskBoardExternalReferenceMutationResult(
+                    Optional.of(current.orElseThrow().toDomain()), Optional.empty(), TaskBoardExternalReferenceMutationOutcome.REPLAYED);
+        }
+
+        if (current.map(TaskBoardExternalReferenceEntity::toDomain)
+                .map(reference -> reference.syncRevision() != request.expectedSyncRevision())
+                .orElse(request.expectedSyncRevision() != 0)) {
+            return conflict(context, request, auditEntry, current, Optional.of(request.taskId()),
+                    "Expected sync revision does not match the current reference revision");
+        }
+
+        if (current.isEmpty()) {
+            Optional<TaskBoardExternalReferenceEntity> occupiedProviderSlot =
+                    findTaskProvider(context, request.taskId(), request.key().provider());
+            if (occupiedProviderSlot.isPresent()
+                    && !occupiedProviderSlot.orElseThrow().toDomain().key().equals(request.key())) {
+                return conflict(context, request, auditEntry, Optional.empty(), Optional.of(request.taskId()),
+                        "QA task already has a different external reference for this provider");
+            }
+        }
+
+        if (current.isPresent()) {
+            TaskBoardExternalReference accepted = current.orElseThrow().toDomain();
+            if (accepted.lastAppliedRevision().equals(request.sourceRevision())
+                    && !accepted.sourceFingerprint().equalsIgnoreCase(request.sourceFingerprint())) {
+                return conflict(context, request, auditEntry, current, Optional.of(request.taskId()),
+                        "Source revision was replayed with a different content fingerprint");
+            }
+            if (request.observedAt().isBefore(accepted.lastObservedAt())) {
+                return conflict(context, request, auditEntry, current, Optional.of(request.taskId()),
+                        "Source observation timestamp moved backwards");
+            }
+            if (accepted.syncState() == TaskBoardExternalReferenceSyncState.CONFLICT) {
+                return conflict(context, request, auditEntry, current, Optional.of(request.taskId()),
+                        "External reference has unresolved conflicts");
+            }
+        }
+
+        Optional<TaskBoardExternalReferenceEntity> otherProvider = findTaskProvider(context, request.taskId(), otherProvider(request.key().provider()));
+        boolean providerDisagreement = otherProvider.map(TaskBoardExternalReferenceEntity::toDomain)
+                .filter(other -> contradictory(other.sourceStatus(), request.sourceStatus())).isPresent();
+        boolean contradictsExecution = request.sourceStatus().indicatesTerminalWork()
+                && (task.status() == TaskBoardTaskStatus.ACTIVE || task.status() == TaskBoardTaskStatus.REVIEW);
+        if (providerDisagreement || contradictsExecution) {
+            if (ingest && current.isEmpty()) {
+                // Reserve the stable identity even when its first observation requires review.
+                Instant now = clock.instant().truncatedTo(ChronoUnit.MICROS);
+                var pending = new TaskBoardExternalReference(UUID.randomUUID(), request.taskId(), request.key(),
+                        request.displayKey(), request.sourceUrl(), TaskBoardExternalReferenceSourceStatus.UNKNOWN,
+                        request.sourceRevision(), "", request.sourceCursor(), "", TaskBoardExternalReferenceSyncState.PENDING,
+                        1, request.observedAt(), request.observedAt(), now, now);
+                current = Optional.of(context.save(TaskBoardExternalReferenceEntity.fromDomain(pending)));
+                rememberAlias(context, alias, pending);
+            }
+            return conflict(context, request, auditEntry, current, Optional.of(request.taskId()),
+                    providerDisagreement ? "Provider source statuses disagree between active work and terminal work"
+                            : "External terminal status disagrees with active QA execution");
+        }
+
+        Instant now = clock.instant().truncatedTo(ChronoUnit.MICROS);
+        TaskBoardExternalReference saved;
+        TaskBoardExternalReferenceMutationOutcome outcome;
+        if (current.isEmpty()) {
+            saved = new TaskBoardExternalReference(UUID.randomUUID(), request.taskId(), request.key(),
+                    request.displayKey(), request.sourceUrl(), request.sourceStatus(), request.sourceRevision(),
+                    request.sourceRevision(), request.sourceCursor(), request.sourceFingerprint(),
+                    TaskBoardExternalReferenceSyncState.CONNECTED, 1, request.observedAt(), request.observedAt(), now, now);
+            outcome = TaskBoardExternalReferenceMutationOutcome.CREATED;
+        } else {
+            TaskBoardExternalReference previous = current.orElseThrow().toDomain();
+            saved = copyReference(previous, request.displayKey(), request.sourceUrl(), request.sourceStatus(),
+                    request.sourceRevision(), request.sourceRevision(), request.sourceCursor(), request.sourceFingerprint(),
+                    TaskBoardExternalReferenceSyncState.CONNECTED, previous.syncRevision() + 1,
+                    request.observedAt(), request.observedAt(), now);
+            outcome = TaskBoardExternalReferenceMutationOutcome.UPDATED;
+        }
+        context.save(TaskBoardExternalReferenceEntity.fromDomain(saved));
+        rememberAlias(context, alias, saved);
+        context.save(TaskBoardAuditEntryEntity.fromDomain(auditFor(auditEntry,
+                TaskBoardAuditEventType.EXTERNAL_REFERENCE_UPSERTED,
+                "Registered or reconciled " + request.key().provider() + " external reference " + request.key().stableKey())));
+        return new TaskBoardExternalReferenceMutationResult(Optional.of(saved), Optional.empty(), outcome);
+    }
+
+    private static void rememberAlias(IPostgresEntityOperationContext context, Optional<String> alias,
+            TaskBoardExternalReference reference) {
+        alias.filter(value -> context.find(TaskBoardExternalReferenceAliasEntity.class, value).isEmpty())
+                .ifPresent(value -> context.save(new TaskBoardExternalReferenceAliasEntity(
+                        value, reference.referenceId().toString())));
     }
 
     @Override
@@ -211,6 +374,7 @@ public final class TaskBoardExternalReferenceDataHandler implements ITaskBoardEx
         Objects.requireNonNull(actorAccountId, "actorAccountId");
         Objects.requireNonNull(auditEntry, "auditEntry");
         return database.entities().executeAtomic(context -> {
+            context.acquireAdvisoryTransactionLock(TaskBoardExternalReferenceAliasEntity.WRITE_LOCK);
             TaskBoardExternalReferenceConflictEntity conflictRow = context.find(
                             TaskBoardExternalReferenceConflictEntity.class, request.conflictId().toString(), LockModeType.PESSIMISTIC_WRITE)
                     .orElseThrow(() -> new IllegalArgumentException("External reference conflict not found: " + request.conflictId()));
@@ -220,8 +384,6 @@ public final class TaskBoardExternalReferenceDataHandler implements ITaskBoardEx
                 throw new TaskBoardConcurrentModificationException("External reference conflict was already resolved differently");
             }
 
-            context.acquireAdvisoryTransactionLock(conflict.key().advisoryLockKey());
-            acquireTaskReferenceLocks(context, Set.of(conflict.requestedTaskId()));
             TaskBoardTaskEntity task = context.find(TaskBoardTaskEntity.class, conflict.requestedTaskId().toString(),
                             LockModeType.PESSIMISTIC_READ)
                     .orElseThrow(() -> new IllegalArgumentException("Task Board task not found: " + conflict.requestedTaskId()));
@@ -236,21 +398,33 @@ public final class TaskBoardExternalReferenceDataHandler implements ITaskBoardEx
             if (currentRevision != request.expectedSyncRevision()) {
                 throw new TaskBoardConcurrentModificationException("External reference changed since the conflict was loaded");
             }
-            if (current.isPresent() && !current.orElseThrow().taskId().equals(conflict.requestedTaskId())) {
+            boolean applyIncoming = request.resolution() == TaskBoardExternalReferenceConflictResolution.APPLY_INCOMING;
+            if (applyIncoming && conflict.reason().startsWith(IDENTITY_CONFLICT)) {
+                throw new TaskBoardConcurrentModificationException("Resolve the source identity before resubmitting");
+            }
+            if (applyIncoming && current.isPresent() && !current.orElseThrow().taskId().equals(conflict.requestedTaskId())) {
                 throw new TaskBoardConcurrentModificationException("External identity is now linked to another QA task");
             }
 
-            Instant now = clock.instant();
+            Instant now = clock.instant().truncatedTo(ChronoUnit.MICROS);
             boolean otherOpenConflict = hasOtherOpenConflict(context, conflict);
-            if (request.resolution() == TaskBoardExternalReferenceConflictResolution.APPLY_INCOMING) {
+            if (applyIncoming) {
                 Optional<TaskBoardExternalReferenceEntity> providerSlot = findTaskProvider(context, conflict.requestedTaskId(), conflict.key().provider());
                 if (providerSlot.isPresent() && !providerSlot.orElseThrow().getSourceId().equals(conflict.key().sourceId())) {
                     throw new TaskBoardConcurrentModificationException("The QA task already has a different reference for this provider");
                 }
                 TaskBoardExternalReference applied = referenceFromConflict(conflict, current, now,
                         otherOpenConflict ? TaskBoardExternalReferenceSyncState.CONFLICT : TaskBoardExternalReferenceSyncState.CONNECTED);
+                var alias = conflict.key().provider() == TaskBoardExternalReferenceProvider.GITHUB_ISSUE
+                        ? TaskBoardExternalReferenceAliasEntity.githubAlias(conflict.incomingSourceUrl()) : Optional.<String>empty();
+                if (alias.flatMap(value -> findByAlias(context, value)).map(TaskBoardExternalReferenceEntity::toDomain)
+                        .filter(reference -> !reference.key().equals(conflict.key())).isPresent()) {
+                    throw new TaskBoardConcurrentModificationException("GitHub alias is already linked");
+                }
                 context.save(TaskBoardExternalReferenceEntity.fromDomain(applied));
-            } else if (current.isPresent()) {
+                rememberAlias(context, alias, applied);
+            } else if (!conflict.reason().startsWith(IDENTITY_CONFLICT) && current.isPresent()
+                    && current.orElseThrow().taskId().equals(conflict.requestedTaskId())) {
                 TaskBoardExternalReference previous = current.orElseThrow();
                 if (!otherOpenConflict && previous.syncState() == TaskBoardExternalReferenceSyncState.CONFLICT) {
                     TaskBoardExternalReference restored = copyReference(previous, previous.displayKey(), previous.sourceUrl(),
@@ -278,25 +452,25 @@ public final class TaskBoardExternalReferenceDataHandler implements ITaskBoardEx
     }
 
     private TaskBoardExternalReferenceMutationResult conflict(
-            org.tavall.database.postgres.entity.IPostgresEntityOperationContext context,
+            IPostgresEntityOperationContext context,
             TaskBoardExternalReferenceMutationRequest request,
             TaskBoardAuditEntry auditEntry,
             Optional<TaskBoardExternalReferenceEntity> current,
             Optional<UUID> existingTaskId,
             String reason
     ) {
-        UUID conflictId = conflictId(request);
+        UUID conflictId = conflictId(request, existingTaskId, reason);
         Optional<TaskBoardExternalReferenceConflictEntity> alreadyQueued = context.find(
                 TaskBoardExternalReferenceConflictEntity.class, conflictId.toString());
         if (alreadyQueued.isPresent()) {
             TaskBoardExternalReferenceConflict existingConflict = alreadyQueued.orElseThrow().toDomain();
-            Optional<TaskBoardExternalReference> currentReference = findByKey(context, request.key())
-                    .map(TaskBoardExternalReferenceEntity::toDomain);
+            Optional<TaskBoardExternalReference> currentReference = reason.startsWith(IDENTITY_CONFLICT)
+                    ? Optional.empty() : findByKey(context, request.key()).map(TaskBoardExternalReferenceEntity::toDomain);
             return new TaskBoardExternalReferenceMutationResult(currentReference,
                     Optional.of(existingConflict), TaskBoardExternalReferenceMutationOutcome.CONFLICT);
         }
 
-        Instant now = clock.instant();
+        Instant now = clock.instant().truncatedTo(ChronoUnit.MICROS);
         Optional<UUID> referenceId = current.map(row -> UUID.fromString(row.getReferenceId()));
         TaskBoardExternalReferenceConflict queued = new TaskBoardExternalReferenceConflict(conflictId, request.key(), referenceId,
                 existingTaskId, request.taskId(), request.displayKey(), request.sourceUrl(), request.sourceStatus(),
@@ -388,7 +562,7 @@ public final class TaskBoardExternalReferenceDataHandler implements ITaskBoardEx
     }
 
     private static Optional<TaskBoardExternalReferenceEntity> findByKey(
-            org.tavall.database.postgres.entity.IPostgresEntityOperationContext context,
+            IPostgresEntityOperationContext context,
             TaskBoardExternalReferenceKey key
     ) {
         return context.findOneNamed(TaskBoardExternalReferenceEntity.class,
@@ -396,7 +570,7 @@ public final class TaskBoardExternalReferenceDataHandler implements ITaskBoardEx
     }
 
     private static Optional<TaskBoardExternalReferenceEntity> findTaskProvider(
-            org.tavall.database.postgres.entity.IPostgresEntityOperationContext context,
+            IPostgresEntityOperationContext context,
             UUID taskId,
             TaskBoardExternalReferenceProvider provider
     ) {
@@ -409,23 +583,19 @@ public final class TaskBoardExternalReferenceDataHandler implements ITaskBoardEx
         return Map.of("provider", key.provider(), "sourceNamespaceId", key.sourceNamespaceId(), "sourceId", key.sourceId());
     }
 
-    private static void acquireTaskReferenceLocks(
-            org.tavall.database.postgres.entity.IPostgresEntityOperationContext context,
-            Set<UUID> taskIds
-    ) {
-        taskIds.stream().map(UUID::toString).sorted(Comparator.naturalOrder())
-                .forEach(id -> context.acquireAdvisoryTransactionLock(TASK_REFERENCE_LOCK_PREFIX + id));
-    }
-
-    private static UUID conflictId(TaskBoardExternalReferenceMutationRequest request) {
+    private static UUID conflictId(TaskBoardExternalReferenceMutationRequest request, Optional<UUID> existingTaskId,
+            String reason) {
         String fingerprint = request.key().stableKey() + "|" + request.taskId() + "|"
                 + request.sourceRevision() + "|" + request.sourceFingerprint() + "|"
                 + request.sourceStatus();
+        if (reason.startsWith(IDENTITY_CONFLICT)) {
+            fingerprint += "|identity|" + existingTaskId.map(UUID::toString).orElse("");
+        }
         return UUID.nameUUIDFromBytes(fingerprint.getBytes(StandardCharsets.UTF_8));
     }
 
     private static boolean hasOtherOpenConflict(
-            org.tavall.database.postgres.entity.IPostgresEntityOperationContext context,
+            IPostgresEntityOperationContext context,
             TaskBoardExternalReferenceConflict conflict
     ) {
         return context.findNamed(TaskBoardExternalReferenceConflictEntity.class,
