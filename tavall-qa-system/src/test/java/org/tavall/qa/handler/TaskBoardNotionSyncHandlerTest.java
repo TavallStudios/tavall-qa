@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.tavall.dependency.maps.DependencyMap;
 import org.junit.jupiter.api.io.TempDir;
 import org.tavall.qa.auth.TaskBoardTestSubjects;
 import org.tavall.qa.domain.TaskBoardAudience;
@@ -39,6 +40,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -56,6 +58,7 @@ final class TaskBoardNotionSyncHandlerTest {
     private TaskBoardQueryHandler queryHandler;
     private TaskBoardNotionSyncHandler syncHandler;
     private TaskBoardAgentViewHandler agentViewHandler;
+    private final DependencyMap dependencies = new DependencyMap();
     private TaskBoardTestComposition composition;
 
     private QaSubjectContext manager;
@@ -67,7 +70,7 @@ final class TaskBoardNotionSyncHandlerTest {
     @BeforeEach
     void setUp() {
         Clock clock = Clock.fixed(baseTime, ZoneOffset.UTC);
-        composition = TaskBoardTestComposition.open(tempDir, clock);
+        composition = TaskBoardTestComposition.open(dependencies, tempDir, clock);
         dataHandler = composition.dataHandler();
         syncDataHandler = composition.bean(org.tavall.qa.persistence.ITaskBoardNotionSyncDataHandler.class);
         mutationHandler = composition.bean(TaskBoardMutationHandler.class);
@@ -104,6 +107,34 @@ final class TaskBoardNotionSyncHandlerTest {
     @AfterEach
     void tearDown() {
         composition.close();
+    }
+
+    @Test
+    void mutationConsumersUseTheReplacementFromTheirOwningDependencyMap() {
+        var original = sampleSnapshot("page-pvp-di-original", "Original task", "In progress",
+                baseTime, false, false);
+        var task = syncHandler.ingestSnapshot(manager, original).task();
+        var update = new TaskBoardAgentExecutionUpdateRequest(
+                task.taskId(), TaskBoardTaskStatus.BLOCKED, true, "", "");
+        var incoming = sampleSnapshot("page-pvp-di-incoming", "Incoming task", "In progress",
+                baseTime, false, false);
+        var replacement = dependencies.replaceInstance(ITaskBoardMutationHandler.class, TaskBoardMutationHandler::new);
+
+        assertSame(replacement, dependencies.findInstance(TaskBoardMutationHandler.class));
+        assertThrows(IllegalStateException.class, () -> mutationHandler.createProject(manager,
+                new TaskBoardProjectCreateRequest("retired-generation", "Retired generation", "",
+                        TaskBoardProjectStatus.ACTIVE, TaskBoardAudience.STAFF, 0)));
+        assertSame(agentViewHandler, dependencies.findInstance(ITaskBoardAgentViewHandler.class));
+        assertSame(syncHandler, dependencies.findInstance(ITaskBoardNotionSyncHandler.class));
+        assertThrows(SecurityException.class, () -> agentViewHandler.updateAgentExecution(unauthorizedSubject, update));
+        assertThrows(SecurityException.class, () -> syncHandler.ingestSnapshot(unauthorizedSubject, incoming));
+        assertEquals(task, dataHandler.findTask(task.taskId()).orElseThrow());
+        assertTrue(syncDataHandler.findSyncStateByPageId(incoming.pageId()).isEmpty());
+
+        assertEquals(TaskBoardTaskStatus.BLOCKED, agentViewHandler.updateAgentExecution(manager, update).status());
+        var ingested = syncHandler.ingestSnapshot(manager, incoming);
+        assertTrue(ingested.created());
+        assertEquals(ingested.taskId(), syncHandler.ingestSnapshot(manager, incoming).taskId());
     }
 
     @Test

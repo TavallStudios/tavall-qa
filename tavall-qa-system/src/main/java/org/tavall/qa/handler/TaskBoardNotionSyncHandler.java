@@ -1,6 +1,7 @@
 package org.tavall.qa.handler;
 
-import org.springframework.stereotype.Component;
+import org.tavall.dependency.DependencyAccess;
+import org.tavall.dependency.GenerationOwnedDependencyAccess;
 import org.tavall.dependency.annotations.DelegatesTo;
 import org.tavall.qa.domain.TaskBoardAudience;
 import org.tavall.qa.domain.TaskBoardAuditEntry;
@@ -11,6 +12,7 @@ import org.tavall.qa.domain.TaskBoardTaskPriority;
 import org.tavall.qa.domain.TaskBoardTaskStatus;
 import org.tavall.qa.domain.auth.QaCapability;
 import org.tavall.qa.domain.auth.QaSubjectContext;
+import org.tavall.qa.domain.notion.INotionTaskMappingRegistry;
 import org.tavall.qa.domain.notion.NotionDatabaseTaskMapping;
 import org.tavall.qa.domain.notion.NotionTaskIngestResult;
 import org.tavall.qa.domain.notion.NotionTaskOutboundChange;
@@ -38,42 +40,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * Idempotent ingest keyed by Notion page ID with revision/conflict resolution,
  * archive/delete handling, role-aware authorization, and outbound sync export + ack.
  */
-@Component
 @DelegatesTo(ITaskBoardNotionSyncHandler.class)
-public final class TaskBoardNotionSyncHandler implements ITaskBoardNotionSyncHandler {
-    private final ITaskBoardNotionSyncDataHandler syncDataHandler;
-    private final ITaskBoardDataHandler dataHandler;
-    private final ITaskBoardMutationHandler mutationHandler;
-    private final org.tavall.qa.domain.notion.INotionTaskMappingRegistry mappingRegistry;
+public final class TaskBoardNotionSyncHandler extends GenerationOwnedDependencyAccess
+        implements ITaskBoardNotionSyncHandler, DependencyAccess<ITaskBoardNotionSyncDataHandler,
+        ITaskBoardDataHandler, ITaskBoardMutationHandler, INotionTaskMappingRegistry> {
     private final Clock clock;
 
-    public TaskBoardNotionSyncHandler(
-            ITaskBoardNotionSyncDataHandler syncDataHandler,
-            ITaskBoardDataHandler dataHandler,
-            ITaskBoardMutationHandler mutationHandler,
-            org.tavall.qa.domain.notion.INotionTaskMappingRegistry mappingRegistry,
-            Clock clock
-    ) {
-        this.syncDataHandler = Objects.requireNonNull(syncDataHandler, "syncDataHandler");
-        this.dataHandler = Objects.requireNonNull(dataHandler, "dataHandler");
-        this.mutationHandler = Objects.requireNonNull(mutationHandler, "mutationHandler");
-        this.mappingRegistry = Objects.requireNonNull(mappingRegistry, "mappingRegistry");
+    public TaskBoardNotionSyncHandler(Clock clock) {
         this.clock = Objects.requireNonNull(clock, "clock");
-    }
-
-    public TaskBoardNotionSyncHandler(
-            ITaskBoardNotionSyncDataHandler syncDataHandler,
-            ITaskBoardDataHandler dataHandler,
-            ITaskBoardMutationHandler mutationHandler,
-            Clock clock
-    ) {
-        this(
-                syncDataHandler,
-                dataHandler,
-                mutationHandler,
-                org.tavall.qa.domain.notion.NotionTaskMappingRegistry.canonical(),
-                Objects.requireNonNull(clock, "clock")
-        );
     }
 
     @Override
@@ -83,11 +57,11 @@ public final class TaskBoardNotionSyncHandler implements ITaskBoardNotionSyncHan
 
         Instant now = clock.instant();
         NotionDatabaseTaskMapping mapping = resolveMapping(snapshot.databaseId());
-        Optional<NotionTaskSyncState> existingStateOpt = syncDataHandler.findSyncStateByPageId(snapshot.pageId());
+        Optional<NotionTaskSyncState> existingStateOpt = getInstance().taskBoardNotionSyncDataHandler().findSyncStateByPageId(snapshot.pageId());
 
         if (existingStateOpt.isPresent()) {
             NotionTaskSyncState existingState = existingStateOpt.get();
-            TaskBoardTask currentTask = dataHandler.findTask(existingState.taskId())
+            TaskBoardTask currentTask = getInstance().taskBoardDataHandler().findTask(existingState.taskId())
                     .orElseThrow(() -> new IllegalStateException("Mapped task not found for sync state: " + existingState.taskId()));
 
             // Check duplicate ingest
@@ -121,7 +95,7 @@ public final class TaskBoardNotionSyncHandler implements ITaskBoardNotionSyncHan
             if (snapshot.archived() || snapshot.deleted()) {
                 TaskBoardTask updatedTask = currentTask;
                 if (currentTask.status() != TaskBoardTaskStatus.CANCELLED) {
-                    updatedTask = mutationHandler.updateTask(subject, new TaskBoardTaskUpdateRequest(
+                    updatedTask = getInstance().taskBoardMutationHandler().updateTask(subject, new TaskBoardTaskUpdateRequest(
                             currentTask.taskId(),
                             null,
                             null,
@@ -149,7 +123,7 @@ public final class TaskBoardNotionSyncHandler implements ITaskBoardNotionSyncHan
                 if (conflict) {
                     updatedState = updatedState.withConflict(conflictDetails, now);
                 }
-                syncDataHandler.saveSyncState(updatedState, audit(subject, updatedTask.taskId(), updatedTask.projectKey(),
+                getInstance().taskBoardNotionSyncDataHandler().saveSyncState(updatedState, audit(subject, updatedTask.taskId(), updatedTask.projectKey(),
                         "Archived/deleted Notion task synchronized", now));
                 return new NotionTaskIngestResult(
                         updatedTask.taskId(),
@@ -195,7 +169,7 @@ public final class TaskBoardNotionSyncHandler implements ITaskBoardNotionSyncHan
                     null
             );
 
-            TaskBoardTask updatedTask = mutationHandler.updateTask(subject, updateRequest);
+            TaskBoardTask updatedTask = getInstance().taskBoardMutationHandler().updateTask(subject, updateRequest);
 
             NotionTaskSyncState updatedState = existingState.withIngestedRevision(
                     snapshot.lastEditedTime(),
@@ -206,7 +180,7 @@ public final class TaskBoardNotionSyncHandler implements ITaskBoardNotionSyncHan
             if (conflict) {
                 updatedState = updatedState.withConflict(conflictDetails, now);
             }
-            syncDataHandler.saveSyncState(updatedState, audit(subject, updatedTask.taskId(), updatedTask.projectKey(),
+            getInstance().taskBoardNotionSyncDataHandler().saveSyncState(updatedState, audit(subject, updatedTask.taskId(), updatedTask.projectKey(),
                     conflict ? "Resolved Notion sync conflict: " + conflictDetails : "Updated task from Notion snapshot", now));
 
             return new NotionTaskIngestResult(
@@ -229,7 +203,7 @@ public final class TaskBoardNotionSyncHandler implements ITaskBoardNotionSyncHan
         }
 
         String projectKey = mapping.defaultProjectKey();
-        if (dataHandler.findProject(projectKey).isEmpty()) {
+        if (getInstance().taskBoardDataHandler().findProject(projectKey).isEmpty()) {
             // Fallback to project-novus if default doesn't exist
             projectKey = "project-novus";
         }
@@ -254,9 +228,9 @@ public final class TaskBoardNotionSyncHandler implements ITaskBoardNotionSyncHan
                 0
         );
 
-        TaskBoardTask createdTask = mutationHandler.createTask(subject, createRequest);
+        TaskBoardTask createdTask = getInstance().taskBoardMutationHandler().createTask(subject, createRequest);
         if (initialStatus != TaskBoardTaskStatus.BACKLOG) {
-            createdTask = mutationHandler.updateTask(subject, new TaskBoardTaskUpdateRequest(
+            createdTask = getInstance().taskBoardMutationHandler().updateTask(subject, new TaskBoardTaskUpdateRequest(
                     createdTask.taskId(),
                     null,
                     null,
@@ -293,7 +267,7 @@ public final class TaskBoardNotionSyncHandler implements ITaskBoardNotionSyncHan
                 now
         );
 
-        syncDataHandler.saveSyncState(newState, audit(subject, createdTask.taskId(), projectKey,
+        getInstance().taskBoardNotionSyncDataHandler().saveSyncState(newState, audit(subject, createdTask.taskId(), projectKey,
                 "Created task from Notion page " + snapshot.pageId(), now));
 
         return new NotionTaskIngestResult(
@@ -318,11 +292,11 @@ public final class TaskBoardNotionSyncHandler implements ITaskBoardNotionSyncHan
             resolveMapping(databaseId.get());
         }
 
-        List<NotionTaskSyncState> pendingStates = syncDataHandler.findPendingOutboundSyncStates(databaseId);
+        List<NotionTaskSyncState> pendingStates = getInstance().taskBoardNotionSyncDataHandler().findPendingOutboundSyncStates(databaseId);
         List<NotionTaskOutboundChange> changes = new ArrayList<>();
 
         for (NotionTaskSyncState state : pendingStates) {
-            Optional<TaskBoardTask> taskOpt = dataHandler.findTask(state.taskId());
+            Optional<TaskBoardTask> taskOpt = getInstance().taskBoardDataHandler().findTask(state.taskId());
             if (taskOpt.isEmpty()) {
                 continue;
             }
@@ -359,7 +333,7 @@ public final class TaskBoardNotionSyncHandler implements ITaskBoardNotionSyncHan
         requireAuthorized(subject);
 
         Instant now = clock.instant();
-        NotionTaskSyncState state = syncDataHandler.findSyncStateByPageId(request.notionPageId())
+        NotionTaskSyncState state = getInstance().taskBoardNotionSyncDataHandler().findSyncStateByPageId(request.notionPageId())
                 .orElseThrow(() -> new IllegalArgumentException("No sync state found for Notion page: " + request.notionPageId()));
 
         if (request.syncRevision() <= state.lastAcknowledgedOutboundRevision()) {
@@ -372,7 +346,7 @@ public final class TaskBoardNotionSyncHandler implements ITaskBoardNotionSyncHan
         }
 
         NotionTaskSyncState updated = state.withAcknowledgedOutboundRevision(request.syncRevision(), now);
-        syncDataHandler.saveSyncState(updated, audit(subject, state.taskId(), "notion-sync",
+        getInstance().taskBoardNotionSyncDataHandler().saveSyncState(updated, audit(subject, state.taskId(), "notion-sync",
                 "Acknowledged outbound sync revision " + request.syncRevision(), now));
 
         return new NotionTaskSyncAckResult(
@@ -387,21 +361,21 @@ public final class TaskBoardNotionSyncHandler implements ITaskBoardNotionSyncHan
     public Optional<NotionTaskSyncState> findSyncStateByPageId(QaSubjectContext subject, String notionPageId) {
         Objects.requireNonNull(notionPageId, "notionPageId");
         requireAuthorized(subject);
-        return syncDataHandler.findSyncStateByPageId(notionPageId);
+        return getInstance().taskBoardNotionSyncDataHandler().findSyncStateByPageId(notionPageId);
     }
 
     @Override
     public Optional<NotionTaskSyncState> findSyncStateByTaskId(QaSubjectContext subject, UUID taskId) {
         Objects.requireNonNull(taskId, "taskId");
         requireAuthorized(subject);
-        return syncDataHandler.findSyncStateByTaskId(taskId);
+        return getInstance().taskBoardNotionSyncDataHandler().findSyncStateByTaskId(taskId);
     }
 
     @Override
     public void registerDatabaseMapping(QaSubjectContext subject, NotionDatabaseTaskMapping mapping) {
         Objects.requireNonNull(mapping, "mapping");
         requireAuthorized(subject);
-        mappingRegistry.registerMapping(mapping);
+        getInstance().notionTaskMappingRegistry().registerMapping(mapping);
     }
 
     @Override
@@ -409,18 +383,18 @@ public final class TaskBoardNotionSyncHandler implements ITaskBoardNotionSyncHan
         if (databaseId == null) {
             return Optional.empty();
         }
-        return mappingRegistry.findMapping(databaseId);
+        return getInstance().notionTaskMappingRegistry().findMapping(databaseId);
     }
 
-    public org.tavall.qa.domain.notion.INotionTaskMappingRegistry mappingRegistry() {
-        return mappingRegistry;
+    public INotionTaskMappingRegistry mappingRegistry() {
+        return getInstance().notionTaskMappingRegistry();
     }
 
     public void advanceOutboundRevision(UUID taskId) {
-        syncDataHandler.findSyncStateByTaskId(taskId).ifPresent(state -> {
+        getInstance().taskBoardNotionSyncDataHandler().findSyncStateByTaskId(taskId).ifPresent(state -> {
             Instant now = clock.instant();
             NotionTaskSyncState advanced = state.withAdvancedOutboundRevision(state.lastOutboundRevision() + 1, now);
-            syncDataHandler.saveSyncState(advanced, null);
+            getInstance().taskBoardNotionSyncDataHandler().saveSyncState(advanced, null);
         });
     }
 
@@ -428,7 +402,7 @@ public final class TaskBoardNotionSyncHandler implements ITaskBoardNotionSyncHan
         if (databaseId == null || databaseId.isBlank()) {
             throw new IllegalArgumentException("Notion databaseId must not be null or blank");
         }
-        return mappingRegistry.findMapping(databaseId)
+        return getInstance().notionTaskMappingRegistry().findMapping(databaseId)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown or unconfigured Notion database: " + databaseId));
     }
 

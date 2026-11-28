@@ -20,29 +20,24 @@ Canonical in-process Task Board and QA authority implementation.
 
 ## Dependency Injection Ownership
 
-- `TavallQaConfiguration` is the only `@CompositionBoundary`. It owns Spring bean construction and
-  binds the QA-managed collaborators the handlers resolve through Tavall DI into the process
-  `IDependencyMap` (`ITaskBoardDataHandler`, `ITaskBoardExternalReferenceDataHandler`,
-  `ITaskBoardActionTargetResolver`, `Clock` when absent, the generated `TaskBoardMutationHandler-
-  /TaskBoardExternalReferenceHandlerDependencyAccess` access surfaces, and the
-  `ITaskBoardMutationHandler` / `ITaskBoardExternalReferenceHandler` /
-  `ITaskBoardExecutionCheckpointHandler` handlers themselves). It implements `DisposableBean` and
-  retires the registrations it created in reverse order on context shutdown; registrations already
-  displaced by a newer composition are left alone.
-- `TaskBoardMutationHandler`, `TaskBoardExternalReferenceHandler`, and
-  `TaskBoardExecutionCheckpointHandler` are Tavall DI-managed: they extend
-  `GenerationOwnedDependencyAccess`, declare their collaborators through typed `DependencyAccess<...>`
-  (lowered into the generated `*DependencyAccess` accessors at build time), and resolve them live on
-  every call, so a `replaceInstance(...)` generation swap is visible without reconstructing the
-  handler and a retired generation fails closed. They have no constructor-held Tavall-managed
-  collaborators and no `@Component` stereotype.
-- Remaining handlers (`TaskBoardQueryHandler`, `TaskBoardVentureQueryHandler`,
-  `TaskBoardAgentViewHandler`, `TaskBoardNotionSyncHandler`) are Spring-composed by the same
-  configuration boundary; migrating them to typed `DependencyAccess` is follow-up work, not a
-  licence for constructor-held collaborators in new code.
-- QA keeps canonical ownership of task/assignment/evidence/Human Verify policy and transactional
-  consistency (advisory-lock + optimistic `expectedUpdatedAt` version checks in the data handlers);
-  no extra module or generic service layer mediates between handlers and data handlers.
+- `TavallQaConfiguration` composes the Spring beans and registers the QA capabilities and generated
+  accessors in the owning dependency map. It retires its registrations in reverse order on close
+  and preserves registrations already displaced by a replacement.
+- Mutation, external reference, execution checkpoint, agent view, and Notion sync handlers use
+  generation-owned typed `DependencyAccess`. Notion ingest and the agent view's management update
+  resolve `ITaskBoardMutationHandler` on use and pass through the caller's QA subject. Spring
+  supplies the Notion sync clock at construction. Mapped persistence and transaction ownership
+  stay in the data layer.
+- The mutation contract owns project and task edits, assignment, evidence submission and review,
+  acceptance, Human Verify, comments, actions, and design review. Those operations apply QA scope
+  and workflow rules, then delegate writes and audit persistence to the data handler. The data
+  handler owns advisory locking and optimistic `expectedUpdatedAt` checks.
+- The external reference contract owns privileged lookup, reconciliation, and conflict resolution.
+  Its handler enforces active Account and service context plus task-management authority before
+  delegating reference and audit persistence to the external reference data handler.
+- Task and venture queries retain their existing Spring composition. The agent execution path for
+  scoped non-manager callers continues to write through the QA data handler with an optimistic
+  version check.
 
 ## Repository Structure
 
