@@ -5,8 +5,9 @@ import org.tavall.dependency.GenerationOwnedDependencyAccess;
 import org.tavall.dependency.annotations.DelegatesTo;
 import org.tavall.qa.domain.TaskBoardAction;
 import org.tavall.qa.domain.TaskBoardDesignReview;
-import org.tavall.qa.request.TaskBoardDesignReviewRegisterRequest;
+import org.tavall.qa.request.TaskBoardDesignReviewAiReviewRequest;
 import org.tavall.qa.request.TaskBoardDesignReviewDecisionRequest;
+import org.tavall.qa.request.TaskBoardDesignReviewRegisterRequest;
 import org.tavall.qa.domain.TaskBoardAudience;
 import org.tavall.qa.domain.TaskBoardAssignment;
 import org.tavall.qa.domain.TaskBoardAuditEntry;
@@ -133,6 +134,41 @@ public final class TaskBoardMutationHandler extends GenerationOwnedDependencyAcc
         return taskBoardDataHandler().saveDesignReview(decided, current.revision(), copyWithStatus(task, TaskBoardTaskStatus.READY, now),
                 task.updatedAt(), audit(subject, Optional.of(task.taskId()), task.projectKey(),
                         TaskBoardAuditEventType.TASK_UPDATED, "Selected design candidate " + key + "; task ready to continue", now));
+    }
+
+    @Override
+    public TaskBoardDesignReview recordDesignAiReview(QaSubjectContext subject, TaskBoardDesignReviewAiReviewRequest request) {
+        Objects.requireNonNull(request, "request");
+        requireAccount(subject);
+        require(subject.canSelectDesignReview(request.taskId()), "AI design review requires assigned reviewer authority");
+        requireAvailable();
+        TaskBoardTask task = requireTask(request.taskId());
+        TaskBoardProject project = taskBoardDataHandler().findProject(task.projectKey()).orElseThrow();
+        require(subject.canManageTask(task.taskId()) || subject.canViewTask(project, task), "Task is not visible to this reviewer");
+        require(task.status() != TaskBoardTaskStatus.DONE && task.status() != TaskBoardTaskStatus.CANCELLED,
+                "A completed or cancelled task cannot record an AI design review");
+        TaskBoardDesignReview current = taskBoardDataHandler().findDesignReview(task.taskId())
+                .orElseThrow(() -> new IllegalArgumentException("Task has no design review"));
+        if (current.revision() != request.expectedRevision()) {
+            throw new org.tavall.qa.domain.TaskBoardConcurrentModificationException("Design review changed; reload before retrying");
+        }
+        Instant now = Instant.now();
+        TaskBoardDesignReview reviewed = current.withAiReview(
+                request.reviewerModel(),
+                subject.accountId().orElseThrow(),
+                request.reviewerAgentIdentity(),
+                now,
+                request.candidateKey(),
+                request.rationale(),
+                request.evidenceRefs(),
+                request.artifactRefs(),
+                request.screenshotArtifactRef());
+        String model = reviewed.aiReviewerModel();
+        String candidate = reviewed.aiCandidateKey();
+        return taskBoardDataHandler().saveDesignReview(reviewed, current.revision(), task, task.updatedAt(),
+                audit(subject, Optional.of(task.taskId()), task.projectKey(),
+                        TaskBoardAuditEventType.TASK_UPDATED,
+                        "Recorded provisional AI design review by " + model + " for candidate " + candidate, now));
     }
 
     @Override

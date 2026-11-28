@@ -16,6 +16,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Applies every Task Board PostgreSQL migration, in order, against a real (native) PostgreSQL
  *  process so schema/constraint regressions are caught in CI. Migration 040 (the venture seed) was
@@ -108,6 +110,59 @@ final class TaskBoardMigrationsPostgresIntegrationTest {
              ResultSet result = statement.executeQuery(ventureProjectCountSql())) {
             result.next();
             assertEquals(26, result.getInt(1), "Re-applying 040 must not duplicate venture projects");
+        }
+    }
+
+    @Test
+    void migration043UpgradesAnExistingHumanDecisionAndCanBeReapplied(@TempDir Path upgradeDirectory) throws Exception {
+        List<String> beforeAiReview = TaskBoardPostgresFixture.CORE_MIGRATIONS.stream()
+                .filter(migration -> !migration.startsWith("043_"))
+                .toList();
+        String taskId;
+        try (var upgrade = new TaskBoardPostgresFixture(upgradeDirectory, beforeAiReview)) {
+            try (var composition = new TaskBoardPostgresComposition(upgrade.database(), java.time.Clock.systemUTC())) {
+                var mutations = composition.bean(ITaskBoardMutationHandler.class);
+                var owner = org.tavall.qa.auth.TaskBoardTestSubjects.manager(java.util.UUID.randomUUID(), java.util.UUID.randomUUID());
+                var task = mutations.createTask(owner, new org.tavall.qa.request.TaskBoardTaskCreateRequest(
+                        "tavall-engineering", "legacy-design", "Legacy design", "Legacy design", "", "",
+                        org.tavall.qa.domain.TaskBoardTaskPriority.HIGH, org.tavall.qa.domain.TaskBoardAudience.STAFF,
+                        1, false, false, "test", "issue://23", 0));
+                taskId = task.taskId().toString();
+            }
+            try (var connection = DriverManager.getConnection(upgrade.url(), "postgres", "");
+                 var insert = connection.prepareStatement("""
+                         INSERT INTO task_board_design_review
+                           (task_id, surface, candidates_json, revision, registered_by_account_id, registered_at,
+                            winner_key, decided_by_account_id, decided_at, decision_note)
+                         VALUES (?, 'Dashboard', '[{},{}]', 2, ?, now(), 'B', ?, now(), 'Owner selected B')
+                         """);
+                 var resource = getClass().getClassLoader()
+                         .getResourceAsStream("schema/postgres/043_task_board_design_review_ai_review.sql")) {
+                String actor = java.util.UUID.randomUUID().toString();
+                insert.setString(1, taskId);
+                insert.setString(2, actor);
+                insert.setString(3, actor);
+                assertEquals(1, insert.executeUpdate());
+                assertNotNull(resource);
+                String sql = new String(resource.readAllBytes(), StandardCharsets.UTF_8);
+                try (var statement = connection.createStatement()) {
+                    statement.execute(sql);
+                    statement.execute(sql);
+                    try (var row = statement.executeQuery("""
+                            SELECT winner_key, decision_note, revision, ai_reviewer_model,
+                                   ai_evidence_refs, ai_artifact_refs
+                            FROM task_board_design_review
+                            """)) {
+                        assertTrue(row.next());
+                        assertEquals("B", row.getString("winner_key"));
+                        assertEquals("Owner selected B", row.getString("decision_note"));
+                        assertEquals(2, row.getInt("revision"));
+                        assertNull(row.getString("ai_reviewer_model"));
+                        assertEquals("[]", row.getString("ai_evidence_refs"));
+                        assertEquals("[]", row.getString("ai_artifact_refs"));
+                    }
+                }
+            }
         }
     }
 

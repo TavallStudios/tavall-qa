@@ -78,6 +78,25 @@ final class QaDesignDecisionCommandTest {
     }
 
     @Test
+    void provisionalReviewReportsDeployableWithNoHumanWinner() {
+        stub.nextDesignReview = java.util.Optional.of(new QaCliDesignReviewSnapshot(
+                TASK_ID, "QA task board", 2,
+                List.of(new TaskBoardDesignCandidate("A", "Board A", "https://qa.tavall.org/a", "fast"),
+                        new TaskBoardDesignCandidate("B", "Board B", "https://qa.tavall.org/b", "rich")),
+                null, null, null, "", "claude-opus-5-5", ACCOUNT_ID.toString(), "design-agent",
+                "2026-11-28T00:00:00Z", "A", "Rationale", List.of("evidence/1"), List.of(), null));
+
+        CLICommandResult result = new QaDesignDecisionCommand().execute(input(Map.of("task-id", TASK_ID)));
+        assertTrue(result.successful());
+        assertEquals("false", result.data().get("decided"));
+        assertEquals("true", result.data().get("aiReviewed"));
+        assertEquals("true", result.data().get("deployable"));
+        assertEquals("A", result.data().get("aiCandidateKey"));
+        assertEquals("claude-opus-5-5", result.data().get("aiReviewerModel"));
+        assertFalse(result.data().containsKey("winnerKey"));
+    }
+
+    @Test
     void missingReviewFailsWithParityMessage() {
         stub.nextDesignReview = java.util.Optional.empty();
 

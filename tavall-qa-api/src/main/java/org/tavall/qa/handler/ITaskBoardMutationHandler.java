@@ -31,6 +31,9 @@ public interface ITaskBoardMutationHandler {
     org.tavall.qa.domain.TaskBoardDesignReview selectDesignReviewWinner(QaSubjectContext subject,
             org.tavall.qa.request.TaskBoardDesignReviewDecisionRequest request);
 
+    org.tavall.qa.domain.TaskBoardDesignReview recordDesignAiReview(QaSubjectContext subject,
+            org.tavall.qa.request.TaskBoardDesignReviewAiReviewRequest request);
+
     TaskBoardProject createProject(QaSubjectContext subject, TaskBoardProjectCreateRequest request);
 
     TaskBoardTask createTask(QaSubjectContext subject, TaskBoardTaskCreateRequest request);

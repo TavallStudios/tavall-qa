@@ -23,4 +23,7 @@ public interface IQaExecutionApiClient {
      * review revision (or 0 when no review exists yet).
      */
     QaCliDesignRegisterResult registerDesignCandidates(QaCliDesignRegisterRequest request);
+
+    /** Records a provisional AI design review; only approved models can make the review deployable. */
+    QaCliDesignAiReviewResult recordDesignAiReview(QaCliDesignAiReviewRequest request);
 }

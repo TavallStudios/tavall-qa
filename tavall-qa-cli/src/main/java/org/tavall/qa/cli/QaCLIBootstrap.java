@@ -30,6 +30,7 @@ public final class QaCLIBootstrap implements ICLIBootstrap {
         registry.registerCommand(new QaTaskUpsertCommand());
         registry.registerCommand(new QaDesignRegisterCommand());
         registry.registerCommand(new QaDesignDecisionCommand());
+        registry.registerCommand(new QaDesignAiReviewCommand());
         registry.registerCommand(new QaGithubSyncCommand());
     }
 }
