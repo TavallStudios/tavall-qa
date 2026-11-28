@@ -53,7 +53,7 @@ final class QaVenturesPageTest {
         String unavailable = renderer.render(QaVenturesPage.build(List.of(), false)).body();
         String empty = renderer.render(QaVenturesPage.build(List.of(), true)).body();
 
-        assertTrue(unavailable.contains("This is not an empty portfolio."));
+        assertTrue(unavailable.contains("Venture data could not be loaded right now."));
         assertTrue(unavailable.contains("Board unavailable"));
         assertTrue(empty.contains("No ventures yet"));
     }
@@ -76,8 +76,25 @@ final class QaVenturesPageTest {
 
         assertTrue(html.contains("Tavall Qa"));
         assertTrue(html.contains("1 open task"));
-        assertTrue(html.contains("href=\"/ventures/tavall-qa\""));
-        assertTrue(html.contains("href=\"https://qa.tavall.org/\""));
+        assertTrue(html.contains("href=\"https://qa.tavall.org/projects/tavall-engineering?venture=tavall-qa\""));
+        assertTrue(html.contains("href=\"/\""));
+    }
+
+    @Test
+    void jsonRouteRendersTypedDirectoryWithIsoTimestamps() {
+        UUID sourceTask = UUID.fromString("8095a1e9-f991-37a3-a486-5fd1754aef69");
+        Instant timestamp = Instant.parse("2026-11-20T09:00:00Z");
+        TaskBoardVenture venture = new TaskBoardVenture("tavall-qa", "venture/tavall-qa/venture-card",
+                "QA <authority>", List.of("tavall-qa"), "LIVE", List.of("https://qa.tavall.org/"),
+                "Wiring", "quality", "Tavall QA Board", sourceTask, timestamp, timestamp);
+
+        String json = QaVenturesJsonRenderer.render(
+                new StubVentureQueryHandler(venture, List.of()), ventureManager());
+
+        assertEquals("/api/ventures", org.tavall.qa.web.routes.QaRoutes.API_VENTURES);
+        assertEquals("""
+                [{"slug":"tavall-qa","sourceTaskKey":"venture/tavall-qa/venture-card","purpose":"QA <authority>","ownerRepos":["tavall-qa"],"stage":"LIVE","liveUrls":["https://qa.tavall.org/"],"topBlocker":"Wiring","goalFamilyRef":"quality","displayName":"Tavall QA Board","sourceTaskId":"8095a1e9-f991-37a3-a486-5fd1754aef69","createdAt":"2026-11-20T09:00:00Z","updatedAt":"2026-11-20T09:00:00Z"}]
+                """.strip(), json);
     }
 
     @Test
@@ -86,7 +103,7 @@ final class QaVenturesPageTest {
                 new UnavailableVentureQueryHandler(), ventureManager())).body();
 
         assertTrue(html.contains("Board unavailable"));
-        assertTrue(html.contains("This is not an empty portfolio."));
+        assertTrue(html.contains("Venture data could not be loaded right now."));
     }
 
     private static QaVentureView venture() {

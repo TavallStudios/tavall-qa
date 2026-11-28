@@ -29,13 +29,13 @@ final class QaProductTest {
     }
 
     @Test
-    void productLinksVenturesStraightToTheDedicatedHost() {
+    void productLinksVenturesToTheQaDirectory() {
         ForgeProduct product = QaProduct.product();
 
         List<ForgeLink> nav = product.navigation();
-        assertEquals("https://ventures.tavall.org/",
+        assertEquals(QaRoutes.VENTURES,
                 nav.stream().filter(link -> "Ventures".equals(link.label())).findFirst().orElseThrow().href());
-        assertEquals("https://ventures.tavall.org/",
+        assertEquals(QaRoutes.VENTURES,
                 product.footerLinks().stream().filter(link -> "Ventures".equals(link.label()))
                         .findFirst().orElseThrow().href());
     }

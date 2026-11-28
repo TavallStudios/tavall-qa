@@ -7,7 +7,9 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 import org.tavall.qa.domain.TaskBoardVenture;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "task_board_venture")
@@ -43,12 +45,25 @@ public class TaskBoardVentureEntity {
     @Column(name = "goal_family_ref", length = 255)
     private String goalFamilyRef;
 
+    @Column(name = "display_name", nullable = false, columnDefinition = "text")
+    private String displayName;
+
+    @Column(name = "source_task_id", length = 36)
+    private String sourceTaskId;
+
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
     protected TaskBoardVentureEntity() {
     }
 
     public TaskBoardVenture toDomain() {
         return new TaskBoardVenture(slug, sourceTaskKey, purpose, readStringList(ownerReposJson), stage,
-                readStringList(liveUrlsJson), topBlocker, goalFamilyRef);
+                readStringList(liveUrlsJson), topBlocker, goalFamilyRef, displayName,
+                sourceTaskId == null ? null : UUID.fromString(sourceTaskId), createdAt, updatedAt);
     }
 
     private static List<String> readStringList(String value) {

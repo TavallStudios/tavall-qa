@@ -20,7 +20,9 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.UUID;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,7 +43,7 @@ final class VentureMigrationPostgresIntegrationTest {
         try (TaskBoardPostgresFixture postgres = new TaskBoardPostgresFixture(directory, migrations);
              Connection connection = DriverManager.getConnection(postgres.url(), "postgres", "")) {
             seedRows(connection);
-            applyVentureMigration(connection);
+            applyMigration(connection, "042_task_board_ventures.sql");
 
             assertEquals(4, count(connection, "SELECT count(*) FROM task_board_task"));
             assertEquals(3, count(connection,
@@ -78,6 +80,7 @@ final class VentureMigrationPostgresIntegrationTest {
             assertEquals(1, count(connection, "SELECT count(*) FROM task_board_execution_checkpoint_payload "
                     + "WHERE checkpoint_id = '40000000-0000-0000-0000-000000000004'"));
 
+            applyMigration(connection, "044_task_board_venture_directory.sql");
             ITaskBoardVentureDataHandler ventureData = new TaskBoardVentureDataHandler(postgres.database());
             ITaskBoardDataHandler taskData = new TaskBoardDataHandler(postgres.database());
             try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
@@ -97,6 +100,102 @@ final class VentureMigrationPostgresIntegrationTest {
                 assertEquals(List.of("Re-homed game issue returns"), query.findVentureTasks("tavall-novus", manager)
                         .stream().map(org.tavall.qa.domain.TaskBoardTask::title).toList());
             }
+        }
+    }
+
+    @Test
+    void upgradeAndRestartRestoreTasksAndSeedSourceCardMetadata() throws Exception {
+        List<String> migrations = new ArrayList<>(TaskBoardPostgresFixture.CORE_MIGRATIONS);
+        migrations.addAll(List.of("040_task_board_venture_projects.sql", "042_task_board_ventures.sql"));
+        migrations.sort(String::compareTo);
+
+        try (TaskBoardPostgresFixture postgres = new TaskBoardPostgresFixture(directory, migrations)) {
+            try (Connection connection = DriverManager.getConnection(postgres.url(), "postgres", "");
+                 Statement statement = connection.createStatement()) {
+                // Recreate a retired project and simulate rehome writes after 042 had already run.
+                applyMigration(connection, "040_task_board_venture_projects.sql");
+                seedRows(connection);
+                statement.execute("""
+                        UPDATE task_board_task SET project_key = 'tavall-pvp'
+                        WHERE external_key = 'github/TavallStudios/tavall-mc/issues/401'
+                        """);
+                statement.execute("""
+                        UPDATE task_board_task SET source_type = 'venture', description =
+                            'Venture venture-card for [tavall-web] (BUILDING/LIVE). Purpose: Updated web purpose. '
+                            'Top blocker: Updated blocker. Source: VENTURES.md.'
+                        WHERE external_key = 'venture/tavall-web/venture-card'
+                        """);
+                statement.execute("""
+                        INSERT INTO task_board_task (task_id, project_key, title, task_status,
+                            description, created_at, updated_at, external_key)
+                        VALUES
+                            ('40000000-0000-0000-0000-000000000012', 'project-novus', 'Original game task',
+                                'READY', '', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'game/novus/arena'),
+                            ('40000000-0000-0000-0000-000000000013', 'tavall-web', 'Engineering maintenance',
+                                'BLOCKED', '', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'maintenance/web'),
+                            ('40000000-0000-0000-0000-000000000014', 'tavall-engineering', 'New venture',
+                                'ACTIVE', 'A newly recorded purpose.', '2026-11-20T09:00:00Z',
+                                '2026-11-22T10:00:00Z', 'venture/new-venture/venture-card')
+                        """);
+                List<String> before = preservedRows(connection);
+                applyMigration(connection, "044_task_board_venture_directory.sql");
+                String venturesBeforeRerun = scalar(connection,
+                        "SELECT jsonb_agg(to_jsonb(v) ORDER BY slug) FROM task_board_venture v");
+                applyMigration(connection, "044_task_board_venture_directory.sql");
+
+                assertEquals(before, preservedRows(connection));
+                assertEquals(venturesBeforeRerun, scalar(connection,
+                        "SELECT jsonb_agg(to_jsonb(v) ORDER BY slug) FROM task_board_venture v"));
+                assertEquals(5, count(connection,
+                        "SELECT count(*) FROM task_board_task WHERE project_key = 'tavall-engineering'"));
+                assertEquals(1, count(connection,
+                        "SELECT count(*) FROM task_board_task WHERE project_key = 'project-novus'"));
+                assertEquals(1, count(connection,
+                        "SELECT count(*) FROM task_board_task WHERE project_key = 'tavall-pvp'"));
+                assertEquals(0, count(connection, """
+                        SELECT count(*) FROM task_board_project p JOIN task_board_venture v ON p.project_key = v.slug
+                        WHERE p.project_key <> 'tavall-pvp'
+                        """));
+            }
+            postgres.restart();
+
+            TaskBoardVentureQueryHandler query = new TaskBoardVentureQueryHandler(
+                    new TaskBoardVentureDataHandler(postgres.database()), new TaskBoardDataHandler(postgres.database()));
+            QaSubjectContext subject = ventureManager();
+            TaskBoardVenture web = query.findVenture("tavall-web", subject).orElseThrow();
+            assertEquals("Tavall Web", web.displayName());
+            assertEquals("Updated web purpose", web.purpose());
+            assertEquals("BUILDING/LIVE", web.stage());
+            assertEquals("Updated blocker", web.topBlocker());
+            assertEquals(List.of("https://tavall.org/"), web.liveUrls());
+            assertEquals(UUID.fromString("40000000-0000-0000-0000-000000000001"), web.sourceTaskId());
+
+            TaskBoardVenture added = query.findVenture("new-venture", subject).orElseThrow();
+            assertEquals("New venture", added.displayName());
+            assertEquals("venture/new-venture/venture-card", added.sourceTaskKey());
+            assertEquals(Instant.parse("2026-11-20T09:00:00Z"), added.createdAt());
+            assertEquals(Instant.parse("2026-11-22T10:00:00Z"), added.updatedAt());
+            assertEquals(29, query.findVentures(subject).size());
+            assertEquals(List.of(), query.findVentureTasks("tavall-qa", subject));
+            assertEquals(List.of("Issue task stays intact"), query.findVentureTasks(web.slug(), subject)
+                    .stream().map(org.tavall.qa.domain.TaskBoardTask::title).toList());
+        }
+    }
+
+    private static List<String> preservedRows(Connection connection) throws Exception {
+        return List.of(
+                scalar(connection, "SELECT jsonb_agg(to_jsonb(t) - 'project_key' ORDER BY task_id) FROM task_board_task t"),
+                scalar(connection, "SELECT jsonb_agg(to_jsonb(t) ORDER BY assignment_id) FROM task_board_assignment t"),
+                scalar(connection, "SELECT jsonb_agg(to_jsonb(t) ORDER BY evidence_id) FROM task_board_evidence t"),
+                scalar(connection, "SELECT jsonb_agg(to_jsonb(t) ORDER BY checkpoint_id) FROM task_board_execution_checkpoint t"),
+                scalar(connection, "SELECT jsonb_agg(to_jsonb(t) ORDER BY checkpoint_id) FROM task_board_execution_checkpoint_payload t")
+        );
+    }
+
+    private static String scalar(Connection connection, String sql) throws Exception {
+        try (Statement statement = connection.createStatement(); ResultSet result = statement.executeQuery(sql)) {
+            assertTrue(result.next());
+            return result.getString(1);
         }
     }
 
@@ -194,10 +293,10 @@ final class VentureMigrationPostgresIntegrationTest {
         connection.setAutoCommit(true);
     }
 
-    private static void applyVentureMigration(Connection connection) throws Exception {
+    private static void applyMigration(Connection connection, String migration) throws Exception {
         try (var input = VentureMigrationPostgresIntegrationTest.class.getClassLoader()
-                .getResourceAsStream("schema/postgres/042_task_board_ventures.sql")) {
-            assertNotNull(input, "Missing migration 042 resource");
+                .getResourceAsStream("schema/postgres/" + migration)) {
+            assertNotNull(input, "Missing migration " + migration);
             try (Statement statement = connection.createStatement()) {
                 statement.execute(new String(input.readAllBytes(), StandardCharsets.UTF_8));
             }

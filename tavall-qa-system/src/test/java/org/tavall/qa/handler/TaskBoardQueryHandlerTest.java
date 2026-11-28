@@ -168,7 +168,7 @@ final class TaskBoardQueryHandlerTest {
                 TaskBoardAudience.ADMIN_ONLY,
                 100
         ));
-        mutationHandler.createTask(manager, new TaskBoardTaskCreateRequest(
+        TaskBoardTask engineeringTask = mutationHandler.createTask(manager, new TaskBoardTaskCreateRequest(
                 "tavall-engineering", "orchestrator", "Review navbar sign-in", "Review navbar sign-in",
                 "Owner review", "Owner review", TaskBoardTaskPriority.HIGH, TaskBoardAudience.ADMIN_ONLY,
                 1, false, false, "orchestrator", "orchestrator/20261105/wUI-nav-signin", 0));
@@ -187,6 +187,14 @@ final class TaskBoardQueryHandlerTest {
         assertTrue(superuserBoard.projects().stream().anyMatch(p -> p.projectKey().equals("project-novus")));
         var engineering = queryHandler.findVisibleProjectView("tavall-engineering", superuser).orElseThrow();
         assertEquals(1, engineering.summary().taskCount());
+        var filtered = queryHandler.findVisibleProjectView("tavall-engineering", superuser,
+                Set.of(engineeringTask.taskId(), UUID.randomUUID())).orElseThrow();
+        assertEquals(1, filtered.summary().taskCount());
+        assertEquals(engineeringTask.taskId(), filtered.sections().getFirst().tasks().getFirst().taskId());
+        assertEquals(0, queryHandler.findVisibleProjectView("tavall-engineering", superuser, Set.of())
+                .orElseThrow().summary().taskCount());
+        assertTrue(queryHandler.findVisibleProjectView("tavall-engineering", ordinary,
+                Set.of(engineeringTask.taskId())).isEmpty());
 
         assertTrue(queryHandler.visibleDashboard(ordinary).projects().stream()
                 .noneMatch(p -> p.projectKey().equals("tavall-engineering")));

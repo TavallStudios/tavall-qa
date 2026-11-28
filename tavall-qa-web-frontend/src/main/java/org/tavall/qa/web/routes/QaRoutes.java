@@ -1,5 +1,9 @@
 package org.tavall.qa.web.routes;
 
+import org.tavall.qa.domain.TaskBoardProjectKey;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -20,6 +24,8 @@ public final class QaRoutes {
     public static final String DESIGN_REVIEW_DECISION = TASK + "/design-review/decision";
     public static final String MESSAGES = "/messages/{key}";
     public static final String VENTURES = "/ventures";
+    public static final String API_VENTURES = "/api/ventures";
+    public static final String VENTURE_FILTER = "venture";
     public static final String VENTURE = "/ventures/{ventureKey}";
 
     // Server-side mutations
@@ -65,6 +71,11 @@ public final class QaRoutes {
         Objects.requireNonNull(projectKey, "projectKey");
         Objects.requireNonNull(taskId, "taskId");
         return "/projects/" + projectKey.trim() + "/tasks/" + taskId;
+    }
+
+    public static String ventureTasks(String slug) {
+        return qaProject(TaskBoardProjectKey.ENGINEERING.value()) + "?" + VENTURE_FILTER
+                + "=" + URLEncoder.encode(Objects.requireNonNull(slug, "slug"), StandardCharsets.UTF_8);
     }
 
     public static String venture(String ventureKey) {

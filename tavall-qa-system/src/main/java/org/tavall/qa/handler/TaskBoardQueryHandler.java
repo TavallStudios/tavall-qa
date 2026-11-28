@@ -127,6 +127,16 @@ public final class TaskBoardQueryHandler implements ITaskBoardQueryHandler {
     }
 
     /** Public items plus the items this subject's audience grants allow (for example admin-only projects). */
+    @Override
+    public Optional<TaskBoardPublicProjectView> findVisibleProjectView(
+            String projectKey, QaSubjectContext subject, Set<UUID> taskIds
+    ) {
+        Objects.requireNonNull(subject, "subject");
+        Set<UUID> selection = Set.copyOf(taskIds);
+        return projectBoard(projectKey, project -> visibleTo(subject, project),
+                task -> selection.contains(task.taskId()) && visibleTo(subject, task));
+    }
+
     private static boolean visibleTo(QaSubjectContext subject, TaskBoardProject project) {
         return project.publicVisible() || subject.canViewProjectAudience(project.audience());
     }
